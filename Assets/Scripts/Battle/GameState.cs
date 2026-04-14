@@ -1,8 +1,7 @@
 // ═══════════════════════════════════════════════════════
-//  DUAL CRAFT — Runtime Game State
-//  Runtime instances of cards on the field, in hand, etc.
+// DUAL CRAFT — Runtime Game State
+// Holds runtime instances of cards on the field, in hand, and in other zones.
 // ═══════════════════════════════════════════════════════
-
 using System.Collections.Generic;
 
 namespace DualCraft.Battle
@@ -10,6 +9,12 @@ namespace DualCraft.Battle
     using Core;
     using Cards;
 
+    /// <summary>
+    /// Represents the complete state of an ongoing match.  Contains both
+    /// players' states, current turn information, active domain effects and
+    /// combat log.  This object is mutable and should only be modified via
+    /// the BattleManager to maintain consistency with game rules.
+    /// </summary>
     public class GameState
     {
         public string RoomId;
@@ -30,6 +35,11 @@ namespace DualCraft.Battle
         public int Owner;
     }
 
+    /// <summary>
+    /// Per‑player runtime state.  Tracks hand, deck, field, pillars, seal zone,
+    /// ashe (discard) pile, current will, and max will.  Also stores the
+    /// Conjuror's health and maximum health.
+    /// </summary>
     public class PlayerState
     {
         public string Id;

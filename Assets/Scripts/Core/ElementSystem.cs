@@ -1,7 +1,9 @@
 // ═══════════════════════════════════════════════════════
-//  DUAL CRAFT — Element Data & Matchup System
+// DUAL CRAFT — Element Data & Matchup System
+// Provides lookup tables for element and creature advantages/weaknesses and
+// returns appropriate damage multipliers.  Also exposes colour mappings for
+// UI representation based on element and rarity.
 // ═══════════════════════════════════════════════════════
-
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -13,7 +15,8 @@ namespace DualCraft.Core
         public string displayName;
         public Color color;
         public string symbol;
-        [TextArea] public string description;
+        [TextArea]
+        public string description;
     }
 
     [System.Serializable]
@@ -27,7 +30,7 @@ namespace DualCraft.Core
 
     public static class ElementSystem
     {
-        // Element advantage chart
+        // Element advantage chart (attacker → defenders it is strong against)
         private static readonly Dictionary<Element, Element[]> Advantages = new()
         {
             { Element.Flame, new[] { Element.Ice, Element.Nature } },
@@ -40,6 +43,7 @@ namespace DualCraft.Core
             { Element.Nature, new[] { Element.Water, Element.Earth } },
         };
 
+        // Element weakness chart (attacker → defenders it is weak against)
         private static readonly Dictionary<Element, Element[]> Weaknesses = new()
         {
             { Element.Flame, new[] { Element.Water } },
@@ -52,19 +56,7 @@ namespace DualCraft.Core
             { Element.Nature, new[] { Element.Flame, Element.Ice } },
         };
 
-        private static readonly Dictionary<Element, Element> Allies = new()
-        {
-            { Element.Flame, Element.Air },
-            { Element.Ice, Element.Water },
-            { Element.Water, Element.Earth },
-            { Element.Earth, Element.Ice },
-            { Element.Air, Element.Flame },
-            { Element.Light, Element.Water },
-            { Element.Dark, Element.Flame },
-            { Element.Nature, Element.Light },
-        };
-
-        // Creature type matchups
+        // Creature type matchups (attacker → defenders it is strong against)
         private static readonly Dictionary<CreatureType, CreatureType[]> CreatureAdvantages = new()
         {
             { CreatureType.Spirit, new[] { CreatureType.Artificial } },
@@ -74,6 +66,7 @@ namespace DualCraft.Core
             { CreatureType.Undead, new CreatureType[0] },
         };
 
+        // Creature type weaknesses (attacker → defenders it is weak against)
         private static readonly Dictionary<CreatureType, CreatureType[]> CreatureWeaknesses = new()
         {
             { CreatureType.Spirit, new[] { CreatureType.Elemental } },
@@ -83,6 +76,11 @@ namespace DualCraft.Core
             { CreatureType.Undead, new CreatureType[0] },
         };
 
+        /// <summary>
+        /// Returns a damage multiplier based on the attacking and defending elements.
+        /// Super effective hits use GameConstants.SuperEffectiveMult, weak hits use
+        /// GameConstants.WeakMult, and neutral hits use GameConstants.NeutralMult.
+        /// </summary>
         public static float GetElementMatchup(Element attacker, Element defender)
         {
             if (System.Array.Exists(Advantages.GetValueOrDefault(attacker, System.Array.Empty<Element>()), e => e == defender))
@@ -92,6 +90,11 @@ namespace DualCraft.Core
             return GameConstants.NeutralMult;
         }
 
+        /// <summary>
+        /// Returns a damage multiplier for creature type matchups.  Advantage uses
+        /// GameConstants.CreatureAdvantageMult, disadvantage uses
+        /// GameConstants.CreatureDisadvantageMult, otherwise neutral.
+        /// </summary>
         public static float GetCreatureMatchup(CreatureType attacker, CreatureType defender)
         {
             if (System.Array.Exists(CreatureAdvantages.GetValueOrDefault(attacker, System.Array.Empty<CreatureType>()), c => c == defender))
@@ -101,35 +104,25 @@ namespace DualCraft.Core
             return GameConstants.NeutralMult;
         }
 
-        public static Element GetAlly(Element element)
-        {
-            return Allies.GetValueOrDefault(element, element);
-        }
-
-        public static bool IsAdvantaged(Element attacker, Element defender)
-        {
-            return System.Array.Exists(Advantages.GetValueOrDefault(attacker, System.Array.Empty<Element>()), e => e == defender);
-        }
-
-        public static bool IsWeakTo(Element attacker, Element defender)
-        {
-            return System.Array.Exists(Weaknesses.GetValueOrDefault(attacker, System.Array.Empty<Element>()), e => e == defender);
-        }
-
-        // Default color mappings
+        /// <summary>
+        /// Returns a default colour for the given element, used in UI.
+        /// </summary>
         public static Color GetElementColor(Element element) => element switch
         {
-            Element.Flame => new Color(0.976f, 0.451f, 0.086f),   // #F97316
-            Element.Ice => new Color(0.376f, 0.647f, 0.98f),      // #60A5FA
-            Element.Water => new Color(0.024f, 0.714f, 0.831f),   // #06B6D4
-            Element.Earth => new Color(0.518f, 0.8f, 0.086f),     // #84CC16
-            Element.Air => new Color(0.58f, 0.639f, 0.722f),      // #94A3B8
-            Element.Light => new Color(0.984f, 0.749f, 0.141f),   // #FBBF24
-            Element.Dark => new Color(0.659f, 0.333f, 0.969f),    // #A855F7
-            Element.Nature => new Color(0.133f, 0.773f, 0.369f),  // #22C55E
+            Element.Flame => new Color(0.976f, 0.451f, 0.086f), // #F97316
+            Element.Ice => new Color(0.376f, 0.647f, 0.98f),    // #60A5FA
+            Element.Water => new Color(0.024f, 0.714f, 0.831f), // #06B6D4
+            Element.Earth => new Color(0.518f, 0.8f, 0.086f),   // #84CC16
+            Element.Air => new Color(0.58f, 0.639f, 0.722f),    // #94A3B8
+            Element.Light => new Color(0.984f, 0.749f, 0.141f), // #FBBF24
+            Element.Dark => new Color(0.659f, 0.333f, 0.969f),  // #A855F7
+            Element.Nature => new Color(0.133f, 0.773f, 0.369f),// #22C55E
             _ => Color.white,
         };
 
+        /// <summary>
+        /// Returns a default colour for the given rarity, used in UI.
+        /// </summary>
         public static Color GetRarityColor(Rarity rarity) => rarity switch
         {
             Rarity.Common => new Color(0.612f, 0.639f, 0.686f),    // #9CA3AF

@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════
-//  DUAL CRAFT — Game Actions (Command Pattern)
+// DUAL CRAFT — Game Actions (Command Pattern)
+// Defines lightweight action objects passed to BattleManager for processing.
 // ═══════════════════════════════════════════════════════
 
 namespace DualCraft.Battle

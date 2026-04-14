@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════
-//  DUAL CRAFT — Core Enums
+// DUAL CRAFT — Core Enums
+// Defines all enumerations used across the game logic.
 // ═══════════════════════════════════════════════════════
 
 namespace DualCraft.Core
 {
+    // Elements to which daemons and spells may belong
     public enum Element
     {
         Flame,
@@ -16,6 +18,7 @@ namespace DualCraft.Core
         Nature
     }
 
+    // Creature types used for secondary matchups
     public enum CreatureType
     {
         Elemental,
@@ -25,6 +28,7 @@ namespace DualCraft.Core
         Undead
     }
 
+    // Card categories (the 7 card types)
     public enum CardCategory
     {
         Daemon,
@@ -36,6 +40,7 @@ namespace DualCraft.Core
         Conjuror
     }
 
+    // Rarity tiers for cards
     public enum Rarity
     {
         Common,
@@ -44,6 +49,7 @@ namespace DualCraft.Core
         Legendary
     }
 
+    // Represents the different phases of a player's turn
     public enum GamePhase
     {
         Draw,
@@ -53,6 +59,7 @@ namespace DualCraft.Core
         End
     }
 
+    // Daemon ability trigger types
     public enum AbilityType
     {
         Passive,
@@ -60,6 +67,7 @@ namespace DualCraft.Core
         OnDestroy
     }
 
+    // When a seal trap activates
     public enum SealTrigger
     {
         OnAttack,
@@ -68,6 +76,7 @@ namespace DualCraft.Core
         OnSpell
     }
 
+    // Used for dispel actions to determine what effect is being removed
     public enum DispelTarget
     {
         Domain,
@@ -76,6 +85,7 @@ namespace DualCraft.Core
         Any
     }
 
+    // Domain spell effect types
     public enum DomainEffectType
     {
         AtkBuffAll,
@@ -87,6 +97,7 @@ namespace DualCraft.Core
         PillarHeal
     }
 
+    // Mask equipment effect types
     public enum MaskEffectType
     {
         AtkBoost,
@@ -97,6 +108,7 @@ namespace DualCraft.Core
         Entangle
     }
 
+    // Seal trap effect types
     public enum SealEffectType
     {
         Drain,
@@ -106,6 +118,7 @@ namespace DualCraft.Core
         HealConjuror
     }
 
+    // Identifies the type of action being processed
     public enum ActionType
     {
         DrawCard,
@@ -121,6 +134,7 @@ namespace DualCraft.Core
         EndTurn
     }
 
+    // Specifies what target the attacker is aiming at
     public enum TargetType
     {
         Daemon,
@@ -128,6 +142,7 @@ namespace DualCraft.Core
         Conjuror
     }
 
+    // Categories for logging entries
     public enum LogEntryType
     {
         Action,

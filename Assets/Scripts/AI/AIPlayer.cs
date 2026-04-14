@@ -161,7 +161,7 @@ namespace DualCraft.AI
             {
                 for (int i = 0; i < opponent.Field.Count; i++)
                 {
-                    if (ElementSystem.IsAdvantaged(attacker.Card.element, opponent.Field[i].Card.element))
+                    if (ElementSystem.GetElementMatchup(attacker.Card.element, opponent.Field[i].Card.element) > 1f)
                     {
                         return (TargetType.Daemon, i);
                     }
