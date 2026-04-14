@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfcd87f8059c942aa9b4691dbc0c1265, type: 3}
+  m_Name: m-5
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.MaskCardData
+  cardId: m-5
+  cardName: Mask of Thorns
+  category: 3
+  rarity: 2
+  artwork: {fileID: 21300000, guid: 29846b25712dc42e48deadda7637ed94, type: 3}
+  fullArt: {fileID: 0}
+  description: Attackers take 2 damage when hitting this Daemon. Lasts 3 turns.
+  flavorText: 
+  willCost: -1
+  duration: 3
+  effectType: 4
+  effectValue: 2

@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9435ae5401165433481b0151d92cde6c, type: 3}
+  m_Name: Primal_Elements
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DeckData
+  deckName: Primal Elements
+  element: 0
+  primaryCreatureType: 0
+  description: "Raw elemental power \u2014 versatile daemons from every element."
+  isStarter: 0
+  cards:
+  - card: {fileID: 11400000, guid: 44f620a1cb0894f4da270a8b3b68bee1, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 59b74c5b96ffb45c4834cfe712159500, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 66f07f38ea8db43d985c8c16017e8c5c, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 85038e110404c4d81ad36b6b5ff44882, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 90c574e8d3bb5496bbff0556f0ba10e1, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 4413ce86aad57423c9c39689e6be797f, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 293d3adeb4b51424799f95223fe56849, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: c81b4850aaa884578b0aafe2e6030d60, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: f3b73abea0d2042d4a70a575110a0416, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: ad6f29187ea464d7f878401839031d24, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 251368ba54fe841ddba754d3a76a1345, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 1c94fb538e93e4a67b0dfe505d159329, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 93b6c6172df4f4681b377c602ca513c9, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 0a840410c3381413f8446b50cf583f88, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 078d1a25197e448b69fe124d6132833e, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: f5415af9dad004424bd0d6f990ff8346, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: ce4b40c448903433c858f74d69febae3, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: a8636f30ddfa64d8aa242a2906738320, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 0b01d876b9fed4fb484c87c3867d8482, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 4ae90b1e0398843ec822687bc675c2b7, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 89b1418ffef0a47129d8f8502e376f41, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: d589bfa940d1c484db82ed35fb682368, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: eb0ebf9c0fae6479e95b0a0902cd8346, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 8c61ddcf526034aa296051071297017b, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 9a165fcbe25f7446784bc4063ca28a09, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 15582ec820f8a40eb991c46b0bd05153, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: aceb4a180dedb46df97ea3293a633887, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 8e11549695fca4751a57b3abfbf806d6, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 32f74dada9beb4caea92497e79bec6bc, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 877b16148a39043f6921234565577c3c, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: bb51bfbf33bed4728abf055ba4f2bdb5, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 02fbe9758ad2248078a778a433bbac3c, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: ba048d95d348247318b8f8e0db5af83b, type: 2}
+    count: 1
+  pillars:
+  - card: {fileID: 11400000, guid: 18e6d6068d9804d409b7ecb5ba166bae, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: a2c98a353b35b45de991256a0dd74f2b, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 8693214a1fa31422ea208c0b394d0c6e, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 6ed7200be037f44b6b9ed37eaeb61d83, type: 2}
+    count: 1

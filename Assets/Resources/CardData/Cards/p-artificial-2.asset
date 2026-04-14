@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535ba2a83eb164d089997782086a5f6e, type: 3}
+  m_Name: p-artificial-2
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.PillarCardData
+  cardId: p-artificial-2
+  cardName: Pillar of the Living Gallery
+  category: 1
+  rarity: 2
+  artwork: {fileID: 21300000, guid: 8f75a683c41914fecb4211ab0407f183, type: 3}
+  fullArt: {fileID: 0}
+  description: Constructs animated by ancient craft move with purpose.
+  flavorText: 
+  willCost: -1
+  element: 2
+  creatureType: 2
+  hp: 10
+  loyalty: 3
+  passiveAbility: Artificial Daemons regenerate 1 Ashe per turn.
+  passiveEffect:
+    passiveType: creature-regen
+    element: 0
+    creatureType: 2
+    value: 1
+  onDestroyedEffect:
+    destroyType: heal-all-allies
+    value: 3
+    element: 0
+  activatedAbilities:
+  - abilityName: Animate
+    description: Summon a 2/4 Construct token.
+    loyaltyCost: 1
+    effectKey: pil-art2-animate
+  - abilityName: Grand Design
+    description: Destroy weakest enemy. All your Daemons heal 3.
+    loyaltyCost: -3
+    effectKey: pil-art2-design

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 108d78e73ec8a425cb7c4c4c76808204, type: 3}
+  m_Name: s-4
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.SealCardData
+  cardId: s-4
+  cardName: Counter Bind
+  category: 4
+  rarity: 1
+  artwork: {fileID: 21300000, guid: 59f5a68fe8a724d6cae3cd5df64b3df4, type: 3}
+  fullArt: {fileID: 0}
+  description: Negate the next Domain or Mask card your opponent plays.
+  flavorText: 
+  willCost: -1
+  trigger: 3
+  effectType: 3
+  effectValue: 0

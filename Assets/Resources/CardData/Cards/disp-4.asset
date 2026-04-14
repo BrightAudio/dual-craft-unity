@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4a72f858f64a448198ba665bfca0093, type: 3}
+  m_Name: disp-4
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DispelCardData
+  cardId: disp-4
+  cardName: Arcane Dissolution
+  category: 5
+  rarity: 2
+  artwork: {fileID: 21300000, guid: 7bba44200e4104095af07a9d0cef7f2f, type: 3}
+  fullArt: {fileID: 0}
+  description: Erase any Domain, Mask, or Seal and drain the caster's reserves. Opponent
+    loses 2 Will.
+  flavorText: '"Magic unmade is magic stolen."'
+  willCost: -1
+  target: 3
+  counterEffect:
+    effectType: drain-will
+    value: 2

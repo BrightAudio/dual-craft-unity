@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 892ee727262864a4db215ac521adcc39, type: 3}
+  m_Name: d-dark-7
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DaemonCardData
+  cardId: d-dark-7
+  cardName: Abyssal Devourer
+  category: 0
+  rarity: 2
+  artwork: {fileID: 21300000, guid: 0e6faecf4f7704a8796f0feeebab517f, type: 3}
+  fullArt: {fileID: 0}
+  description: A monstrous entity from the deepest void that swallows all it touches.
+  flavorText: '"It does not consume to feed. It consumes to erase."'
+  willCost: -1
+  element: 6
+  creatureType: 0
+  ashe: 8
+  attack: 6
+  asheCost: 3
+  evolvesTo: {fileID: 0}
+  evolutionCost: 0
+  ability:
+    abilityName: Oblivion
+    description: When destroyed, the opponent discards 1 random card.
+    type: 2
+    effectKey: oblivion

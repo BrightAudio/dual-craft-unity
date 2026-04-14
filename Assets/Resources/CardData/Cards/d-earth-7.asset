@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 892ee727262864a4db215ac521adcc39, type: 3}
+  m_Name: d-earth-7
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DaemonCardData
+  cardId: d-earth-7
+  cardName: Crystal Borer
+  category: 0
+  rarity: 2
+  artwork: {fileID: 21300000, guid: e511af4dbb5b9486294175fe87369da5, type: 3}
+  fullArt: {fileID: 0}
+  description: A drilling automaton tipped with razor-sharp crystal teeth.
+  flavorText: '"No stone can stop it. No Pillar can withstand it."'
+  willCost: -1
+  element: 3
+  creatureType: 1
+  ashe: 10
+  attack: 5
+  asheCost: 2
+  evolvesTo: {fileID: 0}
+  evolutionCost: 0
+  ability:
+    abilityName: Core Drill
+    description: Deals double damage to Pillars.
+    type: 0
+    effectKey: pillar-crusher

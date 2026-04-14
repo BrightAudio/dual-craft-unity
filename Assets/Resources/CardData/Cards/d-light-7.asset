@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 892ee727262864a4db215ac521adcc39, type: 3}
+  m_Name: d-light-7
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DaemonCardData
+  cardId: d-light-7
+  cardName: Seraph of Reckoning
+  category: 0
+  rarity: 2
+  artwork: {fileID: 21300000, guid: 11f512c898d0c474eaf7d4a899dbb3f5, type: 3}
+  fullArt: {fileID: 0}
+  description: A six-winged angel of judgment that descends on the wicked.
+  flavorText: '"Mercy was its first instinct. It learned a second."'
+  willCost: -1
+  element: 5
+  creatureType: 0
+  ashe: 7
+  attack: 5
+  asheCost: 2
+  evolvesTo: {fileID: 0}
+  evolutionCost: 0
+  ability:
+    abilityName: Divine Descent
+    description: Heals your Conjuror for 3 HP on summon.
+    type: 1
+    effectKey: divine-descent

@@ -1,0 +1,93 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9435ae5401165433481b0151d92cde6c, type: 3}
+  m_Name: Ethereal_Conclave
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DeckData
+  deckName: Ethereal Conclave
+  element: 4
+  primaryCreatureType: 0
+  description: Spectral forces that phase through defenses and haunt the enemy.
+  isStarter: 0
+  cards:
+  - card: {fileID: 11400000, guid: 3cb3c2d2588d14b5f9e517baae881bf6, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 7bd5cf461d26a44cca406a6a58cf76cc, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 8e7d5e0532fcc443eb8b0ba83034b353, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 030a5b0dba56d46808f55da2d4bf51d8, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 9d26f8bd10ada4a23ab7b27ec24e9fc7, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: dc68f0765abdd4d15a1b331852ad6674, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: c3606bb494e6840ac954292854fa2b7d, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: ca3826c9d82a047e4b903df21fd9e138, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 1c94fb538e93e4a67b0dfe505d159329, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 532dc133b5bd9400bbabadd993e8ad36, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 0d099f4d2d97f449f8b7c8d25d54a87e, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 3935146b16f64456ca8764f602a5ecad, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: baab05df08e604fbe9cfd34dc65a75d6, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 45b3ed9a74ed14d5682977d866523055, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 7ce109522d17044b5864952df015ba27, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: f5415af9dad004424bd0d6f990ff8346, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: a8636f30ddfa64d8aa242a2906738320, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 0b01d876b9fed4fb484c87c3867d8482, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 4ae90b1e0398843ec822687bc675c2b7, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 89b1418ffef0a47129d8f8502e376f41, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 07755fdcfe5c44c8fb14daff4dc2cd93, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: eb0ebf9c0fae6479e95b0a0902cd8346, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 8c61ddcf526034aa296051071297017b, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 9a165fcbe25f7446784bc4063ca28a09, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 15582ec820f8a40eb991c46b0bd05153, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: aceb4a180dedb46df97ea3293a633887, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 8e11549695fca4751a57b3abfbf806d6, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 877b16148a39043f6921234565577c3c, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: bb51bfbf33bed4728abf055ba4f2bdb5, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: c743fb5cbc62e493bb85aa1336169170, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 02fbe9758ad2248078a778a433bbac3c, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: ba048d95d348247318b8f8e0db5af83b, type: 2}
+    count: 1
+  pillars:
+  - card: {fileID: 11400000, guid: ff9f8fe1ae5054ad3b3bc7ae4c44f4f9, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 22894087f92844a9b9f1c13551680070, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 6ed7200be037f44b6b9ed37eaeb61d83, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: a41da003815224cdc98cea4a047eedf1, type: 2}
+    count: 1

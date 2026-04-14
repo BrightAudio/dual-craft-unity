@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 892ee727262864a4db215ac521adcc39, type: 3}
+  m_Name: d-air-3
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DaemonCardData
+  cardId: d-air-3
+  cardName: Skyforge Eagle
+  category: 0
+  rarity: 2
+  artwork: {fileID: 21300000, guid: 1969a947fa80743028fb084b740cb3c2, type: 3}
+  fullArt: {fileID: 0}
+  description: A mechanical raptor with razor-edged wings of tempered steel.
+  flavorText: '"Built to hunt what the wind cannot catch."'
+  willCost: -1
+  element: 4
+  creatureType: 1
+  ashe: 5
+  attack: 6
+  asheCost: 2
+  evolvesTo: {fileID: 0}
+  evolutionCost: 0
+  ability:
+    abilityName: Dive Bomb
+    description: Deals double damage to Pillars.
+    type: 0
+    effectKey: pillar-crusher

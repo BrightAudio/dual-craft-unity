@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535ba2a83eb164d089997782086a5f6e, type: 3}
+  m_Name: p-machine-1
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.PillarCardData
+  cardId: p-machine-1
+  cardName: Pillar of the Iron Forge
+  category: 1
+  rarity: 1
+  artwork: {fileID: 21300000, guid: 98fc15db951ef46fd8cdff63c6385d2e, type: 3}
+  fullArt: {fileID: 0}
+  description: The forge never sleeps. Your machines grow stronger.
+  flavorText: 
+  willCost: -1
+  element: 0
+  creatureType: 1
+  hp: 11
+  loyalty: 3
+  passiveAbility: Machine Daemons gain +2 ATK.
+  passiveEffect:
+    passiveType: creature-atk-buff
+    element: 0
+    creatureType: 1
+    value: 2
+  onDestroyedEffect:
+    destroyType: summon-token
+    value: 0
+    element: 0
+  activatedAbilities:
+  - abilityName: Overclock
+    description: All Machine Daemons gain +1 ATK permanently.
+    loyaltyCost: 1
+    effectKey: pil-mach1-overclock
+  - abilityName: Mass Production
+    description: Summon a 3/3 Automaton token. Draw 1 card.
+    loyaltyCost: -3
+    effectKey: pil-mach1-produce

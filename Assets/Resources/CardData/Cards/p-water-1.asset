@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535ba2a83eb164d089997782086a5f6e, type: 3}
+  m_Name: p-water-1
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.PillarCardData
+  cardId: p-water-1
+  cardName: Pillar of the Abyss
+  category: 1
+  rarity: 1
+  artwork: {fileID: 21300000, guid: 4583aac542cde45dd9e0aae4b0608678, type: 3}
+  fullArt: {fileID: 0}
+  description: Regenerates your Water Daemons. The deep sea provides.
+  flavorText: 
+  willCost: -1
+  element: 2
+  creatureType: 0
+  hp: 12
+  loyalty: 3
+  passiveAbility: Your Water Daemons regenerate 1 Ashe per turn.
+  passiveEffect:
+    passiveType: element-regen
+    element: 2
+    creatureType: 0
+    value: 1
+  onDestroyedEffect:
+    destroyType: return-from-ashepile
+    value: 0
+    element: 0
+  activatedAbilities:
+  - abilityName: Tidal Heal
+    description: Heal all your Daemons for 2 Ashe.
+    loyaltyCost: 1
+    effectKey: pil-water1-heal
+  - abilityName: Whirlpool
+    description: Return 2 cards from your Ashe Pile to hand.
+    loyaltyCost: -3
+    effectKey: pil-water1-whirl

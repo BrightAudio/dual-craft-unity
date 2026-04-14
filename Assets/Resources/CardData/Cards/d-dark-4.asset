@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 892ee727262864a4db215ac521adcc39, type: 3}
+  m_Name: d-dark-4
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DaemonCardData
+  cardId: d-dark-4
+  cardName: Gloom Crawler
+  category: 0
+  rarity: 0
+  artwork: {fileID: 21300000, guid: 43401faee103d48dfad914296f0835e3, type: 3}
+  fullArt: {fileID: 0}
+  description: A multilimbed horror that skitters through the spaces between shadows.
+  flavorText: '"Check under the bed. Now check the ceiling."'
+  willCost: -1
+  element: 6
+  creatureType: 4
+  ashe: 7
+  attack: 4
+  asheCost: 1
+  evolvesTo: {fileID: 11400000, guid: 3935146b16f64456ca8764f602a5ecad, type: 2}
+  evolutionCost: 3
+  ability:
+    abilityName: 
+    description: 
+    type: 0
+    effectKey: 

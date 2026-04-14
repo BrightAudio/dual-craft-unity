@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535ba2a83eb164d089997782086a5f6e, type: 3}
+  m_Name: p-flame-1
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.PillarCardData
+  cardId: p-flame-1
+  cardName: Pillar of the Blazing Sun
+  category: 1
+  rarity: 1
+  artwork: {fileID: 21300000, guid: d6a88f5386e5f48bb97488afde427e67, type: 3}
+  fullArt: {fileID: 0}
+  description: Scorches all enemies each turn. Activate to unleash fiery punishment.
+  flavorText: 
+  willCost: -1
+  element: 0
+  creatureType: 0
+  hp: 10
+  loyalty: 3
+  passiveAbility: Deal 1 damage to all enemy Daemons at the start of your turn.
+  passiveEffect:
+    passiveType: start-turn-damage
+    element: 0
+    creatureType: 0
+    value: 1
+  onDestroyedEffect:
+    destroyType: damage-all-enemies
+    value: 3
+    element: 0
+  activatedAbilities:
+  - abilityName: Flare
+    description: Deal 2 damage to a random enemy Daemon.
+    loyaltyCost: 1
+    effectKey: pil-flame1-flare
+  - abilityName: Solar Burst
+    description: Deal 4 damage to all enemy Daemons.
+    loyaltyCost: -3
+    effectKey: pil-flame1-burst

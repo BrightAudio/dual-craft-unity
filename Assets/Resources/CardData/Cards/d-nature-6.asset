@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 892ee727262864a4db215ac521adcc39, type: 3}
+  m_Name: d-nature-6
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DaemonCardData
+  cardId: d-nature-6
+  cardName: Verdant Hydra
+  category: 0
+  rarity: 2
+  artwork: {fileID: 21300000, guid: 3da2410ee828d416b9b7a4462e264d8b, type: 3}
+  fullArt: {fileID: 0}
+  description: A multi-headed plant beast that regrows stronger with every wound.
+  flavorText: '"Cut one head, and two more bloom."'
+  willCost: -1
+  element: 7
+  creatureType: 0
+  ashe: 10
+  attack: 5
+  asheCost: 2
+  evolvesTo: {fileID: 0}
+  evolutionCost: 0
+  ability:
+    abilityName: Rebirth
+    description: When destroyed, returns to the field with 4 Ashe (once per game).
+    type: 2
+    effectKey: rebirth

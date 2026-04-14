@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 892ee727262864a4db215ac521adcc39, type: 3}
+  m_Name: d-flame-6
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DaemonCardData
+  cardId: d-flame-6
+  cardName: Wildfire Fox
+  category: 0
+  rarity: 0
+  artwork: {fileID: 21300000, guid: a23a441c5357b45eca3f9d8c24907dbc, type: 3}
+  fullArt: {fileID: 0}
+  description: A spectral fox that ignites the ground wherever it runs.
+  flavorText: "\"Follow the burning pawprints\u2014if you dare.\""
+  willCost: -1
+  element: 0
+  creatureType: 3
+  ashe: 5
+  attack: 4
+  asheCost: 1
+  evolvesTo: {fileID: 0}
+  evolutionCost: 0
+  ability:
+    abilityName: 
+    description: 
+    type: 0
+    effectKey: 

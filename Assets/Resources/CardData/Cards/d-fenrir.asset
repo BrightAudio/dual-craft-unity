@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 892ee727262864a4db215ac521adcc39, type: 3}
+  m_Name: d-fenrir
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DaemonCardData
+  cardId: d-fenrir
+  cardName: Fenrir, the Great White Wolf
+  category: 0
+  rarity: 3
+  artwork: {fileID: 21300000, guid: 2584eebf4571941d88b48d6e788bdd6b, type: 3}
+  fullArt: {fileID: 0}
+  description: A colossal white wolf spirit of ancient legend. Those who earn its
+    loyalty are forever protected. Those who face it are never seen again.
+  flavorText: "\"He was the best of us. The pack remembers.\" \u2014 In honor of
+    Jeff"
+  willCost: -1
+  element: 1
+  creatureType: 3
+  ashe: 14
+  attack: 6
+  asheCost: 2
+  evolvesTo: {fileID: 0}
+  evolutionCost: 0
+  ability:
+    abilityName: Undying Pack
+    description: When Fenrir is destroyed, all your other Daemons gain +2 ATK and
+      heal 3 Ashe. He fights on through them.
+    type: 2
+    effectKey: undying-pack

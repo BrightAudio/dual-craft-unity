@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4c57cfd8193647ac8dfa103633a3f6c, type: 3}
+  m_Name: cj-earth
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.ConjurorCardData
+  cardId: cj-earth
+  cardName: Terravex, the Living Mountain
+  category: 6
+  rarity: 3
+  artwork: {fileID: 0}
+  fullArt: {fileID: 0}
+  description: A conjuror who IS the land. Immovable. Indestructible.
+  flavorText: '"I am the ground you stand on. Kneel."'
+  willCost: -1
+  element: 3
+  loyalty: 6
+  abilities:
+  - abilityName: Fortification
+    description: All your Daemons gain +2 max Ashe.
+    loyaltyCost: 1
+    effectKey: cj-earth-buff
+  - abilityName: Earthquake
+    description: Deal 3 damage to all Daemons (yours take 1 less).
+    loyaltyCost: -3
+    effectKey: cj-earth-quake
+  - abilityName: Tectonic Collapse
+    description: Destroy an enemy Pillar. Summon a 5/5 Golem token.
+    loyaltyCost: -6
+    effectKey: cj-earth-ult

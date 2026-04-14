@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9435ae5401165433481b0151d92cde6c, type: 3}
+  m_Name: Apprentices_Flame_Kit
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DeckData
+  deckName: Apprentice's Flame Kit
+  element: 0
+  primaryCreatureType: 0
+  description: A beginner-friendly deck with basic Flame daemons. Given by Professor
+    Eluris.
+  isStarter: 1
+  cards:
+  - card: {fileID: 11400000, guid: 44f620a1cb0894f4da270a8b3b68bee1, type: 2}
+    count: 4
+  - card: {fileID: 11400000, guid: 59b74c5b96ffb45c4834cfe712159500, type: 2}
+    count: 3
+  - card: {fileID: 11400000, guid: 7ce109522d17044b5864952df015ba27, type: 2}
+    count: 3
+  - card: {fileID: 11400000, guid: ad6f29187ea464d7f878401839031d24, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: c81b4850aaa884578b0aafe2e6030d60, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: f5415af9dad004424bd0d6f990ff8346, type: 2}
+    count: 4
+  - card: {fileID: 11400000, guid: ce4b40c448903433c858f74d69febae3, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 89b1418ffef0a47129d8f8502e376f41, type: 2}
+    count: 3
+  - card: {fileID: 11400000, guid: 9a165fcbe25f7446784bc4063ca28a09, type: 2}
+    count: 4
+  - card: {fileID: 11400000, guid: 15582ec820f8a40eb991c46b0bd05153, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 32f74dada9beb4caea92497e79bec6bc, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 877b16148a39043f6921234565577c3c, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 8e11549695fca4751a57b3abfbf806d6, type: 2}
+    count: 1
+  pillars:
+  - card: {fileID: 11400000, guid: 18e6d6068d9804d409b7ecb5ba166bae, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: a2c98a353b35b45de991256a0dd74f2b, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 8693214a1fa31422ea208c0b394d0c6e, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 9140244cfe6954e46ac01b229792d62f, type: 2}
+    count: 1

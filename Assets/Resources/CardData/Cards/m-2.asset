@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfcd87f8059c942aa9b4691dbc0c1265, type: 3}
+  m_Name: m-2
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.MaskCardData
+  cardId: m-2
+  cardName: Mask of Iron
+  category: 3
+  rarity: 0
+  artwork: {fileID: 21300000, guid: 5f7f1cd58501c49a0883e5508e456a57, type: 3}
+  fullArt: {fileID: 0}
+  description: Equipped Daemon gains +5 Ashe for 3 turns.
+  flavorText: 
+  willCost: -1
+  duration: 3
+  effectType: 1
+  effectValue: 5

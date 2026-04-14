@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 892ee727262864a4db215ac521adcc39, type: 3}
+  m_Name: d-flame-7
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DaemonCardData
+  cardId: d-flame-7
+  cardName: Magma Forgemaster
+  category: 0
+  rarity: 2
+  artwork: {fileID: 21300000, guid: 7eec0db313c204f54ba05403fd1a3721, type: 3}
+  fullArt: {fileID: 0}
+  description: A colossal automaton that reshapes metal in its molten core.
+  flavorText: '"Every Daemon it destroys becomes raw material."'
+  willCost: -1
+  element: 0
+  creatureType: 1
+  ashe: 9
+  attack: 5
+  asheCost: 2
+  evolvesTo: {fileID: 0}
+  evolutionCost: 0
+  ability:
+    abilityName: Reforge
+    description: Gains +1 ATK each time a Daemon is destroyed.
+    type: 0
+    effectKey: reforge

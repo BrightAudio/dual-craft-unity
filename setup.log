@@ -1,0 +1,562 @@
+Unity Editor version:    6000.4.2f1 (7a4c1aeef971)
+Branch:                  6000.4/staging
+Build type:              Release
+Batch mode:              YES
+macOS version:           Version 26.3.1 (Build 25D2128)
+Darwin version:          25.3.0
+Architecture:            arm64
+Running under Rosetta:   NO
+Available memory:        16384 MB
+Date:                    2026-04-14T01:30:19Z
+[Licensing::Module] Trying to connect to existing licensing client channel...
+[Licensing::IpcConnector] Channel LicenseClient-stephenalexanderbright doesn't exist
+Launching external process: /Applications/Unity/Hub/Editor/6000.4.2f1/Unity.app/Contents/Helpers/UnityLicensingClient.app/Contents/MacOS/Unity.Licensing.Client
+[Licensing::Module] Successfully launched the LicensingClient (PId: 51705)
+Launching external process: /Applications/Unity/Hub/Editor/6000.4.2f1/Unity.app/Contents/Helpers/PackageManager/Server/UnityPackageManager
+
+COMMAND LINE ARGUMENTS:
+/Applications/Unity/Hub/Editor/6000.4.2f1/Unity.app/Contents/MacOS/Unity
+-batchmode
+-nographics
+-quit
+-projectPath
+/Users/stephenalexanderbright/dual-craft-unity
+-executeMethod
+DualCraft.Editor.ProjectSetup.RunFullSetup
+-logFile
+/Users/stephenalexanderbright/dual-craft-unity/setup.log
+Successfully changed project path to: /Users/stephenalexanderbright/dual-craft-unity
+/Users/stephenalexanderbright/dual-craft-unity
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-temp-allocator-size-gfx=262144"
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+Player connection [8674980096]  Target information:
+
+Player connection [8674980096]  * "[IP] 192.168.1.218 [Port] 55504 [Flags] 2 [Guid] 3469424446 [EditorId] 3469424446 [Version] 1048832 [Id] OSXEditor(0,Mac.attlocal.net) [Debug] 1 [PackageName] OSXEditor [ProjectName] Editor" 
+
+Player connection [8674980096]  * "[IP] 100.89.49.62 [Port] 55504 [Flags] 2 [Guid] 3469424446 [EditorId] 3469424446 [Version] 1048832 [Id] OSXEditor(0,Mac.attlocal.net) [Debug] 1 [PackageName] OSXEditor [ProjectName] Editor" 
+
+Player connection [8674980096] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [8674980096] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Package Manager] Connected to IPC stream "Upm-51704" after 0.3 seconds.
+[Licensing::Module] Licensing is not yet initialized.
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-stephenalexanderbright" at "2026-04-14T01:30:20.157107Z"
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.1+9fbee8e
+  Session Id:              4ddb7e9de22345f79e6d6ceaccebbd2d
+  Correlation Id:          1bbd2427c370719b7d05defd89c27b27
+  External correlation Id: 2079135412238617847
+  Machine Id:              NMh9wrNzvw1LGDYUx05UjAIx/2A=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-stephenalexanderbright" (connect: 0.38s, validation: 0.03s, handshake: 0.26s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-stephenalexanderbright-notifications" at "2026-04-14T01:30:20.44384Z"
+[Licensing::Module] Connected to LicensingClient (PId: 51705, launch time: 0.00, total connection time: 0.67s)
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: 2475966887328-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.00
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Licensing Background thread has ended after 0.68s
+[Licensing::Module] Licensing is initialized (took 0.31s).
+[Licensing::Client] Successfully resolved entitlement details
+Library Redirect Path: Library/
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Initialize engine version: 6000.4.2f1 (7a4c1aeef971)
+[Subsystems] Discovering subsystems at path /Applications/Unity/Hub/Editor/6000.4.2f1/Unity.app/Contents/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path /Users/stephenalexanderbright/dual-craft-unity/Assets
+Forcing GfxDevice: Null
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+NullGfxDevice:
+    Version:  NULL 1.0 [1.0]
+    Renderer: Null Device
+    Vendor:   Unity Technologies
+Initialize mono
+Mono path[0] = '/Applications/Unity/Hub/Editor/6000.4.2f1/Unity.app/Contents/Resources/Scripting/Managed'
+Mono path[1] = '/Applications/Unity/Hub/Editor/6000.4.2f1/Unity.app/Contents/Resources/Scripting/MonoBleedingEdge/lib/mono/unityjit-macos'
+Mono config path = '/Applications/Unity/Hub/Editor/6000.4.2f1/Unity.app/Contents/Resources/Scripting/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56704
+CodeReloadManager initialized
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: /Applications/Unity/Hub/Editor/6000.4.2f1/PlaybackEngines/WebGLSupport/UnityEditor.WebGL.Extensions.dll
+Register platform support module: /Applications/Unity/Hub/Editor/6000.4.2f1/Unity.app/Contents/PlaybackEngines/MacStandaloneSupport/UnityEditor.OSXStandalone.Extensions.dll
+Registered in 0.001291 seconds.
+Native extension for OSXStandalone target not found
+Native extension for WebGL target not found
+Package Manager log level set to [2]
+ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.203 seconds
+Domain Reload Profiling: 467ms
+	BeginReloadAssembly (82ms)
+		CreateAndSetChildDomain (5ms)
+	RebuildCommonClasses (27ms)
+	RebuildNativeTypeToScriptingClass (7ms)
+	initialDomainReloadingComplete (30ms)
+	LoadAllAssembliesAndSetupDomain (116ms)
+		LoadAssemblies (77ms)
+		AnalyzeDomain (109ms)
+			TypeCache.Refresh (107ms)
+				TypeCache.ScanAssembly (96ms)
+	FinalizeReload (204ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (23ms)
+			BeforeProcessingInitializeOnLoad (39ms)
+			ProcessInitializeOnLoadAttributes (51ms)
+			ProcessInitializeOnLoadMethodAttributes (57ms)
+[Licensing::Client] Successfully resolved entitlement details
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 18 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.collab-proxy@2.5.1 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.collab-proxy@c810163b1645)
+    com.unity.inputsystem@1.11.2 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.inputsystem@3c4a97c3950f)
+    com.unity.timeline@1.8.7 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.timeline@c58b4ee65782)
+  Built-in packages:
+    com.unity.2d.sprite@1.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.2d.sprite@929df5adbb1f)
+    com.unity.textmeshpro@5.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.textmeshpro@53f43edfd2e0)
+    com.unity.ugui@2.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.ugui@d8a2716f3013)
+    com.unity.modules.animation@1.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.modules.animation)
+    com.unity.modules.audio@1.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.modules.audio)
+    com.unity.modules.imageconversion@1.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.modules.imageconversion)
+    com.unity.modules.jsonserialize@1.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.modules.jsonserialize)
+    com.unity.modules.particlesystem@1.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.modules.particlesystem)
+    com.unity.modules.physics@1.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.modules.physics)
+    com.unity.modules.physics2d@1.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.modules.physics2d)
+    com.unity.modules.ui@1.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.modules.ui)
+    com.unity.modules.uielements@1.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.modules.uielements)
+    com.unity.modules.imgui@1.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.modules.imgui)
+    com.unity.modules.hierarchycore@1.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.modules.hierarchycore)
+    com.unity.modules.director@1.0.0 (location: /Users/stephenalexanderbright/dual-craft-unity/Library/PackageCache/com.unity.modules.director)
+[Package Manager] com.unity.textmeshpro is deprecated: This package is no longer supported. TextMeshPro functionalities are now included in the com.unity.ugui package. To continue using them, consider adding it to your project dependencies.
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.01 seconds
+[ScriptCompilation] Requested script compilation because: AssetDatabase observed changes in script compilation related files
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://unix:/tmp/ilpp.sock-405f37d1dbcea3ea213a7fbab07ea450
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /Users/stephenalexanderbright/dual-craft-unity
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping - application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping - 200 - application/grpc 21.6114ms
+Starting: /Applications/Unity/Hub/Editor/6000.4.2f1/Unity.app/Contents/Resources/BuildPipeline/bee_backend --ipc --defer-dag-verification --dagfile="Library/Bee/200b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: /Users/stephenalexanderbright/dual-craft-unity
+DisplayProgressbar: Compiling Scripts
+ExitCode: 4 Duration: 1s942ms
+Rebuilding DAG because FileSignature timestamp changed: Library/Bee/200b0aE-inputdata.json
+[267/273    1s] Csc Library/Bee/artifacts/200b0aE.dag/DualCraft.dll (+2 others)
+Assets/Scripts/UI/CardVisual.cs(45,22): warning CS0414: The field 'CardVisual._isFaceDown' is assigned but its value is never used
+*** Tundra requires additional run (1.93 seconds), 1 items updated, 266 evaluated
+Starting: /Applications/Unity/Hub/Editor/6000.4.2f1/Unity.app/Contents/Resources/Scripting/netcorerun/netcorerun "/Applications/Unity/Hub/Editor/6000.4.2f1/Unity.app/Contents/Resources/BuildPipeline/ScriptCompilationBuildProgram.exe" "Library/Bee/200b0aE.dag.json" "Library/Bee/200b0aE-inputdata.json" "Library/Bee/buildprogram0.traceevents"
+WorkingDir: /Users/stephenalexanderbright/dual-craft-unity
+ExitCode: 0 Duration: 0s445ms
+Starting: /Applications/Unity/Hub/Editor/6000.4.2f1/Unity.app/Contents/Resources/BuildPipeline/bee_backend --ipc --defer-dag-verification --dagfile="Library/Bee/200b0aE.dag" --continue-on-failure --dagfilejson="Library/Bee/200b0aE.dag.json" --profile="Library/Bee/backend2.traceevents" ScriptAssemblies
+WorkingDir: /Users/stephenalexanderbright/dual-craft-unity
+ExitCode: 0 Duration: 0s506ms
+Finished compiling graph: 276 nodes, 2788 flattened edges (2638 ToBuild, 30 ToUse), maximum node priority 127
+[205/273    0s] WriteText Library/Bee/artifacts/200b0aE.dag/DualCraft.rsp
+[267/273    0s] Csc Library/Bee/artifacts/200b0aE.dag/DualCraft.dll (+2 others)
+Assets/Scripts/UI/CardVisual.cs(45,22): warning CS0414: The field 'CardVisual._isFaceDown' is assigned but its value is never used
+[268/273    0s] CopyFiles Library/ScriptAssemblies/DualCraft.dll
+[269/273    0s] CopyFiles Library/ScriptAssemblies/DualCraft.pdb
+[270/273    0s] Csc Library/Bee/artifacts/200b0aE.dag/DualCraft.Editor.dll (+2 others)
+Assets/Editor/BuildPlayer.cs(20,13): warning CS0618: 'PlayerSettings.SetScriptingBackend(BuildTargetGroup, ScriptingImplementation)' is obsolete: 'Use SetScriptingBackend(NamedBuildTarget buildTarget, ScriptingImplementation backend) instead'
+Assets/Editor/ProjectSetup.cs(141,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets/Editor/ProjectSetup.cs(209,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets/Editor/ProjectSetup.cs(1069,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+[271/273    0s] CopyFiles Library/ScriptAssemblies/DualCraft.Editor.pdb
+[272/273    0s] CopyFiles Library/ScriptAssemblies/DualCraft.Editor.dll
+*** Tundra build success (0.50 seconds), 7 items updated, 273 evaluated
+Assets/Scripts/UI/CardVisual.cs(45,22): warning CS0414: The field 'CardVisual._isFaceDown' is assigned but its value is never used
+Assets/Editor/BuildPlayer.cs(20,13): warning CS0618: 'PlayerSettings.SetScriptingBackend(BuildTargetGroup, ScriptingImplementation)' is obsolete: 'Use SetScriptingBackend(NamedBuildTarget buildTarget, ScriptingImplementation backend) instead'
+Assets/Editor/ProjectSetup.cs(141,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets/Editor/ProjectSetup.cs(209,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets/Editor/ProjectSetup.cs(1069,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+AssetDatabase: script compilation time: 3.344523s
+Begin MonoManager ReloadAssembly
+Total cache size 66593052
+Total cache size after purge 66593052, took 00:00:00.0312550
+Assembly Assembly-CSharp-Editor-firstpass.dll at Library/ScriptAssemblies/Assembly-CSharp-Editor-firstpass.dll not valid. Loading of assembly skipped.
+Assembly Assembly-CSharp-Editor.dll at Library/ScriptAssemblies/Assembly-CSharp-Editor.dll not valid. Loading of assembly skipped.
+Assembly Assembly-CSharp-firstpass.dll at Library/ScriptAssemblies/Assembly-CSharp-firstpass.dll not valid. Loading of assembly skipped.
+Assembly Assembly-CSharp.dll at Library/ScriptAssemblies/Assembly-CSharp.dll not valid. Loading of assembly skipped.
+Assembly DocCodeExamples.dll at Library/ScriptAssemblies/DocCodeExamples.dll not valid. Loading of assembly skipped.
+Assembly Unity.2D.Sprite.Package.EditorTests.dll at Library/ScriptAssemblies/Unity.2D.Sprite.Package.EditorTests.dll not valid. Loading of assembly skipped.
+Assembly Unity.InputSystem.IntegrationTests.dll at Library/ScriptAssemblies/Unity.InputSystem.IntegrationTests.dll not valid. Loading of assembly skipped.
+Assembly Unity.InputSystem.TestFramework.dll at Library/ScriptAssemblies/Unity.InputSystem.TestFramework.dll not valid. Loading of assembly skipped.
+Assembly Unity.TextMeshPro.Editor.Tests.dll at Library/ScriptAssemblies/Unity.TextMeshPro.Editor.Tests.dll not valid. Loading of assembly skipped.
+Assembly Unity.TextMeshPro.Tests.dll at Library/ScriptAssemblies/Unity.TextMeshPro.Tests.dll not valid. Loading of assembly skipped.
+Assembly UnityEditor.UI.Common.Tests.dll at Library/ScriptAssemblies/UnityEditor.UI.Common.Tests.dll not valid. Loading of assembly skipped.
+Assembly UnityEditor.UI.EditorTests.dll at Library/ScriptAssemblies/UnityEditor.UI.EditorTests.dll not valid. Loading of assembly skipped.
+Assembly UnityEngine.UI.Tests.dll at Library/ScriptAssemblies/UnityEngine.UI.Tests.dll not valid. Loading of assembly skipped.
+Native extension for OSXStandalone target not found
+Native extension for WebGL target not found
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.300 seconds
+Domain Reload Profiling: 556ms
+	BeginReloadAssembly (86ms)
+		DisableScriptedObjects (9ms)
+		CreateAndSetChildDomain (29ms)
+	RebuildCommonClasses (18ms)
+	RebuildNativeTypeToScriptingClass (7ms)
+	initialDomainReloadingComplete (20ms)
+	LoadAllAssembliesAndSetupDomain (125ms)
+		LoadAssemblies (106ms)
+		AnalyzeDomain (45ms)
+			TypeCache.Refresh (39ms)
+				TypeCache.ScanAssembly (33ms)
+			BuildScriptInfoCaches (4ms)
+	FinalizeReload (300ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (10ms)
+			BeforeProcessingInitializeOnLoad (53ms)
+			ProcessInitializeOnLoadAttributes (146ms)
+			ProcessInitializeOnLoadMethodAttributes (19ms)
+		AwakeInstancesAfterBackupRestoration (7ms)
+(Values over 0.050ms)
+Asset Pipeline Refresh (id=a313223d0e00c47a5b16554bcc84ddba): Total: 4.136 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=466 ms
+		Asset DB Callback time: managed=47 ms, native=15 ms
+		Scripting: domain reloads=1, domain reload time=256 ms, compile time=3345 ms, other=4 ms
+		Project Asset Count: scripts=392, non-scripts=960
+		Asset File Changes: new=1, changed=6, moved=0, deleted=6
+		Scan Filter Count: 1
+	InvokePackagesCallback: 12.963ms
+	ApplyChangesToAssetFolders: 0.087ms
+	Scan: 104.999ms
+	OnSourceAssetsModified: 0.312ms
+	CategorizeScriptCompilationAssets: 8.075ms
+	ProcessAssetsWithTransientArtifactChanges: 7.905ms
+	CategorizeAssets: 7.541ms
+	CompileScripts: 3345.434ms
+	ImportOutOfDateAssets: 302.566ms (302.212ms without children)
+		UnloadImportedAssets: 0.110ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.115ms
+		OnDemandSchedulerStart: 0.127ms
+	PostProcessAllAssets: 48.473ms
+		VCAutoAddAssetPostprocess 0.716ms
+		ShaderAssetModifiedCallback 0.304ms
+		PostProcessCallbackCreateDeferredMaterials 0.273ms
+		MonoPostProcessAllAssets: 46.633ms
+			AssetPostprocessor.OnPostprocessAllAssets 23.478ms
+			StyleCatalogPostProcessor.OnPostprocessAllAssets 7.350ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 3.846ms
+			BuilderAssetPostprocessor.OnPostprocessAllAssets 3.265ms
+			AssetChangedListener.OnPostprocessAllAssets 0.825ms
+			SyncVS.PostprocessSyncProject 0.588ms
+			RetainedModeAssetPostprocessor.OnPostprocessAllAssets 0.585ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 0.355ms
+			TextAssetPostProcessor.OnPostprocessAllAssets 0.273ms
+			ArtifactBrowserPostProcessor.OnPostprocessAllAssets 0.241ms
+			SpriteEditorTexturePostprocessor.OnPostprocessAllAssets 0.227ms
+			TMPro_TexturePostProcessor.OnPostprocessAllAssets 0.221ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 0.170ms
+			InputActionAssetPostprocessor.OnPostprocessAllAssets 0.160ms
+			AudioMixerPostprocessor.OnPostprocessAllAssets 0.129ms
+			AssetEvents.OnPostprocessAllAssets 0.102ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.097ms
+			SpeedTreePostProcessor.OnPostprocessAllAssets 0.069ms
+			ProjectSettingsPostprocessor.OnPostprocessAllAssets 0.064ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.061ms
+			ConfigAssetsTracker.OnPostprocessAllAssets 0.050ms
+	PostAssetChangesProfiler: 1.353ms
+	UnloadStreamsBegin: 0.659ms
+	PersistCurrentRevisions: 0.103ms
+	GenerateScriptTypeHashes: 0.700ms
+	GenerateScriptTypeSerializationHashes: 1.444ms
+	Untracked: 294.091ms
+
+Application.AssetDatabase Initial Refresh End
+Scanning for USB devices : 0.036ms
+Initializing Unity extensions:
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-Dual Craft
+Unloading 17 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 1545 unused Assets / (2.2 MB). Loaded Objects now: 2165.
+Memory consumption went from 129.6 MB to 127.4 MB.
+Total: 3.647875 ms (FindLiveObjects: 0.067584 ms CreateObjectMapping: 0.023791 ms MarkObjects: 3.078833 ms  DeleteObjects: 0.476666 ms)
+
+[ProjectSetup] Starting full project setup...
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+DualCraft.Editor.ProjectSetup:RunFullSetup () (at Assets/Editor/ProjectSetup.cs:38)
+
+(Filename: Assets/Editor/ProjectSetup.cs Line: 38)
+
+[ProjectSetup] Creating prefabs...
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+DualCraft.Editor.ProjectSetup:RunFullSetup () (at Assets/Editor/ProjectSetup.cs:46)
+
+(Filename: Assets/Editor/ProjectSetup.cs Line: 46)
+
+Start importing Assets/Prefabs/CardPrefab.prefab using Guid(74bf6aeb2ca3c48d5befe418740d0ff8) (PrefabImporter) -> (Import Result ID: '2ac078aa6d2b704c42eefd23761b73c4') in 0.006044625 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=26f57f5b4759bee2662c824eb7262c6f DependenciesID=ebac579b4a726340b23360f1c2653168 StaticDependenciesID=a1fcdbc80b11d62efa63faec8192f534 
+Asset Pipeline Refresh (id=254489c90167d4f88927b507a960c006): Total: 0.014 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[ProjectSetup] Created CardPrefab (Duel Craft design)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+DualCraft.Editor.ProjectSetup:CreateCardPrefab () (at Assets/Editor/ProjectSetup.cs:195)
+DualCraft.Editor.ProjectSetup:RunFullSetup () (at Assets/Editor/ProjectSetup.cs:47)
+
+(Filename: Assets/Editor/ProjectSetup.cs Line: 195)
+
+Start importing Assets/Prefabs/LogEntryPrefab.prefab using Guid(183a841b709ca4eef886f13e6575ab8d) (PrefabImporter) -> (Import Result ID: 'ea2c825a55b2906f15ee7930aef6e306') in 0.002158417 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=ab7452a5e5dee81468a94cc8f79be69e DependenciesID=ab8b6388d27df0623a6c9e3fd0bfd44c StaticDependenciesID=e43382aed5de2c90028c61a9a70fe43c 
+Asset Pipeline Refresh (id=b802e95c6f6a04ecda3e1caa4544faf8): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[ProjectSetup] Created LogEntryPrefab
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+DualCraft.Editor.ProjectSetup:CreateLogEntryPrefab () (at Assets/Editor/ProjectSetup.cs:216)
+DualCraft.Editor.ProjectSetup:RunFullSetup () (at Assets/Editor/ProjectSetup.cs:48)
+
+(Filename: Assets/Editor/ProjectSetup.cs Line: 216)
+
+[ProjectSetup] Importing cards from JSON...
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+DualCraft.Editor.ProjectSetup:RunFullSetup () (at Assets/Editor/ProjectSetup.cs:51)
+
+(Filename: Assets/Editor/ProjectSetup.cs Line: 51)
+
+[ProjectSetup] CardDatabase already exists, skipping import
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+DualCraft.Editor.ProjectSetup:ImportCardsFromJson () (at Assets/Editor/ProjectSetup.cs:227)
+DualCraft.Editor.ProjectSetup:RunFullSetup () (at Assets/Editor/ProjectSetup.cs:52)
+
+(Filename: Assets/Editor/ProjectSetup.cs Line: 227)
+
+[ProjectSetup] Creating scenes...
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+DualCraft.Editor.ProjectSetup:RunFullSetup () (at Assets/Editor/ProjectSetup.cs:55)
+
+(Filename: Assets/Editor/ProjectSetup.cs Line: 55)
+
+Unloading 1 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 72 unused Assets / (8.1 KB). Loaded Objects now: 2181.
+Memory consumption went from 124.9 MB to 124.9 MB.
+Total: 3.248916 ms (FindLiveObjects: 0.032791 ms CreateObjectMapping: 0.015250 ms MarkObjects: 3.175292 ms  DeleteObjects: 0.025333 ms)
+
+Start importing Assets/Scenes/MainMenu.unity using Guid(5a61884a44f2c4719977a582b936daa3) (DefaultImporter) -> (Import Result ID: '20cd51a7fd56856daa22b52523068076') in 0.000422334 seconds [static dependencies only]. Details - ImportResultOutputID=2a71ebf5291958af2aeb84ffddd9dee9 DependenciesID=fad96045ad986e56d400abfc2d2260e8 StaticDependenciesID=2408dea0d9d988ff88cf445880f09989 
+Asset Pipeline Refresh (id=272658ebf210e471ea6a2ab1d57f1792): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[ProjectSetup] Created MainMenu scene (Hub layout)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+DualCraft.Editor.ProjectSetup:CreateMainMenuScene () (at Assets/Editor/ProjectSetup.cs:535)
+DualCraft.Editor.ProjectSetup:RunFullSetup () (at Assets/Editor/ProjectSetup.cs:56)
+
+(Filename: Assets/Editor/ProjectSetup.cs Line: 535)
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 22 unused Assets / (66.1 KB). Loaded Objects now: 2192.
+Memory consumption went from 127.0 MB to 127.0 MB.
+Total: 3.509042 ms (FindLiveObjects: 0.034458 ms CreateObjectMapping: 0.015459 ms MarkObjects: 3.441625 ms  DeleteObjects: 0.017334 ms)
+
+Start importing Assets/Scenes/Battle.unity using Guid(286bdc8288391411188687d2e43121a4) (DefaultImporter) -> (Import Result ID: '6eaf02fd6b12954618c8db6c02312a4a') in 0.00029225 seconds [static dependencies only]. Details - ImportResultOutputID=99e3c9a2f80d7b16cc8ee98a5c9d659d DependenciesID=2636d229271c69eba48a5c9b792b3a2b StaticDependenciesID=a3e41f59887df58fe039517849ae48d1 
+Asset Pipeline Refresh (id=c9b899168790248fdbb9dbcdbb44d4a9): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[ProjectSetup] Created Battle scene (PTCG-inspired + dice)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+DualCraft.Editor.ProjectSetup:CreateBattleScene () (at Assets/Editor/ProjectSetup.cs:900)
+DualCraft.Editor.ProjectSetup:RunFullSetup () (at Assets/Editor/ProjectSetup.cs:57)
+
+(Filename: Assets/Editor/ProjectSetup.cs Line: 900)
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 318 unused Assets / (213.0 KB). Loaded Objects now: 2192.
+Memory consumption went from 129.3 MB to 129.1 MB.
+Total: 3.462209 ms (FindLiveObjects: 0.037959 ms CreateObjectMapping: 0.017875 ms MarkObjects: 3.225584 ms  DeleteObjects: 0.180584 ms)
+
+Start importing Assets/Scenes/Collection.unity using Guid(a80e6b384ab534fcd9f7ac777f99fb29) (DefaultImporter) -> (Import Result ID: '9ec2a63bab235d31539abd18620ec342') in 0.000350125 seconds [static dependencies only]. Details - ImportResultOutputID=3cc62938a581831e4ccbd07ec92ba216 DependenciesID=34cab6793e2ceb7085c0cd34236a9c9d StaticDependenciesID=b32d63504f4ed9bee96305e5a687b1af 
+Asset Pipeline Refresh (id=4aad781a15bf44bd3b0a72a433c5a2d5): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[ProjectSetup] Created Collection scene (PTCG-inspired)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+DualCraft.Editor.ProjectSetup:CreateCollectionScene () (at Assets/Editor/ProjectSetup.cs:1112)
+DualCraft.Editor.ProjectSetup:RunFullSetup () (at Assets/Editor/ProjectSetup.cs:58)
+
+(Filename: Assets/Editor/ProjectSetup.cs Line: 1112)
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 310 unused Assets / (204.3 KB). Loaded Objects now: 2192.
+Memory consumption went from 126.0 MB to 125.8 MB.
+Total: 3.664917 ms (FindLiveObjects: 0.035292 ms CreateObjectMapping: 0.017833 ms MarkObjects: 3.441750 ms  DeleteObjects: 0.169833 ms)
+
+Start importing Assets/Scenes/DeckBuilder.unity using Guid(66b238290f7d648d4bae30d60398d4d4) (DefaultImporter) -> (Import Result ID: '70e3cd0faed589c11d300bf9884a7076') in 0.000314541 seconds [static dependencies only]. Details - ImportResultOutputID=cbba5c9228fd26cf33ef532e2fd57ec1 DependenciesID=901b47cef1e9e1157574fad123f4f823 StaticDependenciesID=ceb3b7a23c4fe6708e60ffc6ada561d9 
+Asset Pipeline Refresh (id=353d9c424bba84dd297ba8e1fc15c61e): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[ProjectSetup] Created DeckBuilder scene (PTCG-inspired)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+DualCraft.Editor.ProjectSetup:CreateDeckBuilderScene () (at Assets/Editor/ProjectSetup.cs:1360)
+DualCraft.Editor.ProjectSetup:RunFullSetup () (at Assets/Editor/ProjectSetup.cs:59)
+
+(Filename: Assets/Editor/ProjectSetup.cs Line: 1360)
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 310 unused Assets / (209.7 KB). Loaded Objects now: 2192.
+Memory consumption went from 129.7 MB to 129.5 MB.
+Total: 3.480792 ms (FindLiveObjects: 0.037375 ms CreateObjectMapping: 0.017708 ms MarkObjects: 3.255375 ms  DeleteObjects: 0.170000 ms)
+
+Start importing Assets/Scenes/PackOpening.unity using Guid(3c23312a5228e47289549ab873946c08) (DefaultImporter) -> (Import Result ID: 'a45ed47ccdb36bbb9ee057ab55282d4b') in 0.000292833 seconds [static dependencies only]. Details - ImportResultOutputID=e55202c3785f35cba54754145629f6ad DependenciesID=d56683ae19a16f62067436fa4d534759 StaticDependenciesID=37ff430560c7fcfa4eea623f5cd5b01e 
+Asset Pipeline Refresh (id=434c98882dfe64cf0ab2edbdd1395e4b): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[ProjectSetup] Created PackOpening scene (PTCG Pocket ceremony)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+DualCraft.Editor.ProjectSetup:CreatePackOpeningScene () (at Assets/Editor/ProjectSetup.cs:1598)
+DualCraft.Editor.ProjectSetup:RunFullSetup () (at Assets/Editor/ProjectSetup.cs:60)
+
+(Filename: Assets/Editor/ProjectSetup.cs Line: 1598)
+
+[ProjectSetup] Configuring build settings...
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+DualCraft.Editor.ProjectSetup:RunFullSetup () (at Assets/Editor/ProjectSetup.cs:63)
+
+(Filename: Assets/Editor/ProjectSetup.cs Line: 63)
+
+Start importing ProjectSettings/EditorBuildSettings.asset using Guid(0000000000000000b000000000000000) (LibraryAssetImporter) -> (Import Result ID: '486ee11953b852c37c8b0bdbdffb9e39') in 0.000391458 seconds [static dependencies only]. Details - ImportResultOutputID=d777934f36c664454d62eda103573334 DependenciesID=e7ff15d05b954f4db3074498417aa811 StaticDependenciesID=cdf159d012fd1763f0c4cb3f48872bea 
+Asset Pipeline Refresh (id=31f189c6c8fc9433c917fb07dea31776): Total: 0.004 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Asset Pipeline Refresh (id=f2f53a61aad224e83bb3d3d27ec47b7f): Total: 0.013 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+[ProjectSetup] === SETUP COMPLETE ===
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+DualCraft.Editor.ProjectSetup:RunFullSetup () (at Assets/Editor/ProjectSetup.cs:69)
+
+(Filename: Assets/Editor/ProjectSetup.cs Line: 69)
+
+Batchmode quit successfully invoked - shutting down!
+Thread 0x16d64b000 may have been prematurely finalized
+Input System module state changed to: ShutdownInProgress.
+Input Polling Thread exited.
+Input System module state changed to: Shutdown.
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+[Licensing::IpcConnector] LicenseClient-stephenalexanderbright-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-stephenalexanderbright channel disconnected successfully.
+Thread 0x16df0b000 may have been prematurely finalized
+Thread 0x16df97000 may have been prematurely finalized
+AcceleratorClientConnectionCallback - disconnected - :0
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+Cleanup mono
+CodeReloadManager destroyed
+debugger-agent: Unable to listen on 44
+Exiting batchmode successfully now!
+[Package Manager] Server process was shutdown

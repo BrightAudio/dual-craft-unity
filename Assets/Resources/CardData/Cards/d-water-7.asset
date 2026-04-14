@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 892ee727262864a4db215ac521adcc39, type: 3}
+  m_Name: d-water-7
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DaemonCardData
+  cardId: d-water-7
+  cardName: Monsoon Shaman
+  category: 0
+  rarity: 1
+  artwork: {fileID: 21300000, guid: 704cc2912a5aa48c7bd4c0299b57b33a, type: 3}
+  fullArt: {fileID: 0}
+  description: A rain spirit that mends wounded allies with healing downpours.
+  flavorText: '"Where it walks, the wounded rise."'
+  willCost: -1
+  element: 2
+  creatureType: 3
+  ashe: 7
+  attack: 3
+  asheCost: 1
+  evolvesTo: {fileID: 0}
+  evolutionCost: 0
+  ability:
+    abilityName: Healing Rain
+    description: Heals all your Daemons for 1 Ashe at start of turn.
+    type: 0
+    effectKey: healing-rain

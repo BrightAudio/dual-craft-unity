@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535ba2a83eb164d089997782086a5f6e, type: 3}
+  m_Name: p-elemental-1
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.PillarCardData
+  cardId: p-elemental-1
+  cardName: Pillar of the Primal Storm
+  category: 1
+  rarity: 0
+  artwork: {fileID: 21300000, guid: 917d141e0475b45e7914e36e18fc7ac7, type: 3}
+  fullArt: {fileID: 0}
+  description: Raw elemental force made manifest.
+  flavorText: 
+  willCost: -1
+  element: 4
+  creatureType: 0
+  hp: 12
+  loyalty: 3
+  passiveAbility: Elemental Daemons gain +1 ATK.
+  passiveEffect:
+    passiveType: creature-atk-buff
+    element: 0
+    creatureType: 0
+    value: 1
+  onDestroyedEffect:
+    destroyType: damage-all-enemies
+    value: 2
+    element: 0
+  activatedAbilities:
+  - abilityName: Channel
+    description: All Elemental Daemons gain +1 ATK permanently.
+    loyaltyCost: 1
+    effectKey: pil-elem1-channel
+  - abilityName: Primal Fury
+    description: Deal 3 damage to all enemies. Draw 1 card.
+    loyaltyCost: -3
+    effectKey: pil-elem1-fury

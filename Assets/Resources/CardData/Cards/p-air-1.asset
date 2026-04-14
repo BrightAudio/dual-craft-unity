@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535ba2a83eb164d089997782086a5f6e, type: 3}
+  m_Name: p-air-1
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.PillarCardData
+  cardId: p-air-1
+  cardName: Pillar of the Storm's Eye
+  category: 1
+  rarity: 1
+  artwork: {fileID: 21300000, guid: b3c6777a8d42b4dffb6a908031682958, type: 3}
+  fullArt: {fileID: 0}
+  description: Grants extra card draws. Speed and tempo embodied.
+  flavorText: 
+  willCost: -1
+  element: 4
+  creatureType: 0
+  hp: 10
+  loyalty: 3
+  passiveAbility: Draw an extra card every other turn.
+  passiveEffect:
+    passiveType: extra-draw-interval
+    element: 0
+    creatureType: 0
+    value: 0
+  onDestroyedEffect:
+    destroyType: return-masks
+    value: 0
+    element: 0
+  activatedAbilities:
+  - abilityName: Gust
+    description: Draw 1 card.
+    loyaltyCost: 1
+    effectKey: pil-air1-gust
+  - abilityName: Tempest
+    description: Draw 3 cards. Your Daemons can attack again.
+    loyaltyCost: -3
+    effectKey: pil-air1-tempest

@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535ba2a83eb164d089997782086a5f6e, type: 3}
+  m_Name: p-spirit-2
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.PillarCardData
+  cardId: p-spirit-2
+  cardName: Pillar of the Ancestral Veil
+  category: 1
+  rarity: 2
+  artwork: {fileID: 21300000, guid: 812ca4e1e85c8479597f47fddb539809, type: 3}
+  fullArt: {fileID: 0}
+  description: Whispers of ancestors guide your spirit companions.
+  flavorText: 
+  willCost: -1
+  element: 6
+  creatureType: 3
+  hp: 9
+  loyalty: 4
+  passiveAbility: Spirit Daemons regenerate 1 Ashe per turn.
+  passiveEffect:
+    passiveType: creature-regen
+    element: 0
+    creatureType: 3
+    value: 1
+  onDestroyedEffect:
+    destroyType: return-from-ashepile
+    value: 0
+    element: 0
+  activatedAbilities:
+  - abilityName: Commune
+    description: Return 1 card from Ashe Pile to hand.
+    loyaltyCost: 1
+    effectKey: pil-spi2-commune
+  - abilityName: Possession
+    description: 'Take control: reduce all enemy ATK by 2. Steal 1 card.'
+    loyaltyCost: -4
+    effectKey: pil-spi2-possess

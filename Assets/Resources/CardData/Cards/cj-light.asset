@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4c57cfd8193647ac8dfa103633a3f6c, type: 3}
+  m_Name: cj-light
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.ConjurorCardData
+  cardId: cj-light
+  cardName: Seraph Solara, the Radiant Judge
+  category: 6
+  rarity: 3
+  artwork: {fileID: 0}
+  fullArt: {fileID: 0}
+  description: A conjuror of divine light who heals the worthy and punishes the wicked.
+  flavorText: '"The light judges all. And finds you wanting."'
+  willCost: -1
+  element: 5
+  loyalty: 5
+  abilities:
+  - abilityName: Blessing
+    description: Heal your Conjuror for 3 HP.
+    loyaltyCost: 1
+    effectKey: cj-light-heal
+  - abilityName: Purge
+    description: Destroy all enemy Masks and Seals.
+    loyaltyCost: -3
+    effectKey: cj-light-purge
+  - abilityName: Divine Reckoning
+    description: Heal to full HP. All Daemons take 4 damage.
+    loyaltyCost: -7
+    effectKey: cj-light-ult

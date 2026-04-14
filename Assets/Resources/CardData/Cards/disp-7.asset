@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4a72f858f64a448198ba665bfca0093, type: 3}
+  m_Name: disp-7
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DispelCardData
+  cardId: disp-7
+  cardName: Void Erasure
+  category: 5
+  rarity: 1
+  artwork: {fileID: 21300000, guid: 7bc7fc3a940ad41309ae5d615daf34c6, type: 3}
+  fullArt: {fileID: 0}
+  description: Unmake an enchantment and pull a soul from the void. Return 1 card
+    from your Ashe Pile to hand.
+  flavorText: "\"What the void takes, the void can return \u2014 for a price.\""
+  willCost: -1
+  target: 3
+  counterEffect:
+    effectType: reclaim
+    value: 1

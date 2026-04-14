@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4c57cfd8193647ac8dfa103633a3f6c, type: 3}
+  m_Name: cj-ice
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.ConjurorCardData
+  cardId: cj-ice
+  cardName: Crystalis, the Frozen Mind
+  category: 6
+  rarity: 3
+  artwork: {fileID: 0}
+  fullArt: {fileID: 0}
+  description: A conjuror whose cold logic freezes foes in their tracks.
+  flavorText: '"Patience is a weapon. The cold is its edge."'
+  willCost: -1
+  element: 1
+  loyalty: 5
+  abilities:
+  - abilityName: Flash Freeze
+    description: Freeze a random enemy Daemon.
+    loyaltyCost: 1
+    effectKey: cj-ice-freeze
+  - abilityName: Glacial Barrier
+    description: Your Conjuror gains 4 HP.
+    loyaltyCost: -2
+    effectKey: cj-ice-heal
+  - abilityName: Absolute Zero
+    description: Freeze ALL enemy Daemons for 2 turns.
+    loyaltyCost: -6
+    effectKey: cj-ice-ult

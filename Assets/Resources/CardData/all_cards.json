@@ -1,0 +1,3260 @@
+{
+  "version": "1.0.0",
+  "generatedFrom": "dual-craft web version",
+  "totalCards": 117,
+  "cards": [
+    {
+      "id": "d-flame-1",
+      "name": "Emberclaw Drake",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "flame",
+      "creatureType": "elemental",
+      "ashe": 8,
+      "attack": 5,
+      "asheCost": 2,
+      "description": "A dragon wreathed in eternal flame that scorches all it touches.",
+      "flavorText": "\"Where it flies, the sky weeps cinders.\"",
+      "ability": {
+        "name": "Blaze Trail",
+        "description": "Deals 1 damage to all enemy Daemons on summon.",
+        "type": "on-summon",
+        "effect": "blaze-trail"
+      }
+    },
+    {
+      "id": "d-flame-2",
+      "name": "Forge Sentinel",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "flame",
+      "creatureType": "machine",
+      "ashe": 10,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A mechanical guardian powered by a molten furnace core.",
+      "flavorText": "\"It knows neither mercy nor rust.\"",
+      "evolvesTo": "d-flame-1",
+      "evolutionCost": 3
+    },
+    {
+      "id": "d-flame-3",
+      "name": "Cindershade Wraith",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "flame",
+      "creatureType": "undead",
+      "ashe": 6,
+      "attack": 6,
+      "asheCost": 3,
+      "description": "A burning spirit of vengeance that consumes its own Ashe to unleash devastating attacks.",
+      "flavorText": "\"Even death cannot extinguish its rage.\"",
+      "ability": {
+        "name": "Immolate",
+        "description": "When destroyed, deals 3 damage to the enemy Conjuror.",
+        "type": "on-destroy",
+        "effect": "immolate"
+      }
+    },
+    {
+      "id": "d-flame-4",
+      "name": "Volcanic Spitter",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "flame",
+      "creatureType": "elemental",
+      "ashe": 7,
+      "attack": 4,
+      "asheCost": 1,
+      "description": "A reptilian beast that hurls globs of molten rock from its maw.",
+      "flavorText": "\"It never stops chewing. It never stops spitting.\""
+    },
+    {
+      "id": "d-flame-5",
+      "name": "Ash Golem",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "flame",
+      "creatureType": "artificial",
+      "ashe": 10,
+      "attack": 3,
+      "asheCost": 2,
+      "description": "Formed from compacted volcanic ash, it crumbles and reforms endlessly.",
+      "flavorText": "\"Bury it. It will only rise hotter.\"",
+      "ability": {
+        "name": "Cinder Cloud",
+        "description": "When destroyed, deals 2 damage to all enemy Daemons.",
+        "type": "on-destroy",
+        "effect": "cinder-cloud"
+      }
+    },
+    {
+      "id": "d-flame-6",
+      "name": "Wildfire Fox",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "flame",
+      "creatureType": "spirit",
+      "ashe": 5,
+      "attack": 4,
+      "asheCost": 1,
+      "description": "A spectral fox that ignites the ground wherever it runs.",
+      "flavorText": "\"Follow the burning pawprints—if you dare.\""
+    },
+    {
+      "id": "d-flame-7",
+      "name": "Magma Forgemaster",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "flame",
+      "creatureType": "machine",
+      "ashe": 9,
+      "attack": 5,
+      "asheCost": 2,
+      "description": "A colossal automaton that reshapes metal in its molten core.",
+      "flavorText": "\"Every Daemon it destroys becomes raw material.\"",
+      "ability": {
+        "name": "Reforge",
+        "description": "Gains +1 ATK each time a Daemon is destroyed.",
+        "type": "passive",
+        "effect": "reforge"
+      }
+    },
+    {
+      "id": "d-ice-1",
+      "name": "Frostfang Serpent",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "ice",
+      "creatureType": "elemental",
+      "ashe": 9,
+      "attack": 4,
+      "asheCost": 2,
+      "description": "A serpent of living ice whose bite freezes enemies solid.",
+      "flavorText": "\"Its coils can halt a river mid-flow.\"",
+      "ability": {
+        "name": "Frostbite",
+        "description": "Freezes target Daemon for 1 turn when attacking.",
+        "type": "passive",
+        "effect": "frostbite"
+      }
+    },
+    {
+      "id": "d-ice-2",
+      "name": "Glacier Golem",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "ice",
+      "creatureType": "machine",
+      "ashe": 12,
+      "attack": 2,
+      "asheCost": 1,
+      "description": "A massive construct of ancient glacial ice, nearly indestructible.",
+      "flavorText": "\"It has stood since before the first thaw.\""
+    },
+    {
+      "id": "d-ice-3",
+      "name": "Phantom Frost",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "ice",
+      "creatureType": "spirit",
+      "ashe": 7,
+      "attack": 5,
+      "asheCost": 2,
+      "description": "A ghostly presence that chills the soul and freezes the body.",
+      "flavorText": "\"You won't see it coming. You'll only feel the cold.\"",
+      "ability": {
+        "name": "Glacial Veil",
+        "description": "Cannot be targeted by Seals.",
+        "type": "passive",
+        "effect": "seal-immune"
+      }
+    },
+    {
+      "id": "d-ice-4",
+      "name": "Rime Stalker",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "ice",
+      "creatureType": "undead",
+      "ashe": 8,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A frozen corpse that prowls the tundra, patient and relentless.",
+      "flavorText": "\"It waited a thousand years. It can wait one more turn.\""
+    },
+    {
+      "id": "d-ice-5",
+      "name": "Avalanche Wurm",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "ice",
+      "creatureType": "elemental",
+      "ashe": 10,
+      "attack": 4,
+      "asheCost": 2,
+      "description": "A massive burrowing creature that triggers devastating ice slides.",
+      "flavorText": "\"The mountain did not collapse. It was pushed.\"",
+      "ability": {
+        "name": "Landslide",
+        "description": "Deals 2 damage to a random enemy Daemon on summon.",
+        "type": "on-summon",
+        "effect": "landslide"
+      }
+    },
+    {
+      "id": "d-ice-6",
+      "name": "Hailstone Crab",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "ice",
+      "creatureType": "machine",
+      "ashe": 9,
+      "attack": 2,
+      "asheCost": 1,
+      "description": "An armored crustacean encased in layers of permafrost plating.",
+      "flavorText": "\"Its shell grows thicker with every storm.\""
+    },
+    {
+      "id": "d-ice-7",
+      "name": "Blizzard Banshee",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "ice",
+      "creatureType": "spirit",
+      "ashe": 6,
+      "attack": 5,
+      "asheCost": 2,
+      "description": "A shrieking phantom whose wail brings a killing frost.",
+      "flavorText": "\"When it screams, even fire flinches.\"",
+      "ability": {
+        "name": "Howling Gale",
+        "description": "Freezes the attacked Daemon for 1 turn.",
+        "type": "passive",
+        "effect": "frostbite"
+      }
+    },
+    {
+      "id": "d-water-1",
+      "name": "Tidecaller Leviathan",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "water",
+      "creatureType": "elemental",
+      "ashe": 11,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "An ancient sea beast that commands the tides themselves.",
+      "flavorText": "\"When it surfaces, entire coastlines retreat.\"",
+      "ability": {
+        "name": "Tidal Surge",
+        "description": "Heals 2 Ashe at the start of your turn.",
+        "type": "passive",
+        "effect": "tidal-regen"
+      }
+    },
+    {
+      "id": "d-water-2",
+      "name": "Coral Automaton",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "water",
+      "creatureType": "machine",
+      "ashe": 8,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A living machine encrusted with deep-sea coral and barnacles.",
+      "flavorText": "\"Half drowned, half alive, entirely lethal.\""
+    },
+    {
+      "id": "d-water-3",
+      "name": "Drowned Revenant",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "water",
+      "creatureType": "undead",
+      "ashe": 7,
+      "attack": 4,
+      "asheCost": 2,
+      "description": "A waterlogged spirit that drags foes into the depths.",
+      "flavorText": "\"The ocean remembers every soul it has claimed.\"",
+      "ability": {
+        "name": "Undertow",
+        "description": "When destroyed, return 1 card from your Ashe Pile to hand.",
+        "type": "on-destroy",
+        "effect": "undertow"
+      }
+    },
+    {
+      "id": "d-water-4",
+      "name": "Riptide Eel",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "water",
+      "creatureType": "elemental",
+      "ashe": 6,
+      "attack": 4,
+      "asheCost": 1,
+      "description": "A crackling eel that rides the currents and strikes like lightning.",
+      "flavorText": "\"The sea has teeth, and they are electric.\""
+    },
+    {
+      "id": "d-water-5",
+      "name": "Abyssal Kraken",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "water",
+      "creatureType": "spirit",
+      "ashe": 12,
+      "attack": 4,
+      "asheCost": 2,
+      "description": "A legendary horror from the deepest ocean trenches.",
+      "flavorText": "\"It does not hunt. It simply opens its reach.\"",
+      "ability": {
+        "name": "Deep Grasp",
+        "description": "Draw 1 card when this Daemon is summoned.",
+        "type": "on-summon",
+        "effect": "deep-grasp"
+      }
+    },
+    {
+      "id": "d-water-6",
+      "name": "Barnacle Drone",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "water",
+      "creatureType": "machine",
+      "ashe": 8,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A drone ship piloted by parasitic barnacles in perfect unison.",
+      "flavorText": "\"The barnacles steer. The hull obeys.\""
+    },
+    {
+      "id": "d-water-7",
+      "name": "Monsoon Shaman",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "water",
+      "creatureType": "spirit",
+      "ashe": 7,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A rain spirit that mends wounded allies with healing downpours.",
+      "flavorText": "\"Where it walks, the wounded rise.\"",
+      "ability": {
+        "name": "Healing Rain",
+        "description": "Heals all your Daemons for 1 Ashe at start of turn.",
+        "type": "passive",
+        "effect": "healing-rain"
+      }
+    },
+    {
+      "id": "d-earth-1",
+      "name": "Stonecrest Titan",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "earth",
+      "creatureType": "elemental",
+      "ashe": 14,
+      "attack": 3,
+      "asheCost": 2,
+      "description": "A mountain fragment brought to life by ancient earth magic.",
+      "flavorText": "\"It does not move quickly. It does not need to.\"",
+      "ability": {
+        "name": "Fortify",
+        "description": "Takes 1 less damage from all attacks.",
+        "type": "passive",
+        "effect": "fortify"
+      }
+    },
+    {
+      "id": "d-earth-2",
+      "name": "Root Weaver",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "earth",
+      "creatureType": "spirit",
+      "ashe": 9,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "An ancient tree spirit whose roots crush and entangle.",
+      "flavorText": "\"The forest floor is its domain and its weapon.\""
+    },
+    {
+      "id": "d-earth-3",
+      "name": "Ironvein Golem",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "earth",
+      "creatureType": "machine",
+      "ashe": 11,
+      "attack": 4,
+      "asheCost": 2,
+      "description": "A golem forged from living ore, growing stronger from the earth.",
+      "flavorText": "\"It mines itself for ammunition.\"",
+      "ability": {
+        "name": "Ore Armor",
+        "description": "Gains +1 Ashe when any Daemon is destroyed.",
+        "type": "passive",
+        "effect": "ore-armor"
+      }
+    },
+    {
+      "id": "d-earth-4",
+      "name": "Quake Beetle",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "earth",
+      "creatureType": "elemental",
+      "ashe": 8,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A massive beetle whose steps crack the earth and topple walls.",
+      "flavorText": "\"It does not dig through stone. Stone moves aside.\""
+    },
+    {
+      "id": "d-earth-5",
+      "name": "Terracotta Warrior",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "earth",
+      "creatureType": "artificial",
+      "ashe": 11,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A clay soldier animated by ancient wards, nearly impervious to harm.",
+      "flavorText": "\"It has guarded that door for ten thousand years and will guard it ten thousand more.\"",
+      "ability": {
+        "name": "Stone Skin",
+        "description": "Takes 1 less damage from all attacks.",
+        "type": "passive",
+        "effect": "fortify"
+      }
+    },
+    {
+      "id": "d-earth-6",
+      "name": "Mudslide Toad",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "earth",
+      "creatureType": "spirit",
+      "ashe": 7,
+      "attack": 4,
+      "asheCost": 1,
+      "description": "A mud spirit that rides a wall of sludge into battle.",
+      "flavorText": "\"You hear it coming. You smell it first.\""
+    },
+    {
+      "id": "d-earth-7",
+      "name": "Crystal Borer",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "earth",
+      "creatureType": "machine",
+      "ashe": 10,
+      "attack": 5,
+      "asheCost": 2,
+      "description": "A drilling automaton tipped with razor-sharp crystal teeth.",
+      "flavorText": "\"No stone can stop it. No Pillar can withstand it.\"",
+      "ability": {
+        "name": "Core Drill",
+        "description": "Deals double damage to Pillars.",
+        "type": "passive",
+        "effect": "pillar-crusher"
+      }
+    },
+    {
+      "id": "d-air-1",
+      "name": "Stormwing Raptor",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "air",
+      "creatureType": "elemental",
+      "ashe": 6,
+      "attack": 5,
+      "asheCost": 1,
+      "description": "A raptor that commands lightning and rides the storm.",
+      "flavorText": "\"Thunder follows in its wake like a loyal hound.\"",
+      "ability": {
+        "name": "Swiftclaw",
+        "description": "Can attack the turn it is summoned.",
+        "type": "passive",
+        "effect": "haste"
+      }
+    },
+    {
+      "id": "d-air-2",
+      "name": "Zephyr Djinn",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "air",
+      "creatureType": "spirit",
+      "ashe": 7,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A spirit of the four winds, elusive and unpredictable.",
+      "flavorText": "\"Try to strike it—you'll only hit the breeze.\""
+    },
+    {
+      "id": "d-air-3",
+      "name": "Skyforge Eagle",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "air",
+      "creatureType": "machine",
+      "ashe": 5,
+      "attack": 6,
+      "asheCost": 2,
+      "description": "A mechanical raptor with razor-edged wings of tempered steel.",
+      "flavorText": "\"Built to hunt what the wind cannot catch.\"",
+      "ability": {
+        "name": "Dive Bomb",
+        "description": "Deals double damage to Pillars.",
+        "type": "passive",
+        "effect": "pillar-crusher"
+      }
+    },
+    {
+      "id": "d-air-4",
+      "name": "Gust Hawk",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "air",
+      "creatureType": "elemental",
+      "ashe": 5,
+      "attack": 4,
+      "asheCost": 1,
+      "description": "A small but vicious bird that strikes faster than the eye can follow.",
+      "flavorText": "\"Blink and you bleed.\""
+    },
+    {
+      "id": "d-air-5",
+      "name": "Thunderclap Monk",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "air",
+      "creatureType": "spirit",
+      "ashe": 7,
+      "attack": 4,
+      "asheCost": 2,
+      "description": "A storm ascetic whose clap sunders the air itself.",
+      "flavorText": "\"One palm. One sound. One silence.\"",
+      "ability": {
+        "name": "Shockwave",
+        "description": "Deals 2 damage to a random enemy Daemon on summon.",
+        "type": "on-summon",
+        "effect": "shockwave"
+      }
+    },
+    {
+      "id": "d-air-6",
+      "name": "Windmill Drake",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "air",
+      "creatureType": "machine",
+      "ashe": 8,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A mechanical dragon that harnesses wind to power its flight.",
+      "flavorText": "\"It hums a tune of turbines and tailwinds.\""
+    },
+    {
+      "id": "d-air-7",
+      "name": "Cyclone Djinn",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "air",
+      "creatureType": "elemental",
+      "ashe": 6,
+      "attack": 6,
+      "asheCost": 2,
+      "description": "A greater djinn that becomes the storm itself.",
+      "flavorText": "\"You cannot fight the sky.\"",
+      "ability": {
+        "name": "Eye of the Storm",
+        "description": "Returns to hand instead of being destroyed (once per game).",
+        "type": "on-destroy",
+        "effect": "eye-of-storm"
+      }
+    },
+    {
+      "id": "d-light-1",
+      "name": "Radiant Phoenix",
+      "category": "daemon",
+      "rarity": "legendary",
+      "element": "light",
+      "creatureType": "spirit",
+      "ashe": 8,
+      "attack": 4,
+      "asheCost": 2,
+      "description": "A bird of pure divine light that rises from its own ashes.",
+      "flavorText": "\"Destroy it and it returns. Brighter.\"",
+      "ability": {
+        "name": "Rebirth",
+        "description": "When destroyed, returns to the field with 4 Ashe (once per game).",
+        "type": "on-destroy",
+        "effect": "rebirth"
+      }
+    },
+    {
+      "id": "d-light-2",
+      "name": "Prism Automaton",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "light",
+      "creatureType": "machine",
+      "ashe": 7,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A crystalline machine that refracts light into devastating beams.",
+      "flavorText": "\"A single ray enters. A thousand razors exit.\""
+    },
+    {
+      "id": "d-light-3",
+      "name": "Dawn Herald",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "light",
+      "creatureType": "elemental",
+      "ashe": 9,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A celestial being that heralds the morning star.",
+      "flavorText": "\"In its presence, shadows simply cease to exist.\"",
+      "ability": {
+        "name": "Healing Light",
+        "description": "Heals your Conjuror for 2 HP on summon.",
+        "type": "on-summon",
+        "effect": "healing-light"
+      }
+    },
+    {
+      "id": "d-light-4",
+      "name": "Halo Sprite",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "light",
+      "creatureType": "spirit",
+      "ashe": 6,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A tiny fae of concentrated starlight that darts across the field.",
+      "flavorText": "\"It giggled. Then the shadow screamed.\"",
+      "evolvesTo": "d-light-1",
+      "evolutionCost": 4
+    },
+    {
+      "id": "d-light-5",
+      "name": "Solar Knight",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "light",
+      "creatureType": "artificial",
+      "ashe": 10,
+      "attack": 4,
+      "asheCost": 2,
+      "description": "An armored construct powered by captured sunlight.",
+      "flavorText": "\"At noon it is invincible. At midnight it merely endures.\"",
+      "ability": {
+        "name": "Solar Charge",
+        "description": "+2 ATK when your Conjuror has more than half HP.",
+        "type": "passive",
+        "effect": "solar-charge"
+      }
+    },
+    {
+      "id": "d-light-6",
+      "name": "Beacon Turret",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "light",
+      "creatureType": "machine",
+      "ashe": 9,
+      "attack": 2,
+      "asheCost": 1,
+      "description": "A stationary light cannon that sweeps the field with searing beams.",
+      "flavorText": "\"It does not move. Everything else does.\""
+    },
+    {
+      "id": "d-light-7",
+      "name": "Seraph of Reckoning",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "light",
+      "creatureType": "elemental",
+      "ashe": 7,
+      "attack": 5,
+      "asheCost": 2,
+      "description": "A six-winged angel of judgment that descends on the wicked.",
+      "flavorText": "\"Mercy was its first instinct. It learned a second.\"",
+      "ability": {
+        "name": "Divine Descent",
+        "description": "Heals your Conjuror for 3 HP on summon.",
+        "type": "on-summon",
+        "effect": "divine-descent"
+      }
+    },
+    {
+      "id": "d-dark-1",
+      "name": "Voidmaw Beast",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "dark",
+      "creatureType": "elemental",
+      "ashe": 8,
+      "attack": 5,
+      "asheCost": 2,
+      "description": "A creature from between dimensions that devours light itself.",
+      "flavorText": "\"Stare into it, and you'll see nothing stare back.\"",
+      "ability": {
+        "name": "Void Drain",
+        "description": "Steals 1 Ashe from the target when attacking.",
+        "type": "passive",
+        "effect": "void-drain"
+      }
+    },
+    {
+      "id": "d-dark-2",
+      "name": "Shadow Reaper",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "dark",
+      "creatureType": "undead",
+      "ashe": 6,
+      "attack": 7,
+      "asheCost": 3,
+      "description": "An undead harvester that reaps the souls of the fallen.",
+      "flavorText": "\"It counts every soul. Yours is next.\"",
+      "ability": {
+        "name": "Soul Reap",
+        "description": "Gains +1 ATK for each Daemon in your Ashe Pile.",
+        "type": "passive",
+        "effect": "soul-reap"
+      }
+    },
+    {
+      "id": "d-dark-3",
+      "name": "Null Construct",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "dark",
+      "creatureType": "artificial",
+      "ashe": 9,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A machine powered by dark matter, disrupting all nearby magic.",
+      "flavorText": "\"It was built by no one. It serves nothing.\""
+    },
+    {
+      "id": "d-dark-4",
+      "name": "Gloom Crawler",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "dark",
+      "creatureType": "undead",
+      "ashe": 7,
+      "attack": 4,
+      "asheCost": 1,
+      "description": "A multilimbed horror that skitters through the spaces between shadows.",
+      "flavorText": "\"Check under the bed. Now check the ceiling.\"",
+      "evolvesTo": "d-dark-5",
+      "evolutionCost": 3
+    },
+    {
+      "id": "d-dark-5",
+      "name": "Nightmare Stalker",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "dark",
+      "creatureType": "spirit",
+      "ashe": 6,
+      "attack": 5,
+      "asheCost": 2,
+      "description": "A predator that hunts through the dreams of its prey.",
+      "flavorText": "\"You thought you were safe when you woke up. You were wrong.\"",
+      "ability": {
+        "name": "Dream Shroud",
+        "description": "Cannot be targeted while you have Seals set.",
+        "type": "passive",
+        "effect": "dream-shroud"
+      }
+    },
+    {
+      "id": "d-dark-6",
+      "name": "Dusk Automaton",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "dark",
+      "creatureType": "machine",
+      "ashe": 9,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A clockwork soldier that only activates when the sun sets.",
+      "flavorText": "\"Tick. Tick. Tick. Silence.\""
+    },
+    {
+      "id": "d-dark-7",
+      "name": "Abyssal Devourer",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "dark",
+      "creatureType": "elemental",
+      "ashe": 8,
+      "attack": 6,
+      "asheCost": 3,
+      "description": "A monstrous entity from the deepest void that swallows all it touches.",
+      "flavorText": "\"It does not consume to feed. It consumes to erase.\"",
+      "ability": {
+        "name": "Oblivion",
+        "description": "When destroyed, the opponent discards 1 random card.",
+        "type": "on-destroy",
+        "effect": "oblivion"
+      }
+    },
+    {
+      "id": "d-nature-1",
+      "name": "Vine Serpent",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "nature",
+      "creatureType": "elemental",
+      "ashe": 8,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A massive serpent of living vines that coils around its prey, squeezing the fight from them.",
+      "flavorText": "\"It does not strike. It simply holds, and holds, and holds.\""
+    },
+    {
+      "id": "d-nature-2",
+      "name": "Thorn Pixie",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "nature",
+      "creatureType": "spirit",
+      "ashe": 5,
+      "attack": 4,
+      "asheCost": 1,
+      "description": "A tiny fae wreathed in thorns that delights in drawing blood from careless hands.",
+      "flavorText": "\"Don't. Touch. The flowers.\"",
+      "ability": {
+        "name": "Quick Paws",
+        "description": "Can attack the turn it is summoned.",
+        "type": "passive",
+        "effect": "haste"
+      },
+      "evolvesTo": "d-nature-5",
+      "evolutionCost": 2
+    },
+    {
+      "id": "d-nature-3",
+      "name": "Mushroom Sentry",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "nature",
+      "creatureType": "artificial",
+      "ashe": 9,
+      "attack": 2,
+      "asheCost": 1,
+      "description": "A living fungal construct that absorbs blows and releases healing spores.",
+      "flavorText": "\"Hit it harder. It only grows.\"",
+      "ability": {
+        "name": "Fortify",
+        "description": "Reduces incoming damage by 1.",
+        "type": "passive",
+        "effect": "fortify"
+      }
+    },
+    {
+      "id": "d-nature-4",
+      "name": "Elderwood Treant",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "nature",
+      "creatureType": "elemental",
+      "ashe": 12,
+      "attack": 3,
+      "asheCost": 2,
+      "description": "An ancient tree given will, it heals itself each turn, outlasting all who challenge it.",
+      "flavorText": "\"Centuries pass. It remains.\"",
+      "ability": {
+        "name": "Deep Roots",
+        "description": "Regenerates 2 Ashe at the start of your turn.",
+        "type": "passive",
+        "effect": "tidal-regen"
+      }
+    },
+    {
+      "id": "d-nature-5",
+      "name": "Blossom Shaman",
+      "category": "daemon",
+      "rarity": "rare",
+      "element": "nature",
+      "creatureType": "spirit",
+      "ashe": 7,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A druidic healer who calls upon the forest to mend wounds and restore life.",
+      "flavorText": "\"Breathe. The forest gives.\"",
+      "ability": {
+        "name": "Bloom",
+        "description": "Heals your Conjuror for 3 HP on summon.",
+        "type": "on-summon",
+        "effect": "divine-descent"
+      }
+    },
+    {
+      "id": "d-nature-6",
+      "name": "Verdant Hydra",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "nature",
+      "creatureType": "elemental",
+      "ashe": 10,
+      "attack": 5,
+      "asheCost": 2,
+      "description": "A multi-headed plant beast that regrows stronger with every wound.",
+      "flavorText": "\"Cut one head, and two more bloom.\"",
+      "ability": {
+        "name": "Rebirth",
+        "description": "When destroyed, returns to the field with 4 Ashe (once per game).",
+        "type": "on-destroy",
+        "effect": "rebirth"
+      }
+    },
+    {
+      "id": "d-nature-7",
+      "name": "Mycelium Network",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "nature",
+      "creatureType": "machine",
+      "ashe": 8,
+      "attack": 4,
+      "asheCost": 2,
+      "description": "A vast underground fungal intelligence that strengthens every living thing connected to it.",
+      "flavorText": "\"Beneath the soil, all things are one.\"",
+      "ability": {
+        "name": "Symbiosis",
+        "description": "When destroyed, all your Daemons heal 3 Ashe.",
+        "type": "on-destroy",
+        "effect": "undying-pack"
+      }
+    },
+    {
+      "id": "d-fenrir",
+      "name": "Fenrir, the Great White Wolf",
+      "category": "daemon",
+      "rarity": "legendary",
+      "element": "ice",
+      "creatureType": "spirit",
+      "ashe": 14,
+      "attack": 6,
+      "asheCost": 2,
+      "description": "A colossal white wolf spirit of ancient legend. Those who earn its loyalty are forever protected. Those who face it are never seen again.",
+      "flavorText": "\"He was the best of us. The pack remembers.\" — In honor of Jeff",
+      "ability": {
+        "name": "Undying Pack",
+        "description": "When Fenrir is destroyed, all your other Daemons gain +2 ATK and heal 3 Ashe. He fights on through them.",
+        "type": "on-destroy",
+        "effect": "undying-pack"
+      }
+    },
+    {
+      "id": "d-fox-fledgling",
+      "name": "Fledgling Fox",
+      "category": "daemon",
+      "rarity": "common",
+      "element": "flame",
+      "creatureType": "spirit",
+      "ashe": 4,
+      "attack": 3,
+      "asheCost": 1,
+      "description": "A young fox kit with a spark in its eyes and fire at its heels. Small but quick — what it lacks in power, it makes up for in heart.",
+      "flavorText": "\"Every legend starts somewhere.\"",
+      "ability": {
+        "name": "Quick Paws",
+        "description": "Can attack the turn it is summoned.",
+        "type": "passive",
+        "effect": "haste"
+      },
+      "evolvesTo": "d-fox-grey",
+      "evolutionCost": 3
+    },
+    {
+      "id": "d-fox-grey",
+      "name": "The Grey Fox",
+      "category": "daemon",
+      "rarity": "epic",
+      "element": "dark",
+      "creatureType": "spirit",
+      "ashe": 9,
+      "attack": 5,
+      "asheCost": 2,
+      "description": "A phantom fox that moves between shadows, striking from angles that shouldn't exist. It cannot be cornered, only respected.",
+      "flavorText": "\"You won't catch me. But I'll find you.\"",
+      "ability": {
+        "name": "Shadow Step",
+        "description": "Cannot be targeted by Seals. When The Grey Fox attacks, it cannot take counter-damage.",
+        "type": "passive",
+        "effect": "shadow-step"
+      }
+    },
+    {
+      "id": "p-flame-1",
+      "name": "Pillar of the Blazing Sun",
+      "category": "pillar",
+      "rarity": "rare",
+      "element": "flame",
+      "hp": 10,
+      "loyalty": 3,
+      "description": "Scorches all enemies each turn. Activate to unleash fiery punishment.",
+      "passiveAbility": "Deal 1 damage to all enemy Daemons at the start of your turn.",
+      "passiveEffect": {
+        "type": "start-turn-damage",
+        "value": 1
+      },
+      "onDestroyedEffect": {
+        "type": "damage-all-enemies",
+        "value": 3
+      },
+      "activatedAbilities": [
+        {
+          "name": "Flare",
+          "description": "Deal 2 damage to a random enemy Daemon.",
+          "loyaltyCost": 1,
+          "effect": "pil-flame1-flare"
+        },
+        {
+          "name": "Solar Burst",
+          "description": "Deal 4 damage to all enemy Daemons.",
+          "loyaltyCost": -3,
+          "effect": "pil-flame1-burst"
+        }
+      ]
+    },
+    {
+      "id": "p-flame-2",
+      "name": "Pillar of Infernal Gates",
+      "category": "pillar",
+      "rarity": "epic",
+      "element": "flame",
+      "hp": 8,
+      "loyalty": 4,
+      "description": "Empowers all Flame Daemons. Channel its fury for devastating strikes.",
+      "passiveAbility": "Your Flame Daemons gain +2 ATK.",
+      "passiveEffect": {
+        "type": "element-atk-buff",
+        "element": "flame",
+        "value": 2
+      },
+      "onDestroyedEffect": {
+        "type": "damage-all-enemies",
+        "value": 2
+      },
+      "activatedAbilities": [
+        {
+          "name": "Ignite",
+          "description": "Your Flame Daemons gain +1 ATK permanently.",
+          "loyaltyCost": 1,
+          "effect": "pil-flame2-ignite"
+        },
+        {
+          "name": "Hellgate",
+          "description": "Deal 6 damage to the enemy Conjuror.",
+          "loyaltyCost": -4,
+          "effect": "pil-flame2-hellgate"
+        }
+      ]
+    },
+    {
+      "id": "p-ice-1",
+      "name": "Pillar of the Frozen Throne",
+      "category": "pillar",
+      "rarity": "rare",
+      "element": "ice",
+      "hp": 12,
+      "loyalty": 3,
+      "description": "Empowers Ice Daemons. Activate to freeze the battlefield.",
+      "passiveAbility": "Your Ice Daemons gain +1 ATK.",
+      "passiveEffect": {
+        "type": "element-atk-buff",
+        "element": "ice",
+        "value": 1
+      },
+      "onDestroyedEffect": {
+        "type": "freeze-random"
+      },
+      "activatedAbilities": [
+        {
+          "name": "Frostbite",
+          "description": "Freeze a random enemy Daemon.",
+          "loyaltyCost": 1,
+          "effect": "pil-ice1-frost"
+        },
+        {
+          "name": "Glacial Prison",
+          "description": "Freeze ALL enemy Daemons for 1 turn.",
+          "loyaltyCost": -3,
+          "effect": "pil-ice1-prison"
+        }
+      ]
+    },
+    {
+      "id": "p-ice-2",
+      "name": "Pillar of Eternal Winter",
+      "category": "pillar",
+      "rarity": "epic",
+      "element": "ice",
+      "hp": 10,
+      "loyalty": 4,
+      "description": "Makes enemies pay more to attack. Tap into deeper cold.",
+      "passiveAbility": "Enemy Daemons cost +1 Ashe to attack.",
+      "passiveEffect": {
+        "type": "extra-ashe-cost",
+        "value": 1
+      },
+      "onDestroyedEffect": {
+        "type": "freeze-random"
+      },
+      "activatedAbilities": [
+        {
+          "name": "Chill",
+          "description": "Enemy Daemons cost +1 Ashe to attack this turn.",
+          "loyaltyCost": 1,
+          "effect": "pil-ice2-chill"
+        },
+        {
+          "name": "Permafrost",
+          "description": "Freeze 2 enemy Daemons and deal 2 damage to each.",
+          "loyaltyCost": -4,
+          "effect": "pil-ice2-perma"
+        }
+      ]
+    },
+    {
+      "id": "p-water-1",
+      "name": "Pillar of the Abyss",
+      "category": "pillar",
+      "rarity": "rare",
+      "element": "water",
+      "hp": 12,
+      "loyalty": 3,
+      "description": "Regenerates your Water Daemons. The deep sea provides.",
+      "passiveAbility": "Your Water Daemons regenerate 1 Ashe per turn.",
+      "passiveEffect": {
+        "type": "element-regen",
+        "element": "water",
+        "value": 1
+      },
+      "onDestroyedEffect": {
+        "type": "return-from-ashepile"
+      },
+      "activatedAbilities": [
+        {
+          "name": "Tidal Heal",
+          "description": "Heal all your Daemons for 2 Ashe.",
+          "loyaltyCost": 1,
+          "effect": "pil-water1-heal"
+        },
+        {
+          "name": "Whirlpool",
+          "description": "Return 2 cards from your Ashe Pile to hand.",
+          "loyaltyCost": -3,
+          "effect": "pil-water1-whirl"
+        }
+      ]
+    },
+    {
+      "id": "p-water-2",
+      "name": "Pillar of the Tidal Crown",
+      "category": "pillar",
+      "rarity": "epic",
+      "element": "water",
+      "hp": 11,
+      "loyalty": 4,
+      "description": "Heals the Conjuror each turn. Channel to refresh and recycle.",
+      "passiveAbility": "Heal your Conjuror 1 HP at start of turn.",
+      "passiveEffect": {
+        "type": "start-turn-heal-conjuror",
+        "value": 1
+      },
+      "onDestroyedEffect": {
+        "type": "draw-cards",
+        "value": 2
+      },
+      "activatedAbilities": [
+        {
+          "name": "Blessing",
+          "description": "Heal your Conjuror for 3 HP.",
+          "loyaltyCost": 1,
+          "effect": "pil-water2-bless"
+        },
+        {
+          "name": "Tidal Surge",
+          "description": "Draw 3 cards and heal Conjuror for 5 HP.",
+          "loyaltyCost": -4,
+          "effect": "pil-water2-surge"
+        }
+      ]
+    },
+    {
+      "id": "p-earth-1",
+      "name": "Pillar of the World Tree",
+      "category": "pillar",
+      "rarity": "rare",
+      "element": "earth",
+      "hp": 14,
+      "loyalty": 4,
+      "description": "Grants all your Daemons extra durability. The deepest roots hold.",
+      "passiveAbility": "Your Daemons gain +2 max Ashe.",
+      "passiveEffect": {
+        "type": "max-ashe-buff",
+        "value": 2
+      },
+      "onDestroyedEffect": {
+        "type": "summon-token",
+        "ashe": 4,
+        "attack": 3,
+        "element": "earth"
+      },
+      "activatedAbilities": [
+        {
+          "name": "Fortify",
+          "description": "All your Daemons gain +1 max Ashe.",
+          "loyaltyCost": 1,
+          "effect": "pil-earth1-fort"
+        },
+        {
+          "name": "Tectonic",
+          "description": "Deal 3 damage to all Daemons. Yours take 1 less.",
+          "loyaltyCost": -4,
+          "effect": "pil-earth1-tec"
+        }
+      ]
+    },
+    {
+      "id": "p-earth-2",
+      "name": "Pillar of the Iron Mountain",
+      "category": "pillar",
+      "rarity": "epic",
+      "element": "earth",
+      "hp": 15,
+      "loyalty": 5,
+      "description": "The toughest Pillar in the game. Unyielding.",
+      "passiveAbility": "Your Earth Daemons gain +1 ATK.",
+      "passiveEffect": {
+        "type": "element-atk-buff",
+        "element": "earth",
+        "value": 1
+      },
+      "onDestroyedEffect": {
+        "type": "summon-token",
+        "ashe": 3,
+        "attack": 4,
+        "element": "earth"
+      },
+      "activatedAbilities": [
+        {
+          "name": "Reinforce",
+          "description": "This Pillar gains +3 HP.",
+          "loyaltyCost": 1,
+          "effect": "pil-earth2-reinf"
+        },
+        {
+          "name": "Avalanche",
+          "description": "Destroy weakest enemy Daemon. Summon a 4/4 Golem.",
+          "loyaltyCost": -5,
+          "effect": "pil-earth2-aval"
+        }
+      ]
+    },
+    {
+      "id": "p-air-1",
+      "name": "Pillar of the Storm's Eye",
+      "category": "pillar",
+      "rarity": "rare",
+      "element": "air",
+      "hp": 10,
+      "loyalty": 3,
+      "description": "Grants extra card draws. Speed and tempo embodied.",
+      "passiveAbility": "Draw an extra card every other turn.",
+      "passiveEffect": {
+        "type": "extra-draw-interval",
+        "interval": 2
+      },
+      "onDestroyedEffect": {
+        "type": "return-masks"
+      },
+      "activatedAbilities": [
+        {
+          "name": "Gust",
+          "description": "Draw 1 card.",
+          "loyaltyCost": 1,
+          "effect": "pil-air1-gust"
+        },
+        {
+          "name": "Tempest",
+          "description": "Draw 3 cards. Your Daemons can attack again.",
+          "loyaltyCost": -3,
+          "effect": "pil-air1-tempest"
+        }
+      ]
+    },
+    {
+      "id": "p-air-2",
+      "name": "Pillar of the Celestial Wind",
+      "category": "pillar",
+      "rarity": "epic",
+      "element": "air",
+      "hp": 9,
+      "loyalty": 3,
+      "description": "Sharpens your Air Daemons. Channel for lightning strikes.",
+      "passiveAbility": "Your Air Daemons gain +2 ATK.",
+      "passiveEffect": {
+        "type": "element-atk-buff",
+        "element": "air",
+        "value": 2
+      },
+      "onDestroyedEffect": {
+        "type": "draw-cards",
+        "value": 3
+      },
+      "activatedAbilities": [
+        {
+          "name": "Zephyr",
+          "description": "Give 1 Daemon haste (can attack this turn).",
+          "loyaltyCost": 1,
+          "effect": "pil-air2-zephyr"
+        },
+        {
+          "name": "Thunder Strike",
+          "description": "Deal 5 damage to a single target (Daemon or Pillar).",
+          "loyaltyCost": -3,
+          "effect": "pil-air2-thunder"
+        }
+      ]
+    },
+    {
+      "id": "p-light-1",
+      "name": "Pillar of Divine Radiance",
+      "category": "pillar",
+      "rarity": "rare",
+      "element": "light",
+      "hp": 13,
+      "loyalty": 4,
+      "description": "Heals your Conjuror with divine light. Channel to purify.",
+      "passiveAbility": "Heal your Conjuror 1 HP at start of turn.",
+      "passiveEffect": {
+        "type": "start-turn-heal-conjuror",
+        "value": 1
+      },
+      "onDestroyedEffect": {
+        "type": "draw-cards",
+        "value": 2
+      },
+      "activatedAbilities": [
+        {
+          "name": "Radiance",
+          "description": "Heal your Conjuror for 2 HP.",
+          "loyaltyCost": 1,
+          "effect": "pil-light1-rad"
+        },
+        {
+          "name": "Purify",
+          "description": "Remove all Masks and Seals from the field.",
+          "loyaltyCost": -4,
+          "effect": "pil-light1-purify"
+        }
+      ]
+    },
+    {
+      "id": "p-light-2",
+      "name": "Pillar of the Morning Star",
+      "category": "pillar",
+      "rarity": "epic",
+      "element": "light",
+      "hp": 11,
+      "loyalty": 4,
+      "description": "Radiates power to your Light Daemons. Unleash judgment.",
+      "passiveAbility": "Your Light Daemons gain +2 ATK.",
+      "passiveEffect": {
+        "type": "element-atk-buff",
+        "element": "light",
+        "value": 2
+      },
+      "onDestroyedEffect": {
+        "type": "damage-all-enemies",
+        "value": 2
+      },
+      "activatedAbilities": [
+        {
+          "name": "Illuminate",
+          "description": "Reveal a random card from opponent's hand.",
+          "loyaltyCost": 1,
+          "effect": "pil-light2-illum"
+        },
+        {
+          "name": "Judgment",
+          "description": "Deal 4 damage to all enemy Daemons.",
+          "loyaltyCost": -4,
+          "effect": "pil-light2-judge"
+        }
+      ]
+    },
+    {
+      "id": "p-dark-1",
+      "name": "Pillar of the Void",
+      "category": "pillar",
+      "rarity": "rare",
+      "element": "dark",
+      "hp": 10,
+      "loyalty": 3,
+      "description": "Increases the cost for enemies to attack. The void consumes.",
+      "passiveAbility": "Enemy Daemons cost +1 Ashe to attack.",
+      "passiveEffect": {
+        "type": "extra-ashe-cost",
+        "value": 1
+      },
+      "onDestroyedEffect": {
+        "type": "destroy-weakest"
+      },
+      "activatedAbilities": [
+        {
+          "name": "Siphon",
+          "description": "Steal 2 Ashe from an enemy Daemon.",
+          "loyaltyCost": 1,
+          "effect": "pil-dark1-siphon"
+        },
+        {
+          "name": "Void Rift",
+          "description": "Destroy the weakest enemy Daemon. Draw 1 card.",
+          "loyaltyCost": -3,
+          "effect": "pil-dark1-void"
+        }
+      ]
+    },
+    {
+      "id": "p-dark-2",
+      "name": "Pillar of Endless Night",
+      "category": "pillar",
+      "rarity": "epic",
+      "element": "dark",
+      "hp": 9,
+      "loyalty": 4,
+      "description": "Empowers your Dark Daemons. Feed the darkness.",
+      "passiveAbility": "Your Dark Daemons gain +2 ATK.",
+      "passiveEffect": {
+        "type": "element-atk-buff",
+        "element": "dark",
+        "value": 2
+      },
+      "onDestroyedEffect": {
+        "type": "destroy-weakest"
+      },
+      "activatedAbilities": [
+        {
+          "name": "Corrupt",
+          "description": "Reduce an enemy Daemon's ATK by 2.",
+          "loyaltyCost": 1,
+          "effect": "pil-dark2-corrupt"
+        },
+        {
+          "name": "Eclipse",
+          "description": "All enemy Daemons lose 3 Ashe. You draw 2 cards.",
+          "loyaltyCost": -4,
+          "effect": "pil-dark2-eclipse"
+        }
+      ]
+    },
+    {
+      "id": "p-nature-1",
+      "name": "Pillar of the Ancient Grove",
+      "category": "pillar",
+      "rarity": "rare",
+      "element": "nature",
+      "hp": 14,
+      "loyalty": 4,
+      "description": "The Grove's roots run deep, granting extra life to all Daemons.",
+      "passiveAbility": "All your Daemons gain +2 max Ashe.",
+      "passiveEffect": {
+        "type": "max-ashe-buff",
+        "value": 2
+      },
+      "onDestroyedEffect": {
+        "type": "heal-all-allies",
+        "value": 4
+      },
+      "activatedAbilities": [
+        {
+          "name": "Nourish",
+          "description": "Heal all your Daemons for 2 Ashe.",
+          "loyaltyCost": 1,
+          "effect": "pil-nature1-nourish"
+        },
+        {
+          "name": "Overgrowth",
+          "description": "Summon a 3/3 Treant token. Entangle 1 enemy.",
+          "loyaltyCost": -4,
+          "effect": "pil-nature1-over"
+        }
+      ]
+    },
+    {
+      "id": "p-nature-2",
+      "name": "Pillar of the Verdant Canopy",
+      "category": "pillar",
+      "rarity": "epic",
+      "element": "nature",
+      "hp": 12,
+      "loyalty": 4,
+      "description": "The canopy's embrace empowers your Nature Daemons.",
+      "passiveAbility": "Your Nature Daemons gain +2 ATK.",
+      "passiveEffect": {
+        "type": "element-atk-buff",
+        "element": "nature",
+        "value": 2
+      },
+      "onDestroyedEffect": {
+        "type": "heal-all-allies",
+        "value": 3
+      },
+      "activatedAbilities": [
+        {
+          "name": "Bloom",
+          "description": "Your Nature Daemons gain +1 ATK permanently.",
+          "loyaltyCost": 1,
+          "effect": "pil-nature2-bloom"
+        },
+        {
+          "name": "Genesis",
+          "description": "Heal Conjuror for 5 HP. All your Daemons gain +2 Ashe.",
+          "loyaltyCost": -4,
+          "effect": "pil-nature2-genesis"
+        }
+      ]
+    },
+    {
+      "id": "p-machine-1",
+      "name": "Pillar of the Iron Forge",
+      "category": "pillar",
+      "rarity": "rare",
+      "element": "flame",
+      "creatureType": "machine",
+      "hp": 11,
+      "loyalty": 3,
+      "description": "The forge never sleeps. Your machines grow stronger.",
+      "passiveAbility": "Machine Daemons gain +2 ATK.",
+      "passiveEffect": {
+        "type": "creature-atk-buff",
+        "creatureType": "machine",
+        "value": 2
+      },
+      "onDestroyedEffect": {
+        "type": "summon-token",
+        "ashe": 4,
+        "attack": 3,
+        "element": "flame"
+      },
+      "activatedAbilities": [
+        {
+          "name": "Overclock",
+          "description": "All Machine Daemons gain +1 ATK permanently.",
+          "loyaltyCost": 1,
+          "effect": "pil-mach1-overclock"
+        },
+        {
+          "name": "Mass Production",
+          "description": "Summon a 3/3 Automaton token. Draw 1 card.",
+          "loyaltyCost": -3,
+          "effect": "pil-mach1-produce"
+        }
+      ]
+    },
+    {
+      "id": "p-machine-2",
+      "name": "Pillar of the Cogwork Engine",
+      "category": "pillar",
+      "rarity": "epic",
+      "element": "earth",
+      "creatureType": "machine",
+      "hp": 13,
+      "loyalty": 4,
+      "description": "A perpetual engine powering all mechanical constructs.",
+      "passiveAbility": "Machine Daemons gain +2 max Ashe.",
+      "passiveEffect": {
+        "type": "creature-ashe-buff",
+        "creatureType": "machine",
+        "value": 2
+      },
+      "onDestroyedEffect": {
+        "type": "damage-all-enemies",
+        "value": 3
+      },
+      "activatedAbilities": [
+        {
+          "name": "Repair",
+          "description": "Heal all Machine Daemons for 3 Ashe.",
+          "loyaltyCost": 1,
+          "effect": "pil-mach2-repair"
+        },
+        {
+          "name": "Overload",
+          "description": "Deal 5 damage to all enemy Daemons.",
+          "loyaltyCost": -4,
+          "effect": "pil-mach2-overload"
+        }
+      ]
+    },
+    {
+      "id": "p-artificial-1",
+      "name": "Pillar of the Architect",
+      "category": "pillar",
+      "rarity": "epic",
+      "element": "light",
+      "creatureType": "artificial",
+      "hp": 12,
+      "loyalty": 4,
+      "description": "The Architect designs perfection into every construct.",
+      "passiveAbility": "Artificial Daemons gain +2 ATK.",
+      "passiveEffect": {
+        "type": "creature-atk-buff",
+        "creatureType": "artificial",
+        "value": 2
+      },
+      "onDestroyedEffect": {
+        "type": "draw-cards",
+        "value": 3
+      },
+      "activatedAbilities": [
+        {
+          "name": "Blueprint",
+          "description": "Draw 2 cards.",
+          "loyaltyCost": 1,
+          "effect": "pil-art1-blueprint"
+        },
+        {
+          "name": "Masterwork",
+          "description": "All Artificial Daemons gain +2 ATK and +2 Ashe permanently.",
+          "loyaltyCost": -4,
+          "effect": "pil-art1-master"
+        }
+      ]
+    },
+    {
+      "id": "p-artificial-2",
+      "name": "Pillar of the Living Gallery",
+      "category": "pillar",
+      "rarity": "epic",
+      "element": "water",
+      "creatureType": "artificial",
+      "hp": 10,
+      "loyalty": 3,
+      "description": "Constructs animated by ancient craft move with purpose.",
+      "passiveAbility": "Artificial Daemons regenerate 1 Ashe per turn.",
+      "passiveEffect": {
+        "type": "creature-regen",
+        "creatureType": "artificial",
+        "value": 1
+      },
+      "onDestroyedEffect": {
+        "type": "heal-all-allies",
+        "value": 3
+      },
+      "activatedAbilities": [
+        {
+          "name": "Animate",
+          "description": "Summon a 2/4 Construct token.",
+          "loyaltyCost": 1,
+          "effect": "pil-art2-animate"
+        },
+        {
+          "name": "Grand Design",
+          "description": "Destroy weakest enemy. All your Daemons heal 3.",
+          "loyaltyCost": -3,
+          "effect": "pil-art2-design"
+        }
+      ]
+    },
+    {
+      "id": "p-spirit-1",
+      "name": "Pillar of the Ethereal Gate",
+      "category": "pillar",
+      "rarity": "epic",
+      "element": "air",
+      "creatureType": "spirit",
+      "hp": 10,
+      "loyalty": 3,
+      "description": "The gate between worlds channels spectral energy.",
+      "passiveAbility": "Spirit Daemons gain +2 ATK.",
+      "passiveEffect": {
+        "type": "creature-atk-buff",
+        "creatureType": "spirit",
+        "value": 2
+      },
+      "onDestroyedEffect": {
+        "type": "freeze-random"
+      },
+      "activatedAbilities": [
+        {
+          "name": "Haunting",
+          "description": "Freeze a random enemy Daemon.",
+          "loyaltyCost": 1,
+          "effect": "pil-spi1-haunt"
+        },
+        {
+          "name": "Spirit Walk",
+          "description": "All your Daemons gain stealth for 1 turn. Draw 1.",
+          "loyaltyCost": -3,
+          "effect": "pil-spi1-walk"
+        }
+      ]
+    },
+    {
+      "id": "p-spirit-2",
+      "name": "Pillar of the Ancestral Veil",
+      "category": "pillar",
+      "rarity": "epic",
+      "element": "dark",
+      "creatureType": "spirit",
+      "hp": 9,
+      "loyalty": 4,
+      "description": "Whispers of ancestors guide your spirit companions.",
+      "passiveAbility": "Spirit Daemons regenerate 1 Ashe per turn.",
+      "passiveEffect": {
+        "type": "creature-regen",
+        "creatureType": "spirit",
+        "value": 1
+      },
+      "onDestroyedEffect": {
+        "type": "return-from-ashepile"
+      },
+      "activatedAbilities": [
+        {
+          "name": "Commune",
+          "description": "Return 1 card from Ashe Pile to hand.",
+          "loyaltyCost": 1,
+          "effect": "pil-spi2-commune"
+        },
+        {
+          "name": "Possession",
+          "description": "Take control: reduce all enemy ATK by 2. Steal 1 card.",
+          "loyaltyCost": -4,
+          "effect": "pil-spi2-possess"
+        }
+      ]
+    },
+    {
+      "id": "p-undead-1",
+      "name": "Pillar of the Bone Throne",
+      "category": "pillar",
+      "rarity": "legendary",
+      "element": "dark",
+      "creatureType": "undead",
+      "hp": 8,
+      "loyalty": 3,
+      "description": "Death is only the beginning. The bone throne rules eternal.",
+      "passiveAbility": "Undead Daemons gain +2 ATK.",
+      "passiveEffect": {
+        "type": "creature-atk-buff",
+        "creatureType": "undead",
+        "value": 2
+      },
+      "onDestroyedEffect": {
+        "type": "destroy-weakest"
+      },
+      "activatedAbilities": [
+        {
+          "name": "Raise Dead",
+          "description": "Return 1 Daemon from Ashe Pile to field with 3 Ashe.",
+          "loyaltyCost": 1,
+          "effect": "pil-und1-raise"
+        },
+        {
+          "name": "Death Wave",
+          "description": "Deal 3 damage to ALL Daemons. Yours heal 2 after.",
+          "loyaltyCost": -3,
+          "effect": "pil-und1-wave"
+        }
+      ]
+    },
+    {
+      "id": "p-undead-2",
+      "name": "Pillar of the Plague Crypt",
+      "category": "pillar",
+      "rarity": "legendary",
+      "element": "nature",
+      "creatureType": "undead",
+      "hp": 9,
+      "loyalty": 4,
+      "description": "Plague and rot spread from this cursed crypt.",
+      "passiveAbility": "Enemy Daemons lose 1 Ashe at start of your turn.",
+      "passiveEffect": {
+        "type": "start-turn-damage",
+        "value": 1
+      },
+      "onDestroyedEffect": {
+        "type": "damage-all-enemies",
+        "value": 4
+      },
+      "activatedAbilities": [
+        {
+          "name": "Infect",
+          "description": "Deal 2 damage to all enemy Daemons.",
+          "loyaltyCost": 1,
+          "effect": "pil-und2-infect"
+        },
+        {
+          "name": "Pandemic",
+          "description": "Destroy all enemy Daemons with 3 or less Ashe.",
+          "loyaltyCost": -4,
+          "effect": "pil-und2-pandemic"
+        }
+      ]
+    },
+    {
+      "id": "p-elemental-1",
+      "name": "Pillar of the Primal Storm",
+      "category": "pillar",
+      "rarity": "common",
+      "element": "air",
+      "creatureType": "elemental",
+      "hp": 12,
+      "loyalty": 3,
+      "description": "Raw elemental force made manifest.",
+      "passiveAbility": "Elemental Daemons gain +1 ATK.",
+      "passiveEffect": {
+        "type": "creature-atk-buff",
+        "creatureType": "elemental",
+        "value": 1
+      },
+      "onDestroyedEffect": {
+        "type": "damage-all-enemies",
+        "value": 2
+      },
+      "activatedAbilities": [
+        {
+          "name": "Channel",
+          "description": "All Elemental Daemons gain +1 ATK permanently.",
+          "loyaltyCost": 1,
+          "effect": "pil-elem1-channel"
+        },
+        {
+          "name": "Primal Fury",
+          "description": "Deal 3 damage to all enemies. Draw 1 card.",
+          "loyaltyCost": -3,
+          "effect": "pil-elem1-fury"
+        }
+      ]
+    },
+    {
+      "id": "p-elemental-2",
+      "name": "Pillar of the Convergence",
+      "category": "pillar",
+      "rarity": "rare",
+      "element": "water",
+      "creatureType": "elemental",
+      "hp": 13,
+      "loyalty": 4,
+      "description": "Where all elements converge, power is limitless.",
+      "passiveAbility": "Elemental Daemons regenerate 1 Ashe per turn.",
+      "passiveEffect": {
+        "type": "creature-regen",
+        "creatureType": "elemental",
+        "value": 1
+      },
+      "onDestroyedEffect": {
+        "type": "heal-all-allies",
+        "value": 3
+      },
+      "activatedAbilities": [
+        {
+          "name": "Harmonize",
+          "description": "Heal all your Daemons for 2 Ashe.",
+          "loyaltyCost": 1,
+          "effect": "pil-elem2-harmonize"
+        },
+        {
+          "name": "Elemental Surge",
+          "description": "All your Daemons gain +2 ATK and can attack again.",
+          "loyaltyCost": -4,
+          "effect": "pil-elem2-surge"
+        }
+      ]
+    },
+    {
+      "id": "f-1",
+      "name": "Mana Surge",
+      "category": "domain",
+      "rarity": "common",
+      "description": "All Daemons on both sides gain +1 ATK.",
+      "effect": {
+        "type": "atk-buff-all",
+        "value": 1
+      }
+    },
+    {
+      "id": "f-2",
+      "name": "Ashe Storm",
+      "category": "domain",
+      "rarity": "rare",
+      "description": "All Daemons lose 2 Ashe at the end of each turn.",
+      "effect": {
+        "type": "damage-all-end",
+        "value": 2
+      }
+    },
+    {
+      "id": "f-3",
+      "name": "Sanctuary",
+      "category": "domain",
+      "rarity": "rare",
+      "description": "No Daemons can be destroyed by combat this turn.",
+      "effect": {
+        "type": "protection",
+        "value": 1
+      }
+    },
+    {
+      "id": "f-4",
+      "name": "Elemental Convergence",
+      "category": "domain",
+      "rarity": "epic",
+      "description": "Daemons matching their controller's primary element gain +2 ATK.",
+      "effect": {
+        "type": "element-atk-buff",
+        "value": 2
+      }
+    },
+    {
+      "id": "f-5",
+      "name": "Dimensional Rift",
+      "category": "domain",
+      "rarity": "common",
+      "description": "Both players draw an extra card at the start of their turn.",
+      "effect": {
+        "type": "extra-draw",
+        "value": 1
+      }
+    },
+    {
+      "id": "f-6",
+      "name": "Pillar of Rebirth",
+      "category": "domain",
+      "rarity": "epic",
+      "description": "Restore a destroyed Pillar to full HP. Instant — does not replace the active Domain.",
+      "flavorText": "\"The stone remembers what it was.\"",
+      "effect": {
+        "type": "pillar-restore",
+        "value": 1
+      }
+    },
+    {
+      "id": "f-7",
+      "name": "Bastion Mending",
+      "category": "domain",
+      "rarity": "rare",
+      "description": "Heal all surviving Pillars for 4 HP. Instant — does not replace the active Domain.",
+      "flavorText": "\"The cracks fill with golden light.\"",
+      "effect": {
+        "type": "pillar-heal",
+        "value": 4
+      }
+    },
+    {
+      "id": "m-1",
+      "name": "Mask of Fury",
+      "category": "mask",
+      "rarity": "common",
+      "description": "Equipped Daemon gains +3 ATK for 2 turns.",
+      "duration": 2,
+      "effect": {
+        "type": "atk-boost",
+        "value": 3
+      }
+    },
+    {
+      "id": "m-2",
+      "name": "Mask of Iron",
+      "category": "mask",
+      "rarity": "common",
+      "description": "Equipped Daemon gains +5 Ashe for 3 turns.",
+      "duration": 3,
+      "effect": {
+        "type": "ashe-boost",
+        "value": 5
+      }
+    },
+    {
+      "id": "m-3",
+      "name": "Mask of Haste",
+      "category": "mask",
+      "rarity": "rare",
+      "description": "Equipped Daemon can attack immediately. Lasts 1 turn.",
+      "duration": 1,
+      "effect": {
+        "type": "haste",
+        "value": 1
+      }
+    },
+    {
+      "id": "m-4",
+      "name": "Mask of Shadows",
+      "category": "mask",
+      "rarity": "rare",
+      "description": "Equipped Daemon cannot be targeted for 2 turns.",
+      "duration": 2,
+      "effect": {
+        "type": "stealth",
+        "value": 1
+      }
+    },
+    {
+      "id": "m-5",
+      "name": "Mask of Thorns",
+      "category": "mask",
+      "rarity": "epic",
+      "description": "Attackers take 2 damage when hitting this Daemon. Lasts 3 turns.",
+      "duration": 3,
+      "effect": {
+        "type": "thorns",
+        "value": 2
+      }
+    },
+    {
+      "id": "s-1",
+      "name": "Ashe Drain",
+      "category": "seal",
+      "rarity": "common",
+      "description": "When opponent attacks, drain 3 Ashe from the attacker.",
+      "trigger": "on-attack",
+      "effect": {
+        "type": "drain",
+        "value": 3
+      }
+    },
+    {
+      "id": "s-2",
+      "name": "Mirror Force",
+      "category": "seal",
+      "rarity": "epic",
+      "description": "When attacked, destroy the attacking Daemon.",
+      "trigger": "on-attack",
+      "effect": {
+        "type": "destroy",
+        "value": 0
+      }
+    },
+    {
+      "id": "s-3",
+      "name": "Elemental Barrier",
+      "category": "seal",
+      "rarity": "common",
+      "description": "Negate the next attack and heal your Conjuror for 3 HP.",
+      "trigger": "on-attack",
+      "effect": {
+        "type": "negate",
+        "value": 3
+      }
+    },
+    {
+      "id": "s-4",
+      "name": "Counter Bind",
+      "category": "seal",
+      "rarity": "rare",
+      "description": "Negate the next Domain or Mask card your opponent plays.",
+      "trigger": "on-spell",
+      "effect": {
+        "type": "counter-spell",
+        "value": 0
+      }
+    },
+    {
+      "id": "s-5",
+      "name": "Soul Harvest",
+      "category": "seal",
+      "rarity": "rare",
+      "description": "When any Daemon is destroyed, heal your Conjuror for 4 HP.",
+      "trigger": "on-daemon-destroy",
+      "effect": {
+        "type": "heal-conjuror",
+        "value": 4
+      }
+    },
+    {
+      "id": "disp-1",
+      "name": "Purifying Light",
+      "category": "dispel",
+      "rarity": "common",
+      "target": "domain",
+      "counterEffect": {
+        "type": "heal-conjuror",
+        "value": 3
+      },
+      "description": "Dissolve the active Domain and mend the damage it wrought. Heals your Conjuror for 3 HP.",
+      "flavorText": "\"Where corruption festers, radiance cleanses.\""
+    },
+    {
+      "id": "disp-2",
+      "name": "Sacred Severance",
+      "category": "dispel",
+      "rarity": "rare",
+      "target": "mask",
+      "counterEffect": {
+        "type": "weaken-all",
+        "value": 1
+      },
+      "description": "Strip a Mask from an enemy Daemon and weaken all enemies. All enemy Daemons lose 1 ATK.",
+      "flavorText": "\"The false skin peels away, and what remains is fragile.\""
+    },
+    {
+      "id": "disp-3",
+      "name": "Seal Shatter",
+      "category": "dispel",
+      "rarity": "common",
+      "target": "seal",
+      "counterEffect": {
+        "type": "shatter-aoe",
+        "value": 2
+      },
+      "description": "Destroy an enemy Seal and release its energy as shrapnel. Deals 2 damage to all enemy Daemons.",
+      "flavorText": "\"The trap shatters — but the shards still cut.\""
+    },
+    {
+      "id": "disp-4",
+      "name": "Arcane Dissolution",
+      "category": "dispel",
+      "rarity": "epic",
+      "target": "any",
+      "counterEffect": {
+        "type": "drain-will",
+        "value": 2
+      },
+      "description": "Erase any Domain, Mask, or Seal and drain the caster's reserves. Opponent loses 2 Will.",
+      "flavorText": "\"Magic unmade is magic stolen.\""
+    },
+    {
+      "id": "disp-5",
+      "name": "Divine Judgment",
+      "category": "dispel",
+      "rarity": "legendary",
+      "target": "any",
+      "counterEffect": {
+        "type": "damage-owner",
+        "value": 5
+      },
+      "description": "Smite any enchantment and punish its caster. Deals 5 damage to the opponent's Conjuror.",
+      "flavorText": "\"The light judges all equally — and finds you wanting.\""
+    },
+    {
+      "id": "disp-6",
+      "name": "Null Tide",
+      "category": "dispel",
+      "rarity": "rare",
+      "target": "any",
+      "counterEffect": {
+        "type": "draw-cards",
+        "value": 2
+      },
+      "description": "Wash away an enchantment and read the currents. Draw 2 cards.",
+      "flavorText": "\"The waters recede, leaving knowledge on the shore.\""
+    },
+    {
+      "id": "disp-7",
+      "name": "Void Erasure",
+      "category": "dispel",
+      "rarity": "rare",
+      "target": "any",
+      "counterEffect": {
+        "type": "reclaim",
+        "value": 1
+      },
+      "description": "Unmake an enchantment and pull a soul from the void. Return 1 card from your Ashe Pile to hand.",
+      "flavorText": "\"What the void takes, the void can return — for a price.\""
+    },
+    {
+      "id": "cj-flame",
+      "name": "Pyralis, the Eternal Flame",
+      "category": "conjuror",
+      "rarity": "legendary",
+      "element": "flame",
+      "description": "A conjuror wreathed in undying fire. Channels destruction into every spell.",
+      "flavorText": "\"Burn brighter. Burn everything.\"",
+      "loyalty": 4,
+      "abilities": [
+        {
+          "name": "Stoke",
+          "description": "All your Flame Daemons gain +1 ATK this turn.",
+          "loyaltyCost": 1,
+          "effect": "cj-flame-buff"
+        },
+        {
+          "name": "Firestorm",
+          "description": "Deal 2 damage to all enemy Daemons.",
+          "loyaltyCost": -2,
+          "effect": "cj-flame-aoe"
+        },
+        {
+          "name": "Inferno Ascension",
+          "description": "Deal 8 damage to the enemy Conjuror.",
+          "loyaltyCost": -5,
+          "effect": "cj-flame-ult"
+        }
+      ]
+    },
+    {
+      "id": "cj-ice",
+      "name": "Crystalis, the Frozen Mind",
+      "category": "conjuror",
+      "rarity": "legendary",
+      "element": "ice",
+      "description": "A conjuror whose cold logic freezes foes in their tracks.",
+      "flavorText": "\"Patience is a weapon. The cold is its edge.\"",
+      "loyalty": 5,
+      "abilities": [
+        {
+          "name": "Flash Freeze",
+          "description": "Freeze a random enemy Daemon.",
+          "loyaltyCost": 1,
+          "effect": "cj-ice-freeze"
+        },
+        {
+          "name": "Glacial Barrier",
+          "description": "Your Conjuror gains 4 HP.",
+          "loyaltyCost": -2,
+          "effect": "cj-ice-heal"
+        },
+        {
+          "name": "Absolute Zero",
+          "description": "Freeze ALL enemy Daemons for 2 turns.",
+          "loyaltyCost": -6,
+          "effect": "cj-ice-ult"
+        }
+      ]
+    },
+    {
+      "id": "cj-water",
+      "name": "Tidecrest, Lord of Currents",
+      "category": "conjuror",
+      "rarity": "legendary",
+      "element": "water",
+      "description": "A conjuror who commands the tides to heal and sustain.",
+      "flavorText": "\"The ocean provides. The ocean endures.\"",
+      "loyalty": 4,
+      "abilities": [
+        {
+          "name": "Healing Tide",
+          "description": "Heal all your Daemons for 2 Ashe.",
+          "loyaltyCost": 1,
+          "effect": "cj-water-heal"
+        },
+        {
+          "name": "Riptide",
+          "description": "Return 1 card from Ashe Pile to hand.",
+          "loyaltyCost": -2,
+          "effect": "cj-water-reclaim"
+        },
+        {
+          "name": "Tsunami",
+          "description": "Destroy the weakest enemy Daemon and draw 3 cards.",
+          "loyaltyCost": -5,
+          "effect": "cj-water-ult"
+        }
+      ]
+    },
+    {
+      "id": "cj-earth",
+      "name": "Terravex, the Living Mountain",
+      "category": "conjuror",
+      "rarity": "legendary",
+      "element": "earth",
+      "description": "A conjuror who IS the land. Immovable. Indestructible.",
+      "flavorText": "\"I am the ground you stand on. Kneel.\"",
+      "loyalty": 6,
+      "abilities": [
+        {
+          "name": "Fortification",
+          "description": "All your Daemons gain +2 max Ashe.",
+          "loyaltyCost": 1,
+          "effect": "cj-earth-buff"
+        },
+        {
+          "name": "Earthquake",
+          "description": "Deal 3 damage to all Daemons (yours take 1 less).",
+          "loyaltyCost": -3,
+          "effect": "cj-earth-quake"
+        },
+        {
+          "name": "Tectonic Collapse",
+          "description": "Destroy an enemy Pillar. Summon a 5/5 Golem token.",
+          "loyaltyCost": -6,
+          "effect": "cj-earth-ult"
+        }
+      ]
+    },
+    {
+      "id": "cj-air",
+      "name": "Zephyria, Voice of Thunder",
+      "category": "conjuror",
+      "rarity": "legendary",
+      "element": "air",
+      "description": "A conjuror who strikes with the speed of lightning and the fury of storms.",
+      "flavorText": "\"You cannot outrun the wind.\"",
+      "loyalty": 3,
+      "abilities": [
+        {
+          "name": "Tailwind",
+          "description": "Draw 2 cards.",
+          "loyaltyCost": 1,
+          "effect": "cj-air-draw"
+        },
+        {
+          "name": "Chain Lightning",
+          "description": "Deal 2 damage to 2 random enemies.",
+          "loyaltyCost": -2,
+          "effect": "cj-air-chain"
+        },
+        {
+          "name": "Eye of the Tempest",
+          "description": "Take an extra battle phase this turn.",
+          "loyaltyCost": -4,
+          "effect": "cj-air-ult"
+        }
+      ]
+    },
+    {
+      "id": "cj-light",
+      "name": "Seraph Solara, the Radiant Judge",
+      "category": "conjuror",
+      "rarity": "legendary",
+      "element": "light",
+      "description": "A conjuror of divine light who heals the worthy and punishes the wicked.",
+      "flavorText": "\"The light judges all. And finds you wanting.\"",
+      "loyalty": 5,
+      "abilities": [
+        {
+          "name": "Blessing",
+          "description": "Heal your Conjuror for 3 HP.",
+          "loyaltyCost": 1,
+          "effect": "cj-light-heal"
+        },
+        {
+          "name": "Purge",
+          "description": "Destroy all enemy Masks and Seals.",
+          "loyaltyCost": -3,
+          "effect": "cj-light-purge"
+        },
+        {
+          "name": "Divine Reckoning",
+          "description": "Heal to full HP. All Daemons take 4 damage.",
+          "loyaltyCost": -7,
+          "effect": "cj-light-ult"
+        }
+      ]
+    },
+    {
+      "id": "cj-dark",
+      "name": "Morvath, the Abyssal Lord",
+      "category": "conjuror",
+      "rarity": "legendary",
+      "element": "dark",
+      "description": "A conjuror who feeds on destruction, growing stronger from every death.",
+      "flavorText": "\"Every soul that falls feeds my hunger.\"",
+      "loyalty": 4,
+      "abilities": [
+        {
+          "name": "Drain",
+          "description": "Steal 2 Ashe from an enemy Daemon.",
+          "loyaltyCost": 1,
+          "effect": "cj-dark-drain"
+        },
+        {
+          "name": "Shadow Pact",
+          "description": "Pay 3 HP to draw 3 cards and gain 2 Will.",
+          "loyaltyCost": -2,
+          "effect": "cj-dark-pact"
+        },
+        {
+          "name": "Void Collapse",
+          "description": "Destroy all Daemons. Gain +1 loyalty per destroy.",
+          "loyaltyCost": -5,
+          "effect": "cj-dark-ult"
+        }
+      ]
+    },
+    {
+      "id": "cj-nature",
+      "name": "Gaia, the World Soul",
+      "category": "conjuror",
+      "rarity": "legendary",
+      "element": "nature",
+      "description": "The forest itself made manifest. Life and growth in overwhelming abundance.",
+      "flavorText": "\"Where I walk, the world blooms.\"",
+      "loyalty": 5,
+      "abilities": [
+        {
+          "name": "Regrowth",
+          "description": "Heal all your Daemons for 3 Ashe.",
+          "loyaltyCost": 1,
+          "effect": "cj-nature-regen"
+        },
+        {
+          "name": "Entangle",
+          "description": "Entangle 2 random enemy Daemons.",
+          "loyaltyCost": -2,
+          "effect": "cj-nature-entangle"
+        },
+        {
+          "name": "Genesis Wave",
+          "description": "Summon 3 random Daemons from your deck to the field.",
+          "loyaltyCost": -6,
+          "effect": "cj-nature-ult"
+        }
+      ]
+    }
+  ],
+  "decks": [
+    {
+      "name": "Flamecaller's Arsenal",
+      "element": "flame",
+      "description": "Aggressive burn strategy — overwhelm enemies with relentless fire damage.",
+      "cards": [
+        "d-flame-1",
+        "d-flame-1",
+        "d-flame-1",
+        "d-flame-2",
+        "d-flame-2",
+        "d-flame-3",
+        "d-flame-3",
+        "d-flame-3",
+        "d-flame-4",
+        "d-flame-4",
+        "d-flame-5",
+        "d-flame-5",
+        "d-flame-6",
+        "d-flame-6",
+        "d-flame-7",
+        "d-flame-7",
+        "d-air-1",
+        "d-air-4",
+        "d-dark-4",
+        "m-1",
+        "m-1",
+        "m-3",
+        "m-3",
+        "s-1",
+        "s-1",
+        "s-2",
+        "s-4",
+        "f-1",
+        "f-1",
+        "f-2",
+        "m-5",
+        "s-5",
+        "s-5",
+        "f-4",
+        "f-4",
+        "f-5",
+        "disp-3",
+        "disp-6",
+        "f-6",
+        "f-7"
+      ],
+      "pillars": [
+        "p-flame-1",
+        "p-flame-2",
+        "p-air-1",
+        "p-air-2"
+      ]
+    },
+    {
+      "name": "Frostweaver's Grimoire",
+      "element": "ice",
+      "description": "Freeze and shatter — control the board and outlast your opponent.",
+      "cards": [
+        "d-ice-1",
+        "d-ice-1",
+        "d-ice-1",
+        "d-ice-2",
+        "d-ice-2",
+        "d-ice-3",
+        "d-ice-3",
+        "d-ice-4",
+        "d-ice-4",
+        "d-ice-5",
+        "d-ice-5",
+        "d-ice-6",
+        "d-ice-6",
+        "d-ice-7",
+        "d-ice-7",
+        "d-water-1",
+        "d-water-3",
+        "d-water-6",
+        "m-2",
+        "m-2",
+        "m-2",
+        "m-3",
+        "m-4",
+        "s-1",
+        "s-1",
+        "s-3",
+        "s-4",
+        "f-3",
+        "f-3",
+        "f-5",
+        "m-5",
+        "s-5",
+        "s-5",
+        "f-1",
+        "f-1",
+        "f-4",
+        "disp-6",
+        "disp-7",
+        "f-6",
+        "f-7"
+      ],
+      "pillars": [
+        "p-ice-1",
+        "p-ice-2",
+        "p-water-1",
+        "p-water-2"
+      ]
+    },
+    {
+      "name": "Tidebinder's Codex",
+      "element": "water",
+      "description": "Heal and regenerate — wear down the enemy with relentless endurance.",
+      "cards": [
+        "d-water-1",
+        "d-water-1",
+        "d-water-1",
+        "d-water-2",
+        "d-water-2",
+        "d-water-3",
+        "d-water-3",
+        "d-water-3",
+        "d-water-4",
+        "d-water-4",
+        "d-water-5",
+        "d-water-5",
+        "d-water-6",
+        "d-water-6",
+        "d-water-7",
+        "d-water-7",
+        "d-earth-1",
+        "d-earth-4",
+        "m-2",
+        "m-2",
+        "m-2",
+        "m-3",
+        "m-4",
+        "s-3",
+        "s-3",
+        "s-5",
+        "s-4",
+        "f-3",
+        "f-3",
+        "f-5",
+        "m-5",
+        "s-1",
+        "s-1",
+        "f-1",
+        "f-1",
+        "f-4",
+        "disp-6",
+        "disp-7",
+        "f-6",
+        "f-7"
+      ],
+      "pillars": [
+        "p-water-1",
+        "p-water-2",
+        "p-earth-1",
+        "p-earth-2"
+      ]
+    },
+    {
+      "name": "Stonewarden's Tome",
+      "element": "earth",
+      "description": "Immovable defense — massive Ashe pools and overwhelming resilience.",
+      "cards": [
+        "d-earth-1",
+        "d-earth-1",
+        "d-earth-1",
+        "d-earth-2",
+        "d-earth-2",
+        "d-earth-3",
+        "d-earth-3",
+        "d-earth-4",
+        "d-earth-4",
+        "d-earth-5",
+        "d-earth-5",
+        "d-earth-6",
+        "d-earth-6",
+        "d-earth-7",
+        "d-earth-7",
+        "d-ice-2",
+        "d-ice-4",
+        "d-ice-1",
+        "m-2",
+        "m-2",
+        "m-2",
+        "m-3",
+        "m-5",
+        "s-1",
+        "s-1",
+        "s-3",
+        "s-4",
+        "f-1",
+        "f-1",
+        "f-3",
+        "m-1",
+        "s-5",
+        "s-5",
+        "f-4",
+        "f-4",
+        "f-5",
+        "disp-3",
+        "disp-7",
+        "f-6",
+        "f-7"
+      ],
+      "pillars": [
+        "p-earth-1",
+        "p-earth-2",
+        "p-ice-1",
+        "p-ice-2"
+      ]
+    },
+    {
+      "name": "Tempest Scrolls",
+      "element": "air",
+      "description": "Speed and precision — strike fast, draw more, dominate tempo.",
+      "cards": [
+        "d-air-1",
+        "d-air-1",
+        "d-air-1",
+        "d-air-2",
+        "d-air-2",
+        "d-air-3",
+        "d-air-3",
+        "d-air-4",
+        "d-air-4",
+        "d-air-5",
+        "d-air-5",
+        "d-air-5",
+        "d-air-6",
+        "d-air-6",
+        "d-air-7",
+        "d-air-7",
+        "d-flame-6",
+        "d-flame-1",
+        "m-1",
+        "m-1",
+        "m-3",
+        "m-3",
+        "s-1",
+        "s-1",
+        "s-2",
+        "s-4",
+        "f-1",
+        "f-1",
+        "f-5",
+        "f-3",
+        "m-4",
+        "s-5",
+        "s-5",
+        "f-4",
+        "f-4",
+        "f-5",
+        "disp-3",
+        "disp-6",
+        "f-6",
+        "f-7"
+      ],
+      "pillars": [
+        "p-air-1",
+        "p-air-2",
+        "p-flame-1",
+        "p-flame-2"
+      ]
+    },
+    {
+      "name": "Radiant Codex",
+      "element": "light",
+      "description": "Divine protection — heal, dispel, and outlast with celestial might.",
+      "cards": [
+        "d-light-1",
+        "d-light-1",
+        "d-light-1",
+        "d-light-2",
+        "d-light-2",
+        "d-light-3",
+        "d-light-3",
+        "d-light-3",
+        "d-light-4",
+        "d-light-4",
+        "d-light-5",
+        "d-light-5",
+        "d-light-6",
+        "d-light-6",
+        "d-light-7",
+        "d-water-7",
+        "d-water-1",
+        "disp-1",
+        "disp-1",
+        "disp-2",
+        "disp-2",
+        "disp-3",
+        "disp-4",
+        "disp-5",
+        "disp-7",
+        "m-2",
+        "m-3",
+        "m-4",
+        "m-5",
+        "s-3",
+        "s-3",
+        "s-5",
+        "f-3",
+        "f-3",
+        "f-5",
+        "s-1",
+        "f-1",
+        "f-1",
+        "f-6",
+        "f-7"
+      ],
+      "pillars": [
+        "p-light-1",
+        "p-light-2",
+        "p-water-1",
+        "p-water-2"
+      ]
+    },
+    {
+      "name": "Shadow Grimoire",
+      "element": "dark",
+      "description": "Sinister power — drain, destroy, and dominate through darkness.",
+      "cards": [
+        "d-dark-1",
+        "d-dark-1",
+        "d-dark-1",
+        "d-dark-2",
+        "d-dark-2",
+        "d-dark-3",
+        "d-dark-3",
+        "d-dark-3",
+        "d-dark-4",
+        "d-dark-4",
+        "d-dark-5",
+        "d-dark-5",
+        "d-dark-6",
+        "d-dark-6",
+        "d-dark-7",
+        "d-dark-7",
+        "d-flame-3",
+        "d-flame-7",
+        "m-1",
+        "m-1",
+        "m-1",
+        "m-3",
+        "m-4",
+        "s-1",
+        "s-1",
+        "s-2",
+        "s-4",
+        "f-2",
+        "f-2",
+        "f-4",
+        "m-5",
+        "s-5",
+        "s-5",
+        "f-1",
+        "f-1",
+        "f-5",
+        "disp-4",
+        "disp-7",
+        "f-6",
+        "f-7"
+      ],
+      "pillars": [
+        "p-dark-1",
+        "p-dark-2",
+        "p-flame-1",
+        "p-flame-2"
+      ]
+    },
+    {
+      "name": "Verdant Chronicle",
+      "element": "nature",
+      "description": "Growth and resilience — heal, regenerate, and outlast everything.",
+      "cards": [
+        "d-nature-1",
+        "d-nature-1",
+        "d-nature-1",
+        "d-nature-2",
+        "d-nature-2",
+        "d-nature-3",
+        "d-nature-3",
+        "d-nature-3",
+        "d-nature-4",
+        "d-nature-4",
+        "d-nature-4",
+        "d-nature-5",
+        "d-nature-5",
+        "d-nature-6",
+        "d-nature-6",
+        "d-nature-7",
+        "d-nature-7",
+        "d-water-3",
+        "d-earth-2",
+        "d-earth-4",
+        "m-2",
+        "m-2",
+        "m-4",
+        "m-5",
+        "s-3",
+        "s-3",
+        "s-4",
+        "s-5",
+        "f-3",
+        "f-3",
+        "f-7",
+        "m-1",
+        "s-1",
+        "s-5",
+        "f-1",
+        "f-6",
+        "disp-1",
+        "disp-7",
+        "f-6",
+        "f-7"
+      ],
+      "pillars": [
+        "p-nature-1",
+        "p-nature-2",
+        "p-water-1",
+        "p-water-2"
+      ]
+    },
+    {
+      "name": "Primal Elements",
+      "element": "flame",
+      "creatureType": "elemental",
+      "description": "Raw elemental power — versatile daemons from every element.",
+      "cards": [
+        "d-flame-1",
+        "d-flame-1",
+        "d-flame-4",
+        "d-flame-4",
+        "d-ice-1",
+        "d-ice-1",
+        "d-ice-5",
+        "d-water-1",
+        "d-water-1",
+        "d-water-4",
+        "d-earth-1",
+        "d-earth-1",
+        "d-earth-4",
+        "d-air-1",
+        "d-air-1",
+        "d-air-4",
+        "d-light-1",
+        "d-light-4",
+        "d-dark-1",
+        "d-nature-1",
+        "d-nature-4",
+        "m-1",
+        "m-1",
+        "m-2",
+        "m-3",
+        "m-4",
+        "m-5",
+        "s-1",
+        "s-1",
+        "s-3",
+        "s-4",
+        "s-5",
+        "f-1",
+        "f-1",
+        "f-3",
+        "f-4",
+        "f-5",
+        "disp-1",
+        "disp-3",
+        "disp-6",
+        "f-6",
+        "f-7"
+      ],
+      "pillars": [
+        "p-elemental-1",
+        "p-elemental-2",
+        "p-flame-1",
+        "p-air-1"
+      ]
+    },
+    {
+      "name": "Cogwork Legion",
+      "element": "earth",
+      "creatureType": "machine",
+      "description": "Mechanical precision — durable machines with devastating combos.",
+      "cards": [
+        "d-flame-2",
+        "d-flame-2",
+        "d-flame-7",
+        "d-ice-2",
+        "d-ice-2",
+        "d-ice-6",
+        "d-water-2",
+        "d-water-2",
+        "d-water-6",
+        "d-earth-3",
+        "d-earth-7",
+        "d-air-3",
+        "d-air-6",
+        "d-light-2",
+        "d-light-2",
+        "d-light-6",
+        "d-dark-6",
+        "d-dark-6",
+        "d-nature-7",
+        "m-1",
+        "m-1",
+        "m-2",
+        "m-2",
+        "m-3",
+        "m-5",
+        "s-1",
+        "s-1",
+        "s-2",
+        "s-3",
+        "s-4",
+        "f-1",
+        "f-1",
+        "f-3",
+        "f-4",
+        "f-5",
+        "disp-3",
+        "disp-4",
+        "disp-6",
+        "f-6",
+        "f-7"
+      ],
+      "pillars": [
+        "p-machine-1",
+        "p-machine-2",
+        "p-earth-1",
+        "p-flame-1"
+      ]
+    },
+    {
+      "name": "Architect's Workshop",
+      "element": "light",
+      "creatureType": "artificial",
+      "description": "Masterfully crafted constructs with unmatched resilience.",
+      "cards": [
+        "d-flame-5",
+        "d-flame-5",
+        "d-ice-2",
+        "d-ice-6",
+        "d-water-2",
+        "d-water-6",
+        "d-earth-3",
+        "d-earth-3",
+        "d-earth-5",
+        "d-earth-5",
+        "d-air-3",
+        "d-air-6",
+        "d-light-2",
+        "d-light-2",
+        "d-light-6",
+        "d-light-6",
+        "d-dark-3",
+        "d-dark-3",
+        "d-nature-3",
+        "d-nature-3",
+        "m-2",
+        "m-2",
+        "m-3",
+        "m-4",
+        "m-5",
+        "s-1",
+        "s-1",
+        "s-3",
+        "s-4",
+        "s-5",
+        "f-3",
+        "f-3",
+        "f-5",
+        "disp-1",
+        "disp-2",
+        "disp-4",
+        "disp-5",
+        "f-1",
+        "f-6",
+        "f-7"
+      ],
+      "pillars": [
+        "p-artificial-1",
+        "p-artificial-2",
+        "p-light-1",
+        "p-earth-1"
+      ]
+    },
+    {
+      "name": "Ethereal Conclave",
+      "element": "air",
+      "creatureType": "spirit",
+      "description": "Spectral forces that phase through defenses and haunt the enemy.",
+      "cards": [
+        "d-flame-3",
+        "d-ice-3",
+        "d-ice-3",
+        "d-ice-7",
+        "d-water-3",
+        "d-water-3",
+        "d-water-5",
+        "d-air-2",
+        "d-air-2",
+        "d-air-5",
+        "d-air-7",
+        "d-light-4",
+        "d-light-4",
+        "d-light-7",
+        "d-dark-4",
+        "d-dark-4",
+        "d-dark-5",
+        "d-nature-2",
+        "d-nature-5",
+        "d-flame-6",
+        "d-flame-6",
+        "m-1",
+        "m-3",
+        "m-3",
+        "m-4",
+        "m-5",
+        "s-1",
+        "s-1",
+        "s-2",
+        "s-4",
+        "s-5",
+        "f-1",
+        "f-3",
+        "f-4",
+        "f-5",
+        "disp-3",
+        "disp-6",
+        "disp-7",
+        "f-1",
+        "f-6",
+        "f-7"
+      ],
+      "pillars": [
+        "p-spirit-1",
+        "p-spirit-2",
+        "p-air-1",
+        "p-dark-1"
+      ]
+    },
+    {
+      "name": "Grave Pact",
+      "element": "dark",
+      "creatureType": "undead",
+      "description": "Death fuels power — destroy and resurrect in an endless cycle.",
+      "cards": [
+        "d-flame-3",
+        "d-flame-3",
+        "d-ice-4",
+        "d-ice-4",
+        "d-water-3",
+        "d-water-3",
+        "d-dark-1",
+        "d-dark-1",
+        "d-dark-2",
+        "d-dark-4",
+        "d-dark-5",
+        "d-dark-7",
+        "d-nature-6",
+        "d-nature-6",
+        "d-fenrir",
+        "d-light-7",
+        "m-1",
+        "m-1",
+        "m-3",
+        "m-4",
+        "m-5",
+        "s-1",
+        "s-1",
+        "s-2",
+        "s-4",
+        "s-5",
+        "f-2",
+        "f-2",
+        "f-4",
+        "disp-4",
+        "disp-7",
+        "f-1",
+        "f-1",
+        "f-5",
+        "f-6",
+        "f-7",
+        "s-3",
+        "s-3",
+        "disp-6"
+      ],
+      "pillars": [
+        "p-undead-1",
+        "p-undead-2",
+        "p-dark-1",
+        "p-dark-2"
+      ]
+    },
+    {
+      "name": "Apprentice's Flame Kit",
+      "element": "flame",
+      "isStarter": true,
+      "description": "A beginner-friendly deck with basic Flame daemons. Given by Professor Eluris.",
+      "cards": [
+        "d-flame-1",
+        "d-flame-1",
+        "d-flame-1",
+        "d-flame-1",
+        "d-flame-4",
+        "d-flame-4",
+        "d-flame-4",
+        "d-flame-6",
+        "d-flame-6",
+        "d-flame-6",
+        "d-air-4",
+        "d-air-4",
+        "d-earth-4",
+        "d-earth-4",
+        "m-1",
+        "m-1",
+        "m-1",
+        "m-1",
+        "m-2",
+        "m-2",
+        "s-1",
+        "s-1",
+        "s-1",
+        "f-1",
+        "f-1",
+        "f-1",
+        "f-1",
+        "f-3",
+        "f-3",
+        "disp-1",
+        "disp-1",
+        "disp-3",
+        "disp-3",
+        "f-5"
+      ],
+      "pillars": [
+        "p-elemental-1",
+        "p-elemental-2",
+        "p-flame-1",
+        "p-flame-2"
+      ]
+    },
+    {
+      "name": "Apprentice's Water Kit",
+      "element": "water",
+      "isStarter": true,
+      "description": "A beginner-friendly deck with basic Water daemons. Given by Professor Eluris.",
+      "cards": [
+        "d-water-1",
+        "d-water-1",
+        "d-water-1",
+        "d-water-1",
+        "d-water-4",
+        "d-water-4",
+        "d-water-4",
+        "d-water-6",
+        "d-water-6",
+        "d-water-6",
+        "d-ice-1",
+        "d-ice-1",
+        "d-earth-1",
+        "d-earth-1",
+        "m-2",
+        "m-2",
+        "m-2",
+        "m-2",
+        "m-4",
+        "m-4",
+        "s-3",
+        "s-3",
+        "s-3",
+        "f-3",
+        "f-3",
+        "f-3",
+        "f-3",
+        "f-1",
+        "f-1",
+        "disp-1",
+        "disp-1",
+        "disp-6",
+        "disp-6",
+        "f-5"
+      ],
+      "pillars": [
+        "p-elemental-1",
+        "p-elemental-2",
+        "p-water-1",
+        "p-water-2"
+      ]
+    },
+    {
+      "name": "Apprentice's Earth Kit",
+      "element": "earth",
+      "isStarter": true,
+      "description": "A beginner-friendly deck with sturdy Earth daemons. Given by Professor Eluris.",
+      "cards": [
+        "d-earth-1",
+        "d-earth-1",
+        "d-earth-1",
+        "d-earth-1",
+        "d-earth-4",
+        "d-earth-4",
+        "d-earth-4",
+        "d-earth-6",
+        "d-earth-6",
+        "d-earth-6",
+        "d-nature-1",
+        "d-nature-1",
+        "d-water-1",
+        "d-water-1",
+        "m-2",
+        "m-2",
+        "m-2",
+        "m-2",
+        "m-5",
+        "m-5",
+        "s-1",
+        "s-1",
+        "s-1",
+        "f-3",
+        "f-3",
+        "f-3",
+        "f-3",
+        "f-1",
+        "f-1",
+        "disp-1",
+        "disp-1",
+        "disp-3",
+        "disp-3",
+        "f-5"
+      ],
+      "pillars": [
+        "p-elemental-1",
+        "p-elemental-2",
+        "p-earth-1",
+        "p-earth-2"
+      ]
+    }
+  ]
+}

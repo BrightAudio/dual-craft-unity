@@ -1,0 +1,4 @@
+﻿<Solution>
+  <Project Path="DualCraft.csproj" />
+  <Project Path="DualCraft.Editor.csproj" />
+</Solution>

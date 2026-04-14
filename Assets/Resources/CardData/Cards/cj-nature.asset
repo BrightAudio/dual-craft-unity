@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4c57cfd8193647ac8dfa103633a3f6c, type: 3}
+  m_Name: cj-nature
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.ConjurorCardData
+  cardId: cj-nature
+  cardName: Gaia, the World Soul
+  category: 6
+  rarity: 3
+  artwork: {fileID: 0}
+  fullArt: {fileID: 0}
+  description: The forest itself made manifest. Life and growth in overwhelming abundance.
+  flavorText: '"Where I walk, the world blooms."'
+  willCost: -1
+  element: 7
+  loyalty: 5
+  abilities:
+  - abilityName: Regrowth
+    description: Heal all your Daemons for 3 Ashe.
+    loyaltyCost: 1
+    effectKey: cj-nature-regen
+  - abilityName: Entangle
+    description: Entangle 2 random enemy Daemons.
+    loyaltyCost: -2
+    effectKey: cj-nature-entangle
+  - abilityName: Genesis Wave
+    description: Summon 3 random Daemons from your deck to the field.
+    loyaltyCost: -6
+    effectKey: cj-nature-ult

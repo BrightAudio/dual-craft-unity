@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c07dac3f4bcbd46a9a1578e4495dad75, type: 3}
+  m_Name: f-2
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DomainCardData
+  cardId: f-2
+  cardName: Ashe Storm
+  category: 2
+  rarity: 1
+  artwork: {fileID: 21300000, guid: 94dde8de9a213438c9b4b51fef15be81, type: 3}
+  fullArt: {fileID: 0}
+  description: All Daemons lose 2 Ashe at the end of each turn.
+  flavorText: 
+  willCost: -1
+  effectType: 1
+  effectValue: 2
+  effectElement: 0

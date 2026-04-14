@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 892ee727262864a4db215ac521adcc39, type: 3}
+  m_Name: d-water-4
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DaemonCardData
+  cardId: d-water-4
+  cardName: Riptide Eel
+  category: 0
+  rarity: 0
+  artwork: {fileID: 21300000, guid: 2c06774adaea6483b910e3400ebab62d, type: 3}
+  fullArt: {fileID: 0}
+  description: A crackling eel that rides the currents and strikes like lightning.
+  flavorText: '"The sea has teeth, and they are electric."'
+  willCost: -1
+  element: 2
+  creatureType: 0
+  ashe: 6
+  attack: 4
+  asheCost: 1
+  evolvesTo: {fileID: 0}
+  evolutionCost: 0
+  ability:
+    abilityName: 
+    description: 
+    type: 0
+    effectKey: 

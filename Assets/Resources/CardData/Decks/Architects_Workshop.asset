@@ -1,0 +1,89 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9435ae5401165433481b0151d92cde6c, type: 3}
+  m_Name: Architects_Workshop
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DeckData
+  deckName: Architect's Workshop
+  element: 5
+  primaryCreatureType: 0
+  description: Masterfully crafted constructs with unmatched resilience.
+  isStarter: 0
+  cards:
+  - card: {fileID: 11400000, guid: d9c8ba16a02844146bdfd87850a5dbed, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: df00c075d7a9d431db949c3c83740cb1, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: ff398e3e1c6b64402a79e25903653cae, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 8c841a3439d5d43af9e8703735dadf14, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 1bcd73df14b984708b625296709bb405, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: dc29cfb059be14d1ea87ea8fd21516cb, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: df078c6873bf84f709b7bf8102472f90, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 9b0e3b1b5724c41ca853bcf5880ec309, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: a45c18222952242f0988b42b961caf46, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 681bfad5c15aa473bbc61e1a4906bfaf, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 6ba36ce7646d64f3a98128c02c52613f, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 70a53b240055b4c7aa26e11e529c3582, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: e158cf9eaa41c4a60992c460955447bc, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: ce4b40c448903433c858f74d69febae3, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: a8636f30ddfa64d8aa242a2906738320, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 0b01d876b9fed4fb484c87c3867d8482, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 4ae90b1e0398843ec822687bc675c2b7, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 89b1418ffef0a47129d8f8502e376f41, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: d589bfa940d1c484db82ed35fb682368, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: eb0ebf9c0fae6479e95b0a0902cd8346, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 8c61ddcf526034aa296051071297017b, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 15582ec820f8a40eb991c46b0bd05153, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 8e11549695fca4751a57b3abfbf806d6, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 32f74dada9beb4caea92497e79bec6bc, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 950a18bf3418f4933b8660ef2ded2f4d, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 30430b13d1bfe43239af4a5adb2a48cc, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 6e830577abd2d4b4c8f58ceeec21cb90, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 9a165fcbe25f7446784bc4063ca28a09, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 02fbe9758ad2248078a778a433bbac3c, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: ba048d95d348247318b8f8e0db5af83b, type: 2}
+    count: 1
+  pillars:
+  - card: {fileID: 11400000, guid: a636953df406f4bb6a1879e41aa11b5e, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 912041a6e7c304b1298ca1376c958782, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: df55e2e5ee1d64dba8b05b4a4ae66f4e, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 1d6593a9c56f04bab91a542d52db70bc, type: 2}
+    count: 1

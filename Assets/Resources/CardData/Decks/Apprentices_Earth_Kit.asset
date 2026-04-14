@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9435ae5401165433481b0151d92cde6c, type: 3}
+  m_Name: Apprentices_Earth_Kit
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DeckData
+  deckName: Apprentice's Earth Kit
+  element: 3
+  primaryCreatureType: 0
+  description: A beginner-friendly deck with sturdy Earth daemons. Given by Professor
+    Eluris.
+  isStarter: 1
+  cards:
+  - card: {fileID: 11400000, guid: 293d3adeb4b51424799f95223fe56849, type: 2}
+    count: 4
+  - card: {fileID: 11400000, guid: c81b4850aaa884578b0aafe2e6030d60, type: 2}
+    count: 3
+  - card: {fileID: 11400000, guid: ded626896c8ea41d7bc5ed394d2e6f51, type: 2}
+    count: 3
+  - card: {fileID: 11400000, guid: 0a840410c3381413f8446b50cf583f88, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 90c574e8d3bb5496bbff0556f0ba10e1, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: ce4b40c448903433c858f74d69febae3, type: 2}
+    count: 4
+  - card: {fileID: 11400000, guid: 4ae90b1e0398843ec822687bc675c2b7, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 89b1418ffef0a47129d8f8502e376f41, type: 2}
+    count: 3
+  - card: {fileID: 11400000, guid: 15582ec820f8a40eb991c46b0bd05153, type: 2}
+    count: 4
+  - card: {fileID: 11400000, guid: 9a165fcbe25f7446784bc4063ca28a09, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 32f74dada9beb4caea92497e79bec6bc, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 877b16148a39043f6921234565577c3c, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 8e11549695fca4751a57b3abfbf806d6, type: 2}
+    count: 1
+  pillars:
+  - card: {fileID: 11400000, guid: 18e6d6068d9804d409b7ecb5ba166bae, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: a2c98a353b35b45de991256a0dd74f2b, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 1d6593a9c56f04bab91a542d52db70bc, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 79323cdc7dd3049c69f7f58295179cd7, type: 2}
+    count: 1

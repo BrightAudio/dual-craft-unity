@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4c57cfd8193647ac8dfa103633a3f6c, type: 3}
+  m_Name: cj-water
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.ConjurorCardData
+  cardId: cj-water
+  cardName: Tidecrest, Lord of Currents
+  category: 6
+  rarity: 3
+  artwork: {fileID: 0}
+  fullArt: {fileID: 0}
+  description: A conjuror who commands the tides to heal and sustain.
+  flavorText: '"The ocean provides. The ocean endures."'
+  willCost: -1
+  element: 2
+  loyalty: 4
+  abilities:
+  - abilityName: Healing Tide
+    description: Heal all your Daemons for 2 Ashe.
+    loyaltyCost: 1
+    effectKey: cj-water-heal
+  - abilityName: Riptide
+    description: Return 1 card from Ashe Pile to hand.
+    loyaltyCost: -2
+    effectKey: cj-water-reclaim
+  - abilityName: Tsunami
+    description: Destroy the weakest enemy Daemon and draw 3 cards.
+    loyaltyCost: -5
+    effectKey: cj-water-ult

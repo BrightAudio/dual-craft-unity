@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535ba2a83eb164d089997782086a5f6e, type: 3}
+  m_Name: p-light-1
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.PillarCardData
+  cardId: p-light-1
+  cardName: Pillar of Divine Radiance
+  category: 1
+  rarity: 1
+  artwork: {fileID: 21300000, guid: 53991c3342d1a489ea04a280d06300d9, type: 3}
+  fullArt: {fileID: 0}
+  description: Heals your Conjuror with divine light. Channel to purify.
+  flavorText: 
+  willCost: -1
+  element: 5
+  creatureType: 0
+  hp: 13
+  loyalty: 4
+  passiveAbility: Heal your Conjuror 1 HP at start of turn.
+  passiveEffect:
+    passiveType: start-turn-heal-conjuror
+    element: 0
+    creatureType: 0
+    value: 1
+  onDestroyedEffect:
+    destroyType: draw-cards
+    value: 2
+    element: 0
+  activatedAbilities:
+  - abilityName: Radiance
+    description: Heal your Conjuror for 2 HP.
+    loyaltyCost: 1
+    effectKey: pil-light1-rad
+  - abilityName: Purify
+    description: Remove all Masks and Seals from the field.
+    loyaltyCost: -4
+    effectKey: pil-light1-purify

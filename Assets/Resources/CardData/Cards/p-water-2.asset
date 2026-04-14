@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535ba2a83eb164d089997782086a5f6e, type: 3}
+  m_Name: p-water-2
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.PillarCardData
+  cardId: p-water-2
+  cardName: Pillar of the Tidal Crown
+  category: 1
+  rarity: 2
+  artwork: {fileID: 21300000, guid: fda96c04b57104f12a3ababdd451c937, type: 3}
+  fullArt: {fileID: 0}
+  description: Heals the Conjuror each turn. Channel to refresh and recycle.
+  flavorText: 
+  willCost: -1
+  element: 2
+  creatureType: 0
+  hp: 11
+  loyalty: 4
+  passiveAbility: Heal your Conjuror 1 HP at start of turn.
+  passiveEffect:
+    passiveType: start-turn-heal-conjuror
+    element: 0
+    creatureType: 0
+    value: 1
+  onDestroyedEffect:
+    destroyType: draw-cards
+    value: 2
+    element: 0
+  activatedAbilities:
+  - abilityName: Blessing
+    description: Heal your Conjuror for 3 HP.
+    loyaltyCost: 1
+    effectKey: pil-water2-bless
+  - abilityName: Tidal Surge
+    description: Draw 3 cards and heal Conjuror for 5 HP.
+    loyaltyCost: -4
+    effectKey: pil-water2-surge

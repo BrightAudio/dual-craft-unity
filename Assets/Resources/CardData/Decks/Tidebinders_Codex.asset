@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9435ae5401165433481b0151d92cde6c, type: 3}
+  m_Name: Tidebinders_Codex
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DeckData
+  deckName: Tidebinder's Codex
+  element: 2
+  primaryCreatureType: 0
+  description: "Heal and regenerate \u2014 wear down the enemy with relentless endurance."
+  isStarter: 0
+  cards:
+  - card: {fileID: 11400000, guid: 90c574e8d3bb5496bbff0556f0ba10e1, type: 2}
+    count: 3
+  - card: {fileID: 11400000, guid: 8c841a3439d5d43af9e8703735dadf14, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 030a5b0dba56d46808f55da2d4bf51d8, type: 2}
+    count: 3
+  - card: {fileID: 11400000, guid: 4413ce86aad57423c9c39689e6be797f, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 9d26f8bd10ada4a23ab7b27ec24e9fc7, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 1bcd73df14b984708b625296709bb405, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 2881e9fc312e24766bbe7917ed8574f9, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 293d3adeb4b51424799f95223fe56849, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: c81b4850aaa884578b0aafe2e6030d60, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: ce4b40c448903433c858f74d69febae3, type: 2}
+    count: 3
+  - card: {fileID: 11400000, guid: a8636f30ddfa64d8aa242a2906738320, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 0b01d876b9fed4fb484c87c3867d8482, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: d589bfa940d1c484db82ed35fb682368, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 8c61ddcf526034aa296051071297017b, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: eb0ebf9c0fae6479e95b0a0902cd8346, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 15582ec820f8a40eb991c46b0bd05153, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 8e11549695fca4751a57b3abfbf806d6, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 4ae90b1e0398843ec822687bc675c2b7, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 89b1418ffef0a47129d8f8502e376f41, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: 9a165fcbe25f7446784bc4063ca28a09, type: 2}
+    count: 2
+  - card: {fileID: 11400000, guid: aceb4a180dedb46df97ea3293a633887, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: bb51bfbf33bed4728abf055ba4f2bdb5, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: c743fb5cbc62e493bb85aa1336169170, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 02fbe9758ad2248078a778a433bbac3c, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: ba048d95d348247318b8f8e0db5af83b, type: 2}
+    count: 1
+  pillars:
+  - card: {fileID: 11400000, guid: 092401e657da94517af3ffb14ae08404, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 1069ffa495c1e476ca6f2c4e7154016b, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 1d6593a9c56f04bab91a542d52db70bc, type: 2}
+    count: 1
+  - card: {fileID: 11400000, guid: 79323cdc7dd3049c69f7f58295179cd7, type: 2}
+    count: 1

@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 892ee727262864a4db215ac521adcc39, type: 3}
+  m_Name: d-dark-2
+  m_EditorClassIdentifier: DualCraft::DualCraft.Cards.DaemonCardData
+  cardId: d-dark-2
+  cardName: Shadow Reaper
+  category: 0
+  rarity: 2
+  artwork: {fileID: 21300000, guid: 26fd3b48f95f1412f8d03840a40675ed, type: 3}
+  fullArt: {fileID: 0}
+  description: An undead harvester that reaps the souls of the fallen.
+  flavorText: '"It counts every soul. Yours is next."'
+  willCost: -1
+  element: 6
+  creatureType: 4
+  ashe: 6
+  attack: 7
+  asheCost: 3
+  evolvesTo: {fileID: 0}
+  evolutionCost: 0
+  ability:
+    abilityName: Soul Reap
+    description: Gains +1 ATK for each Daemon in your Ashe Pile.
+    type: 0
+    effectKey: soul-reap
