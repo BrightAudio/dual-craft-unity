@@ -323,5 +323,54 @@ namespace DualCraft.UI.Visual
             }
             attackLine.positionCount = 0;
         }
+
+        // ════════════════════════════════════════════════
+        //  SUMMON FLASH  (card played → board glow burst)
+        // ════════════════════════════════════════════════
+
+        /// <summary>Flash effect when a card is summoned to the board.</summary>
+        public void ShowSummonFlash(Vector2 pos, Color elementColor)
+        {
+            SpawnText(pos, "SUMMON", elementColor, 1.2f);
+            FlashScreen(DualCraftVisualTheme.WithAlpha(elementColor, 0.3f), 0.2f);
+        }
+
+        // ════════════════════════════════════════════════
+        //  STATUS EFFECT FLOAT  (buff/debuff applied)
+        // ════════════════════════════════════════════════
+
+        /// <summary>Show a floating status effect label.</summary>
+        public void ShowStatusApplied(Vector2 pos, string statusName, Color color)
+        {
+            SpawnText(pos + Vector2.up * 40f, statusName, color, 0.85f);
+        }
+
+        // ════════════════════════════════════════════════
+        //  CARD ACTIVATION GLOW
+        // ════════════════════════════════════════════════
+
+        /// <summary>Glow burst at a card's position when it activates an ability.</summary>
+        public void ShowCardActivation(Vector2 pos, Color glowColor)
+        {
+            FlashScreen(DualCraftVisualTheme.WithAlpha(glowColor, 0.15f), 0.15f);
+            SpawnText(pos, "✦", glowColor, 1.8f);
+        }
+
+        // ════════════════════════════════════════════════
+        //  VICTORY / DEFEAT TEXT BURST
+        // ════════════════════════════════════════════════
+
+        /// <summary>Big centered text for end-of-game result.</summary>
+        public void ShowGameResult(bool victory)
+        {
+            var theme = DualCraftVisualTheme.I;
+            string text = victory ? "VICTORY!" : "DEFEAT";
+            Color color = victory
+                ? (theme != null ? theme.victoryColor : Color.yellow)
+                : (theme != null ? theme.defeatColor : Color.red);
+            SpawnText(Vector2.zero, text, color, 2.5f);
+            if (victory)
+                FlashScreen(DualCraftVisualTheme.WithAlpha(color, 0.25f), 0.4f);
+        }
     }
 }

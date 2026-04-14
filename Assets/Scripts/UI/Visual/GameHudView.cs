@@ -54,6 +54,22 @@ namespace DualCraft.UI.Visual
         [SerializeField] private Image opponentPanel;
         [SerializeField] private Image opponentPanelBorder;
 
+        [Header("End Turn")]
+        [SerializeField] private FancyButton endTurnButton;
+        [SerializeField] private CanvasGroup endTurnGroup;
+
+        [Header("Phase Progress")]
+        [SerializeField] private RectTransform phaseDotsContainer;
+        [SerializeField] private Image[] phaseDots;
+
+        [Header("Turn Timer")]
+        [SerializeField] private Image turnTimerBar;
+        [SerializeField] private Image turnTimerBg;
+        [SerializeField] private TMP_Text turnTimerText;
+
+        [Header("Status Effects")]
+        [SerializeField] private RectTransform statusEffectsParent;
+
         // ── Cached previous values for diff animation ────────
         private int _prevPlayerHp, _prevPlayerWill, _prevPlayerDeck, _prevPlayerHand;
         private int _prevOppHp, _prevOppWill, _prevOppDeck, _prevOppHand;
@@ -291,6 +307,104 @@ namespace DualCraft.UI.Visual
                 yield return null;
             }
             img.color = target;
+        }
+
+        // ════════════════════════════════════════════════
+        //  END TURN BUTTON
+        // ════════════════════════════════════════════════
+
+        /// <summary>Enable/disable the End Turn button with visual feedback.</summary>
+        public void SetEndTurnEnabled(bool enabled)
+        {
+            if (endTurnButton != null) endTurnButton.SetInteractable(enabled);
+            if (endTurnGroup != null)
+            {
+                StopCoroutine(nameof(PulseEndTurn));
+                if (enabled) StartCoroutine(PulseEndTurn());
+            }
+        }
+
+        private IEnumerator PulseEndTurn()
+        {
+            while (true)
+            {
+                float t = (Mathf.Sin(Time.time * 2f) + 1f) * 0.5f;
+                if (endTurnGroup != null)
+                    endTurnGroup.alpha = Mathf.Lerp(0.85f, 1f, t);
+                yield return null;
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        //  PHASE PROGRESS DOTS
+        // ════════════════════════════════════════════════
+
+        /// <summary>Highlight the current phase dot (0=Draw through 4=End).</summary>
+        public void SetPhaseProgress(int activeIndex)
+        {
+            if (phaseDots == null) return;
+            for (int i = 0; i < phaseDots.Length; i++)
+            {
+                if (phaseDots[i] == null) continue;
+                bool active = i == activeIndex;
+                bool past = i < activeIndex;
+                phaseDots[i].color = active
+                    ? (Theme != null ? Theme.gold : Color.yellow)
+                    : past
+                        ? (Theme != null ? Theme.textMuted : Color.grey)
+                        : (Theme != null ? DualCraftVisualTheme.WithAlpha(Theme.textMuted, 0.25f) : new Color(0.4f, 0.4f, 0.4f, 0.25f));
+                phaseDots[i].transform.localScale = active ? Vector3.one * 1.4f : Vector3.one;
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        //  TURN TIMER
+        // ════════════════════════════════════════════════
+
+        /// <summary>Update the turn timer (0-1 normalized, plus seconds).</summary>
+        public void SetTurnTimer(float normalized, int secondsLeft = -1)
+        {
+            if (turnTimerBar != null)
+            {
+                turnTimerBar.fillAmount = normalized;
+                Color full = Theme != null ? Theme.turnTimerFull : Color.green;
+                Color low  = Theme != null ? Theme.turnTimerLow : Color.red;
+                turnTimerBar.color = Color.Lerp(low, full, normalized);
+            }
+            if (turnTimerText != null && secondsLeft >= 0)
+                turnTimerText.text = $"{secondsLeft}s";
+        }
+
+        // ════════════════════════════════════════════════
+        //  STATUS EFFECT ICONS
+        // ════════════════════════════════════════════════
+
+        /// <summary>Add a status effect icon to the HUD strip.</summary>
+        public void AddStatusIcon(Sprite icon, Color tint, float duration = 0f)
+        {
+            if (statusEffectsParent == null) return;
+            var go = new GameObject("StatusIcon", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(statusEffectsParent, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(28f, 28f);
+            var img = go.GetComponent<Image>();
+            img.sprite = icon;
+            img.color = tint;
+            StartCoroutine(UIAnimUtils.PopScale(go.transform, 0.2f));
+            if (duration > 0f) StartCoroutine(RemoveStatusAfter(go, duration));
+        }
+
+        /// <summary>Clear all status effect icons.</summary>
+        public void ClearStatusIcons()
+        {
+            if (statusEffectsParent == null) return;
+            foreach (Transform child in statusEffectsParent) Destroy(child.gameObject);
+        }
+
+        private IEnumerator RemoveStatusAfter(GameObject go, float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (go != null) Destroy(go);
         }
     }
 }

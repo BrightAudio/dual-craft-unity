@@ -72,6 +72,23 @@ namespace DualCraft.UI.Visual
         [SerializeField] private RectTransform newsTickerRect;
         [SerializeField] private Image dailyRewardIndicator;
 
+        [Header("Card Showcase")]
+        [SerializeField] private RectTransform cardCarouselParent;
+        [SerializeField] private float carouselSpeed         = 0.03f;
+        [SerializeField] private float carouselCardSpacing   = 120f;
+
+        [Header("Rank / Season")]
+        [SerializeField] private Image rankBadge;
+        [SerializeField] private TMP_Text rankText;
+        [SerializeField] private Image seasonBanner;
+        [SerializeField] private TMP_Text seasonText;
+        [SerializeField] private TMP_Text seasonTimerText;
+
+        [Header("Energy / Stamina")]
+        [SerializeField] private Image energyBar;
+        [SerializeField] private TMP_Text energyText;
+        [SerializeField] private Image energyIcon;
+
         [Header("Animation Settings")]
         [SerializeField] private float parallaxSpeed1   = 3f;
         [SerializeField] private float parallaxSpeed2   = 1.5f;
@@ -346,6 +363,102 @@ namespace DualCraft.UI.Visual
         {
             if (dailyRewardIndicator != null)
                 dailyRewardIndicator.gameObject.SetActive(available);
+        }
+
+        // ════════════════════════════════════════════════
+        //  CARD SHOWCASE CAROUSEL
+        // ════════════════════════════════════════════════
+
+        /// <summary>Start a slow-scrolling card carousel in the background.</summary>
+        public void StartCardCarousel(List<Sprite> cardSprites)
+        {
+            if (cardCarouselParent == null || cardSprites == null || cardSprites.Count == 0) return;
+            foreach (Transform child in cardCarouselParent) Destroy(child.gameObject);
+            for (int i = 0; i < cardSprites.Count; i++)
+            {
+                var go = new GameObject($"CarouselCard_{i}", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+                go.transform.SetParent(cardCarouselParent, false);
+                var rt = go.GetComponent<RectTransform>();
+                rt.sizeDelta = new Vector2(90f, 126f);
+                rt.anchoredPosition = new Vector2(i * carouselCardSpacing, 0f);
+                var img = go.GetComponent<Image>();
+                img.sprite = cardSprites[i];
+                img.preserveAspect = true;
+                img.raycastTarget = false;
+                go.GetComponent<CanvasGroup>().alpha = 0.5f;
+            }
+            StartCoroutine(AnimateCarousel());
+        }
+
+        private IEnumerator AnimateCarousel()
+        {
+            if (cardCarouselParent == null) yield break;
+            while (true)
+            {
+                float totalWidth = cardCarouselParent.childCount * carouselCardSpacing;
+                for (int i = 0; i < cardCarouselParent.childCount; i++)
+                {
+                    var rt = cardCarouselParent.GetChild(i) as RectTransform;
+                    if (rt == null) continue;
+                    rt.anchoredPosition += Vector2.left * carouselSpeed * 60f * Time.deltaTime;
+                    if (rt.anchoredPosition.x < -carouselCardSpacing)
+                        rt.anchoredPosition = new Vector2(rt.anchoredPosition.x + totalWidth, rt.anchoredPosition.y);
+                    var cg = rt.GetComponent<CanvasGroup>();
+                    if (cg != null)
+                    {
+                        float center = cardCarouselParent.rect.width * 0.5f;
+                        float dist = Mathf.Abs(rt.anchoredPosition.x - center);
+                        cg.alpha = Mathf.Lerp(0.7f, 0.15f, dist / (totalWidth * 0.4f));
+                    }
+                }
+                yield return null;
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        //  RANK / TIER
+        // ════════════════════════════════════════════════
+
+        /// <summary>Set the player's competitive rank display.</summary>
+        public void SetRank(string rankName, Sprite badge = null, Color? tint = null)
+        {
+            if (rankText != null) rankText.text = rankName;
+            if (rankBadge != null)
+            {
+                if (badge != null) rankBadge.sprite = badge;
+                rankBadge.color = tint ?? (Theme != null ? Theme.gold : Color.yellow);
+                StartCoroutine(UIAnimUtils.PulseScale(rankBadge.transform, 0.97f, 1.03f, 1f));
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        //  SEASON BANNER
+        // ════════════════════════════════════════════════
+
+        /// <summary>Set the current season display.</summary>
+        public void SetSeason(string name, string timeRemaining, Sprite banner = null)
+        {
+            if (seasonText != null) seasonText.text = name;
+            if (seasonTimerText != null) seasonTimerText.text = timeRemaining;
+            if (seasonBanner != null && banner != null) seasonBanner.sprite = banner;
+        }
+
+        // ════════════════════════════════════════════════
+        //  ENERGY / STAMINA
+        // ════════════════════════════════════════════════
+
+        /// <summary>Update the energy/stamina bar display.</summary>
+        public void SetEnergy(int current, int max)
+        {
+            if (energyText != null) energyText.text = $"{current}/{max}";
+            if (energyBar != null)
+            {
+                float fill = max > 0 ? (float)current / max : 0f;
+                StartCoroutine(UIAnimUtils.ProgressFill(energyBar, fill, 0.4f));
+                energyBar.color = fill > 0.3f
+                    ? (Theme != null ? Theme.manaBlue : Color.cyan)
+                    : (Theme != null ? Theme.danger : Color.red);
+            }
         }
     }
 }

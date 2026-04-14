@@ -42,6 +42,9 @@ namespace DualCraft.UI.Visual
         [SerializeField] private bool enableIdleBreath = true;
         [SerializeField] private float breathSpeed    = 1.2f;
 
+        [Header("Variant")]
+        [SerializeField] private ButtonVariant variant = ButtonVariant.Secondary;
+
         // ── Internals ────────────────────────────────────────
         private Button _button;
         private Coroutine _hoverCo;
@@ -68,6 +71,7 @@ namespace DualCraft.UI.Visual
                 c.a = 0f;
                 innerGlow.color = c;
             }
+            ApplyVariant();
         }
 
         private void OnEnable()
@@ -263,6 +267,30 @@ namespace DualCraft.UI.Visual
                 innerGlow.color = c;
                 yield return null;
             }
+        }
+
+        // ════════════════════════════════════════════════
+        //  VARIANT AUTO-STYLING
+        // ════════════════════════════════════════════════
+
+        /// <summary>Apply color scheme from Theme based on variant.</summary>
+        public void ApplyVariant()
+        {
+            var theme = DualCraftVisualTheme.I;
+            if (theme == null) return;
+            normalColor = theme.GetButtonBg(variant);
+            hoverColor  = DualCraftVisualTheme.Lighten(normalColor, 0.08f);
+            pressColor  = DualCraftVisualTheme.Darken(normalColor, 0.15f);
+            glowColor   = variant == ButtonVariant.Primary ? theme.gold : theme.glowDefault;
+            if (background != null) background.color = normalColor;
+            if (label != null) label.color = theme.GetButtonText(variant);
+        }
+
+        /// <summary>Change button variant at runtime.</summary>
+        public void SetVariant(ButtonVariant v)
+        {
+            variant = v;
+            ApplyVariant();
         }
     }
 }

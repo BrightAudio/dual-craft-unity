@@ -562,5 +562,172 @@ namespace DualCraft.UI.Visual
                 yield return null;
             }
         }
+
+        // ════════════════════════════════════════════════
+        //  SPRING SCALE  (critically damped spring physics)
+        // ════════════════════════════════════════════════
+        public static IEnumerator SpringScale(Transform tr, Vector3 target, float stiffness = 300f, float damping = 20f)
+        {
+            Vector3 current = tr.localScale;
+            Vector3 velocity = Vector3.zero;
+            float threshold = 0.001f;
+            while (true)
+            {
+                Vector3 delta = target - current;
+                if (delta.sqrMagnitude < threshold && velocity.sqrMagnitude < threshold) break;
+                velocity += (delta * stiffness - velocity * damping) * Time.unscaledDeltaTime;
+                current += velocity * Time.unscaledDeltaTime;
+                tr.localScale = current;
+                yield return null;
+            }
+            tr.localScale = target;
+        }
+
+        // ════════════════════════════════════════════════
+        //  PANEL REVEAL  (scale up from 85% + fade in)
+        // ════════════════════════════════════════════════
+        public static IEnumerator PanelReveal(CanvasGroup cg, float duration = 0.35f)
+        {
+            Transform tr = cg.transform;
+            Vector3 target = tr.localScale;
+            tr.localScale = target * 0.85f;
+            cg.alpha = 0f;
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.unscaledDeltaTime;
+                float p = EaseOutQuad(Mathf.Clamp01(t / duration));
+                tr.localScale = Vector3.Lerp(target * 0.85f, target, p);
+                cg.alpha = p;
+                yield return null;
+            }
+            tr.localScale = target;
+            cg.alpha = 1f;
+            cg.blocksRaycasts = true;
+        }
+
+        // ════════════════════════════════════════════════
+        //  ARC MOVE  (parabolic path for card dealing)
+        // ════════════════════════════════════════════════
+        public static IEnumerator ArcMoveTo(RectTransform rt, Vector2 target, float arcHeight = 80f, float duration = 0.4f)
+        {
+            Vector2 start = rt.anchoredPosition;
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.unscaledDeltaTime;
+                float p = EaseInOutCubic(Mathf.Clamp01(t / duration));
+                Vector2 pos = Vector2.Lerp(start, target, p);
+                pos.y += Mathf.Sin(p * Mathf.PI) * arcHeight;
+                rt.anchoredPosition = pos;
+                yield return null;
+            }
+            rt.anchoredPosition = target;
+        }
+
+        // ════════════════════════════════════════════════
+        //  CROSSFADE IMAGES  (smooth blend between two Images)
+        // ════════════════════════════════════════════════
+        public static IEnumerator CrossfadeImages(Image from, Image to, float duration = 0.5f)
+        {
+            Color fromCol = from != null ? from.color : Color.white;
+            Color toCol = to != null ? to.color : Color.white;
+            if (to != null) { Color c = toCol; c.a = 0f; to.color = c; to.gameObject.SetActive(true); }
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.unscaledDeltaTime;
+                float p = Mathf.Clamp01(t / duration);
+                if (from != null) { Color c = fromCol; c.a = 1f - p; from.color = c; }
+                if (to != null) { Color c = toCol; c.a = p; to.color = c; }
+                yield return null;
+            }
+            if (from != null) from.gameObject.SetActive(false);
+            if (to != null) to.color = toCol;
+        }
+
+        // ════════════════════════════════════════════════
+        //  PULSE SCALE  (looping idle breath for icons/badges)
+        // ════════════════════════════════════════════════
+        public static IEnumerator PulseScale(Transform tr, float minScale = 0.95f, float maxScale = 1.05f, float speed = 1.5f)
+        {
+            Vector3 baseScale = tr.localScale;
+            while (true)
+            {
+                float t = (Mathf.Sin(Time.time * speed) + 1f) * 0.5f;
+                tr.localScale = baseScale * Mathf.Lerp(minScale, maxScale, t);
+                yield return null;
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        //  PROGRESS FILL  (animated bar fill with easing)
+        // ════════════════════════════════════════════════
+        public static IEnumerator ProgressFill(Image bar, float target, float duration = 0.5f)
+        {
+            float start = bar.fillAmount;
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.unscaledDeltaTime;
+                bar.fillAmount = Mathf.Lerp(start, target, EaseOutQuad(Mathf.Clamp01(t / duration)));
+                yield return null;
+            }
+            bar.fillAmount = target;
+        }
+
+        // ════════════════════════════════════════════════
+        //  RIPPLE EFFECT  (expanding circle at click point)
+        // ════════════════════════════════════════════════
+        public static IEnumerator RippleEffect(RectTransform parent, Vector2 localPos, Color color, float maxRadius = 120f, float duration = 0.4f)
+        {
+            var go = new GameObject("Ripple", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchoredPosition = localPos;
+            rt.sizeDelta = Vector2.zero;
+            var img = go.GetComponent<Image>();
+            img.color = color;
+            img.raycastTarget = false;
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.unscaledDeltaTime;
+                float p = Mathf.Clamp01(t / duration);
+                float size = EaseOutQuad(p) * maxRadius * 2f;
+                rt.sizeDelta = new Vector2(size, size);
+                Color c = color; c.a = color.a * (1f - p);
+                img.color = c;
+                yield return null;
+            }
+            UnityEngine.Object.Destroy(go);
+        }
+
+        // ════════════════════════════════════════════════
+        //  GLOW INTENSITY PULSE  (HDR-style brightness cycle)
+        // ════════════════════════════════════════════════
+        public static IEnumerator GlowIntensityPulse(Image img, float minI = 0.8f, float maxI = 1.5f, float speed = 1f)
+        {
+            Color baseColor = img.color;
+            while (true)
+            {
+                float t = (Mathf.Sin(Time.time * speed) + 1f) * 0.5f;
+                float i = Mathf.Lerp(minI, maxI, t);
+                img.color = new Color(baseColor.r * i, baseColor.g * i, baseColor.b * i, baseColor.a);
+                yield return null;
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        //  BANNER SLIDE  (slide down, hold, slide up)
+        // ════════════════════════════════════════════════
+        public static IEnumerator BannerSlide(CanvasGroup cg, RectTransform rt, float holdTime = 1.2f)
+        {
+            cg.alpha = 0f;
+            yield return SlideIn(rt, new Vector2(0f, 80f), 0.25f);
+            yield return FadeIn(cg, 0.15f);
+            yield return new WaitForSeconds(holdTime);
+            yield return FadeOut(cg, 0.25f);
+        }
     }
 }

@@ -273,6 +273,98 @@ namespace DualCraft.UI.Visual
             1 => panelElevated,
             _ => panelOverlay,
         };
+
+        // ══════════════════════════════════════════════════════════
+        //  BUTTON VARIANTS
+        // ══════════════════════════════════════════════════════════
+        [Header("Button Variants")]
+        public Color btnPrimaryBg      = new Color(0.78f, 0.66f, 0.42f, 0.90f);
+        public Color btnPrimaryText    = new Color(0.04f, 0.04f, 0.06f, 1f);
+        public Color btnSecondaryBg    = new Color(0.14f, 0.12f, 0.22f, 0.92f);
+        public Color btnSecondaryText  = new Color(0.90f, 0.85f, 0.78f, 1f);
+        public Color btnGhostBg        = new Color(0.10f, 0.09f, 0.15f, 0.25f);
+        public Color btnGhostText      = new Color(0.70f, 0.65f, 0.78f, 1f);
+        public Color btnDangerBg       = new Color(0.75f, 0.15f, 0.15f, 0.88f);
+        public Color btnDangerText     = new Color(1f, 0.92f, 0.90f, 1f);
+
+        // ══════════════════════════════════════════════════════════
+        //  AMBIENT PARTICLE PRESETS
+        // ══════════════════════════════════════════════════════════
+        [Header("Ambient Particle Colors")]
+        public Color wispColor         = new Color(0.42f, 0.36f, 0.91f, 0.40f);
+        public Color sparkleColor      = new Color(1f, 0.95f, 0.75f, 0.55f);
+        public Color emberColor        = new Color(1f, 0.55f, 0.15f, 0.50f);
+        public Color mistColor         = new Color(0.25f, 0.22f, 0.40f, 0.12f);
+        public Color godRayColor       = new Color(0.90f, 0.82f, 0.60f, 0.06f);
+
+        // ══════════════════════════════════════════════════════════
+        //  UI SPACING
+        // ══════════════════════════════════════════════════════════
+        [Header("Spacing")]
+        public float panelPadding      = 16f;
+        public float zonePadding       = 8f;
+        public float cardGap           = 6f;
+        public float hudHeight         = 64f;
+        public float phaseBarHeight    = 4f;
+
+        // ══════════════════════════════════════════════════════════
+        //  BOARD INDICATORS
+        // ══════════════════════════════════════════════════════════
+        [Header("Board Indicators")]
+        public Color activePlayerGlow    = new Color(0.78f, 0.66f, 0.42f, 0.35f);
+        public Color inactivePlayerGlow  = new Color(0.30f, 0.28f, 0.40f, 0.10f);
+        public Color turnTimerFull       = new Color(0.25f, 0.85f, 0.45f, 1f);
+        public Color turnTimerLow        = new Color(0.90f, 0.22f, 0.22f, 1f);
+        public Color turnTimerBg         = new Color(0.08f, 0.08f, 0.10f, 0.75f);
+
+        // ══════════════════════════════════════════════════════════
+        //  OVERLAY / MODAL
+        // ══════════════════════════════════════════════════════════
+        [Header("Overlay")]
+        public Color overlayDim          = new Color(0f, 0f, 0f, 0.65f);
+        public Color tooltipBg           = new Color(0.10f, 0.09f, 0.16f, 0.96f);
+        public Color tooltipBorder       = new Color(0.45f, 0.40f, 0.65f, 0.40f);
+        public Color victoryColor        = new Color(0.95f, 0.82f, 0.35f, 1f);
+        public Color defeatColor         = new Color(0.55f, 0.25f, 0.25f, 1f);
+
+        // ══════════════════════════════════════════════════════════
+        //  BADGE COLORS
+        // ══════════════════════════════════════════════════════════
+        [Header("Badge Colors")]
+        public Color badgeNew            = new Color(0.30f, 0.75f, 0.45f, 1f);
+        public Color badgeHot            = new Color(0.95f, 0.45f, 0.10f, 1f);
+        public Color badgeSale           = new Color(0.85f, 0.20f, 0.35f, 1f);
+        public Color badgeFeatured       = new Color(0.78f, 0.66f, 0.42f, 1f);
+
+        // ══════════════════════════════════════════════════════════
+        //  ADDITIONAL HELPERS
+        // ══════════════════════════════════════════════════════════
+
+        public static Color WithAlpha(Color c, float a) => new Color(c.r, c.g, c.b, a);
+
+        public static Color Darken(Color c, float amount = 0.3f) =>
+            new Color(c.r * (1f - amount), c.g * (1f - amount), c.b * (1f - amount), c.a);
+
+        public static Color Lighten(Color c, float amount = 0.3f) =>
+            new Color(Mathf.Min(1f, c.r + amount), Mathf.Min(1f, c.g + amount), Mathf.Min(1f, c.b + amount), c.a);
+
+        public Color GetButtonBg(ButtonVariant v) => v switch
+        {
+            ButtonVariant.Primary   => btnPrimaryBg,
+            ButtonVariant.Secondary => btnSecondaryBg,
+            ButtonVariant.Ghost     => btnGhostBg,
+            ButtonVariant.Danger    => btnDangerBg,
+            _                       => btnSecondaryBg,
+        };
+
+        public Color GetButtonText(ButtonVariant v) => v switch
+        {
+            ButtonVariant.Primary   => btnPrimaryText,
+            ButtonVariant.Secondary => btnSecondaryText,
+            ButtonVariant.Ghost     => btnGhostText,
+            ButtonVariant.Danger    => btnDangerText,
+            _                       => btnSecondaryText,
+        };
     }
 
     // ══════════════════════════════════════════════════════════
@@ -297,5 +389,16 @@ namespace DualCraft.UI.Visual
         Battle,
         HighTension,
         Victory
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  BUTTON VARIANT  — for FancyButton style presets
+    // ══════════════════════════════════════════════════════════
+    public enum ButtonVariant
+    {
+        Primary,
+        Secondary,
+        Ghost,
+        Danger
     }
 }

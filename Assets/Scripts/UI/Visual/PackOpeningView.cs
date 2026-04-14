@@ -42,6 +42,9 @@ namespace DualCraft.UI.Visual
         [SerializeField] private TMP_Text rarityLabel;
         [SerializeField] private ParticleSystem rareParticles;
 
+        [Header("Skip")]
+        [SerializeField] private FancyButton skipButton;
+
         [Header("Summary")]
         [SerializeField] private CanvasGroup summaryGroup;
         [SerializeField] private RectTransform summaryCardGrid;
@@ -544,6 +547,54 @@ namespace DualCraft.UI.Visual
         {
             var cg = rt.gameObject.AddComponent<CanvasGroup>();
             return cg;
+        }
+
+        // ════════════════════════════════════════════════
+        //  SKIP SUPPORT
+        // ════════════════════════════════════════════════
+
+        private bool _skipRequested;
+
+        /// <summary>Skip to the summary screen.</summary>
+        public void RequestSkip()
+        {
+            _skipRequested = true;
+            if (skipButton != null) skipButton.SetInteractable(false);
+        }
+
+        // ════════════════════════════════════════════════
+        //  ELEMENT-COLORED BURST
+        // ════════════════════════════════════════════════
+
+        /// <summary>Override burst colors based on pack element affinity.</summary>
+        public void SetPackElement(Element element)
+        {
+            Color elColor = Theme != null ? Theme.GetElementColor(element) : Color.white;
+            if (burstRing != null) burstRing.color = DualCraftVisualTheme.WithAlpha(elColor, 0.8f);
+            if (burstRing2 != null) burstRing2.color = DualCraftVisualTheme.WithAlpha(elColor, 0.5f);
+            if (packGlow != null) packGlow.color = DualCraftVisualTheme.WithAlpha(elColor, 0.3f);
+        }
+
+        // ════════════════════════════════════════════════
+        //  DUPLICATE INDICATOR
+        // ════════════════════════════════════════════════
+
+        /// <summary>Mark a card GameObject as a duplicate.</summary>
+        public void MarkDuplicate(GameObject cardGo)
+        {
+            var dupeGo = new GameObject("DupeBadge", typeof(RectTransform));
+            dupeGo.transform.SetParent(cardGo.transform, false);
+            var rt = dupeGo.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0f, 0.88f);
+            rt.anchorMax = new Vector2(0.35f, 1f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            var tmp = dupeGo.AddComponent<TextMeshProUGUI>();
+            tmp.text = "DUPE";
+            tmp.fontSize = 8f;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = Theme != null ? Theme.textMuted : new Color(0.5f, 0.5f, 0.55f);
+            tmp.fontStyle = FontStyles.Italic;
         }
     }
 

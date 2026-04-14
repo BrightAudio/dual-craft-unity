@@ -75,6 +75,22 @@ namespace DualCraft.UI.Visual
         [SerializeField] private Image centerSeparator;
         [SerializeField] private CanvasGroup boardGroup;
 
+        [Header("Turn Indicators")]
+        [SerializeField] private Image playerSideBorder;
+        [SerializeField] private Image opponentSideBorder;
+        [SerializeField] private CanvasGroup turnBannerGroup;
+        [SerializeField] private TMP_Text turnBannerText;
+        [SerializeField] private Image turnTimerBar;
+        [SerializeField] private Image turnTimerBg;
+        [SerializeField] private RectTransform phaseDotsParent;
+
+        [Header("End State")]
+        [SerializeField] private CanvasGroup endOverlayGroup;
+        [SerializeField] private TMP_Text endTitleText;
+        [SerializeField] private TMP_Text endSubtitleText;
+        [SerializeField] private Image endOverlayBg;
+        [SerializeField] private ParticleSystem victoryParticles;
+
         // ── Internals ────────────────────────────────────────
         private Coroutine _phaseBannerCo;
         private Coroutine _attackLineCo;
@@ -475,6 +491,127 @@ namespace DualCraft.UI.Visual
             }
             c.a = targetA;
             img.color = c;
+        }
+
+        // ════════════════════════════════════════════════
+        //  ACTIVE PLAYER INDICATOR
+        // ════════════════════════════════════════════════
+
+        /// <summary>Highlight which player's turn it is.</summary>
+        public void SetActivePlayer(bool isPlayerTurn)
+        {
+            Color active   = Theme != null ? Theme.activePlayerGlow : new Color(0.78f, 0.66f, 0.42f, 0.35f);
+            Color inactive = Theme != null ? Theme.inactivePlayerGlow : new Color(0.3f, 0.28f, 0.4f, 0.1f);
+            if (playerSideBorder != null)
+                StartCoroutine(LerpColor(playerSideBorder, isPlayerTurn ? active : inactive, 0.4f));
+            if (opponentSideBorder != null)
+                StartCoroutine(LerpColor(opponentSideBorder, isPlayerTurn ? inactive : active, 0.4f));
+        }
+
+        // ════════════════════════════════════════════════
+        //  TURN BANNER
+        // ════════════════════════════════════════════════
+
+        /// <summary>Flash a "YOUR TURN" or "OPPONENT'S TURN" banner.</summary>
+        public void ShowTurnBanner(bool isPlayerTurn)
+        {
+            if (turnBannerGroup == null || turnBannerText == null) return;
+            turnBannerText.text = isPlayerTurn ? "YOUR TURN" : "OPPONENT'S TURN";
+            turnBannerText.color = isPlayerTurn
+                ? (Theme != null ? Theme.gold : Color.yellow)
+                : (Theme != null ? Theme.textSecondary : Color.grey);
+            StartCoroutine(TurnBannerSequence());
+        }
+
+        private IEnumerator TurnBannerSequence()
+        {
+            if (turnBannerGroup == null) yield break;
+            var rt = turnBannerGroup.GetComponent<RectTransform>();
+            turnBannerGroup.alpha = 0f;
+            turnBannerGroup.gameObject.SetActive(true);
+            if (rt != null)
+                yield return UIAnimUtils.SlideIn(rt, new Vector2(0f, 60f), 0.25f);
+            yield return UIAnimUtils.FadeIn(turnBannerGroup, 0.15f);
+            yield return new WaitForSeconds(1f);
+            yield return UIAnimUtils.FadeOut(turnBannerGroup, 0.3f);
+            turnBannerGroup.gameObject.SetActive(false);
+        }
+
+        // ════════════════════════════════════════════════
+        //  TURN TIMER
+        // ════════════════════════════════════════════════
+
+        /// <summary>Update the turn timer bar (0 = empty, 1 = full).</summary>
+        public void SetTurnTimer(float normalized)
+        {
+            if (turnTimerBar == null) return;
+            turnTimerBar.fillAmount = normalized;
+            Color full = Theme != null ? Theme.turnTimerFull : Color.green;
+            Color low  = Theme != null ? Theme.turnTimerLow : Color.red;
+            turnTimerBar.color = Color.Lerp(low, full, normalized);
+        }
+
+        // ════════════════════════════════════════════════
+        //  PHASE PROGRESS DOTS
+        // ════════════════════════════════════════════════
+
+        /// <summary>Highlight phase dot by index (0-4).</summary>
+        public void SetPhaseProgress(int activeIndex)
+        {
+            if (phaseDotsParent == null) return;
+            for (int i = 0; i < phaseDotsParent.childCount; i++)
+            {
+                var dot = phaseDotsParent.GetChild(i).GetComponent<Image>();
+                if (dot == null) continue;
+                bool isActive = i == activeIndex;
+                bool isPast = i < activeIndex;
+                dot.color = isActive
+                    ? (Theme != null ? Theme.gold : Color.yellow)
+                    : isPast
+                        ? (Theme != null ? Theme.textMuted : Color.grey)
+                        : (Theme != null ? DualCraftVisualTheme.WithAlpha(Theme.textMuted, 0.25f) : new Color(0.4f, 0.4f, 0.4f, 0.25f));
+                dot.transform.localScale = isActive ? Vector3.one * 1.3f : Vector3.one;
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        //  VICTORY / DEFEAT OVERLAY
+        // ════════════════════════════════════════════════
+
+        /// <summary>Show victory or defeat end-of-game overlay.</summary>
+        public void ShowEndState(bool victory, string subtitle = "")
+        {
+            if (endOverlayGroup == null) return;
+            StartCoroutine(EndStateSequence(victory, subtitle));
+        }
+
+        private IEnumerator EndStateSequence(bool victory, string subtitle)
+        {
+            endOverlayGroup.alpha = 0f;
+            endOverlayGroup.gameObject.SetActive(true);
+            if (endOverlayBg != null)
+                endOverlayBg.color = Theme != null ? Theme.overlayDim : new Color(0, 0, 0, 0.65f);
+
+            Color titleColor = victory
+                ? (Theme != null ? Theme.victoryColor : Color.yellow)
+                : (Theme != null ? Theme.defeatColor : Color.red);
+
+            if (endTitleText != null)
+            {
+                endTitleText.text = victory ? "VICTORY" : "DEFEAT";
+                endTitleText.color = titleColor;
+            }
+            if (endSubtitleText != null)
+            {
+                endSubtitleText.text = subtitle;
+                endSubtitleText.color = Theme != null ? Theme.textSecondary : Color.grey;
+            }
+
+            yield return UIAnimUtils.FadeIn(endOverlayGroup, 0.5f);
+            if (endTitleText != null)
+                StartCoroutine(UIAnimUtils.ElasticScale(endTitleText.transform, 0.6f));
+            if (victory && victoryParticles != null)
+                victoryParticles.Emit(80);
         }
     }
 

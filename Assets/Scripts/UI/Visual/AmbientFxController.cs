@@ -19,6 +19,12 @@ namespace DualCraft.UI.Visual
         [SerializeField] private ParticleSystem dustMotes;
         [SerializeField] private ParticleSystem sparkles;
         [SerializeField] private ParticleSystem edgeGlow;
+        [SerializeField] private ParticleSystem mistParticles;
+
+        [Header("Light Effects")]
+        [SerializeField] private Image godRayLeft;
+        [SerializeField] private Image godRayRight;
+        [SerializeField] private Image boardEdgeGlow;
 
         [Header("Overlay Images")]
         [SerializeField] private Image vignetteOverlay;
@@ -309,6 +315,111 @@ namespace DualCraft.UI.Visual
                 ambientLightOverlay.color = c;
                 yield return null;
             }
+        }
+
+        // ════════════════════════════════════════════════
+        //  MIST / FOG LAYER
+        // ════════════════════════════════════════════════
+
+        /// <summary>Enable/disable a rolling mist layer for atmospheric depth.</summary>
+        public void SetMist(bool on, float transitionTime = 1f)
+        {
+            if (mistParticles == null) return;
+            if (on && !mistParticles.isPlaying) mistParticles.Play();
+            StartCoroutine(LerpMist(on, transitionTime));
+        }
+
+        private IEnumerator LerpMist(bool on, float dur)
+        {
+            if (mistParticles == null) yield break;
+            var emission = mistParticles.emission;
+            float startRate = emission.rateOverTime.constant;
+            float targetRate = on ? 12f : 0f;
+            float t = 0f;
+            while (t < dur)
+            {
+                t += Time.deltaTime;
+                emission.rateOverTime = Mathf.Lerp(startRate, targetRate, t / dur);
+                yield return null;
+            }
+            emission.rateOverTime = targetRate;
+            if (!on) mistParticles.Stop();
+        }
+
+        // ════════════════════════════════════════════════
+        //  GOD RAYS  (diagonal light beams)
+        // ════════════════════════════════════════════════
+
+        /// <summary>Start animated god-ray light beams.</summary>
+        public void EnableGodRays(bool on)
+        {
+            if (godRayLeft != null) godRayLeft.gameObject.SetActive(on);
+            if (godRayRight != null) godRayRight.gameObject.SetActive(on);
+            if (on) StartCoroutine(AnimateGodRays());
+        }
+
+        private IEnumerator AnimateGodRays()
+        {
+            Color rayColor = Theme != null ? Theme.godRayColor : new Color(0.9f, 0.82f, 0.6f, 0.06f);
+            while (godRayLeft != null && godRayLeft.gameObject.activeSelf)
+            {
+                float noise1 = Mathf.PerlinNoise(Time.time * 0.3f, 0f);
+                float noise2 = Mathf.PerlinNoise(0f, Time.time * 0.25f);
+                if (godRayLeft != null)
+                {
+                    Color c = rayColor; c.a = Mathf.Lerp(0.02f, rayColor.a, noise1);
+                    godRayLeft.color = c;
+                }
+                if (godRayRight != null)
+                {
+                    Color c = rayColor; c.a = Mathf.Lerp(0.02f, rayColor.a, noise2);
+                    godRayRight.color = c;
+                }
+                yield return null;
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        //  BOARD EDGE GLOW
+        // ════════════════════════════════════════════════
+
+        /// <summary>Start/stop a pulsing glow around the board edge.</summary>
+        public void SetBoardEdgeGlow(bool on, Color? color = null)
+        {
+            if (boardEdgeGlow == null) return;
+            boardEdgeGlow.gameObject.SetActive(on);
+            if (on)
+            {
+                Color gc = color ?? (Theme != null ? Theme.glowOuterSoft : new Color(0.42f, 0.36f, 0.91f, 0.1f));
+                StartCoroutine(UIAnimUtils.BreathingGlow(boardEdgeGlow, gc, 0.8f, 0.03f, 0.12f));
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        //  WEATHER PRESETS  (per-element atmospheric effects)
+        // ════════════════════════════════════════════════
+
+        /// <summary>Apply element-themed weather particles and tint.</summary>
+        public void SetWeather(DualCraft.Core.Element element)
+        {
+            SetElementTheme(element);
+            bool useMist = element == DualCraft.Core.Element.Water
+                        || element == DualCraft.Core.Element.Ice
+                        || element == DualCraft.Core.Element.Dark;
+            SetMist(useMist);
+            if (element == DualCraft.Core.Element.Flame && embers != null)
+            {
+                var em = embers.emission;
+                em.rateOverTime = 25f;
+            }
+        }
+
+        /// <summary>Clear weather back to default.</summary>
+        public void ClearWeather()
+        {
+            ClearElementTheme();
+            SetMist(false);
+            if (embers != null) { var em = embers.emission; em.rateOverTime = calmEmissionRate * 0.4f; }
         }
     }
 }
