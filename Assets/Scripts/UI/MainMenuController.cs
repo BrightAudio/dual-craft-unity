@@ -30,7 +30,7 @@ namespace DualCraft.UI
             if (titleText) titleText.text = "DUAL CRAFT";
             if (taglineText) taglineText.text = Core.GameConstants.GameTagline;
 
-            playButton?.onClick.AddListener(() => LoadScene("OnlineLobby"));
+            playButton?.onClick.AddListener(() => LoadScene("Multiplayer"));
             aiDuelButton?.onClick.AddListener(() => LoadScene("Battle"));
             collectionButton?.onClick.AddListener(() => LoadScene("Collection"));
             deckBuilderButton?.onClick.AddListener(() => LoadScene("DeckBuilder"));

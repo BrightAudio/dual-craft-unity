@@ -3,7 +3,12 @@
     "rootNamespace": "DualCraft",
     "references": [
         "Unity.TextMeshPro",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "Unity.Services.Core",
+        "Unity.Services.Authentication",
+        "Unity.Services.Relay",
+        "Unity.Networking.Transport",
+        "Unity.Collections"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

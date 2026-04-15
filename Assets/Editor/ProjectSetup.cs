@@ -59,6 +59,7 @@ namespace DualCraft.Editor
             CreateCollectionScene();
             CreateDeckBuilderScene();
             CreatePackOpeningScene();
+            CreateMultiplayerScene();
 
             // Step 4: Configure build settings
             Debug.Log("[ProjectSetup] Configuring build settings...");
@@ -1747,6 +1748,47 @@ namespace DualCraft.Editor
         }
 
         // ═══════════════════════════════════════════════════
+        //  MULTIPLAYER SCENE
+        // ═══════════════════════════════════════════════════
+
+        static void CreateMultiplayerScene()
+        {
+            if (AssetExists("Assets/Scenes/Multiplayer.unity")) return;
+
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            // Camera
+            var camGO = new GameObject("Main Camera");
+            var cam = camGO.AddComponent<Camera>();
+            cam.backgroundColor = new Color(0.03f, 0.02f, 0.06f);
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.orthographic = true;
+            cam.orthographicSize = 5;
+            camGO.AddComponent<AudioListener>();
+            camGO.tag = "MainCamera";
+
+            CreateEventSystem();
+
+            // The MultiplayerMenu builds its own UI programmatically,
+            // so we just need a root GameObject with the component.
+            var menuGO = new GameObject("MultiplayerMenu");
+            var menu = menuGO.AddComponent<DualCraft.Networking.MultiplayerMenu>();
+
+            // Assign card database and default deck
+            var cardDb = AssetDatabase.LoadAssetAtPath<DualCraft.Cards.CardDatabase>("Assets/Resources/CardData/CardDatabase.asset");
+            var defaultDeck = AssetDatabase.LoadAssetAtPath<DualCraft.Cards.DeckData>("Assets/Resources/CardData/Decks/StarterDeck.asset");
+            if (cardDb != null) SetPrivateField(menu, "cardDatabase", cardDb);
+            if (defaultDeck != null) SetPrivateField(menu, "defaultDeck", defaultDeck);
+
+            // Music hook
+            var music = menuGO.AddComponent<MusicSceneHook>();
+            SetPrivateField(music, "musicMode", MusicManager.MusicMode.Menu);
+
+            EditorSceneManager.SaveScene(scene, "Assets/Scenes/Multiplayer.unity");
+            Debug.Log("[ProjectSetup] Created Multiplayer scene (lobby + relay)");
+        }
+
+        // ═══════════════════════════════════════════════════
         //  BUILD SETTINGS
         // ═══════════════════════════════════════════════════
 
@@ -1759,6 +1801,7 @@ namespace DualCraft.Editor
                 new EditorBuildSettingsScene("Assets/Scenes/Collection.unity", true),
                 new EditorBuildSettingsScene("Assets/Scenes/DeckBuilder.unity", true),
                 new EditorBuildSettingsScene("Assets/Scenes/PackOpening.unity", true),
+                new EditorBuildSettingsScene("Assets/Scenes/Multiplayer.unity", true),
             };
             EditorBuildSettings.scenes = scenes;
         }
