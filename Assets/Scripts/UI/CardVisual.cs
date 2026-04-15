@@ -48,6 +48,7 @@ namespace DualCraft.UI
         private bool _isFaceDown;
         private static Sprite _cardBackSprite;
         private static readonly Dictionary<string, Sprite> _artCache = new();
+        private static readonly Dictionary<string, Sprite> _frameCache = new();
 
         private static Sprite LoadCardArt(string cardId)
         {
@@ -55,6 +56,21 @@ namespace DualCraft.UI
             if (_artCache.TryGetValue(cardId, out var cached)) return cached;
             var sprite = Resources.Load<Sprite>("CardArt/" + cardId);
             if (sprite != null) _artCache[cardId] = sprite;
+            return sprite;
+        }
+
+        private static Sprite LoadFrame(CardCategory cat)
+        {
+            string frameName = cat switch
+            {
+                CardCategory.Daemon   => "frame-daemon",
+                CardCategory.Pillar   => "frame-pillar",
+                CardCategory.Conjuror => "frame-conjuror",
+                _                     => "frame-spell",
+            };
+            if (_frameCache.TryGetValue(frameName, out var cached)) return cached;
+            var sprite = Resources.Load<Sprite>("UI/" + frameName);
+            if (sprite != null) _frameCache[frameName] = sprite;
             return sprite;
         }
 
@@ -110,6 +126,8 @@ namespace DualCraft.UI
             {
                 cardBackImage.gameObject.SetActive(true);
                 if (_cardBackSprite == null)
+                    _cardBackSprite = Resources.Load<Sprite>("UI/card-back-premium");
+                if (_cardBackSprite == null)
                     _cardBackSprite = Resources.Load<Sprite>("CardArt/card-back");
                 if (_cardBackSprite == null)
                     _cardBackSprite = CardBackGenerator.Generate();
@@ -135,30 +153,31 @@ namespace DualCraft.UI
             Color elemColor = GetElementColor(elem);
             Color rarColor = GetRarityColor(_cardData.rarity);
 
-            // Outer frame: category-tinted dark border
+            // Outer frame: AI-generated category frame, falls back to tinted solid
             if (outerFrame)
             {
-                Color frameColor = Color.Lerp(new Color(0.06f, 0.06f, 0.06f), catColor, 0.15f);
-                outerFrame.color = frameColor;
+                var frameSpr = LoadFrame(_cardData.category);
+                if (frameSpr != null)
+                {
+                    outerFrame.sprite = frameSpr;
+                    outerFrame.color = Color.white;
+                }
+                else
+                {
+                    Color frameColor = Color.Lerp(new Color(0.06f, 0.06f, 0.06f), catColor, 0.15f);
+                    outerFrame.color = frameColor;
+                }
             }
 
             // Artwork — fills edge-to-edge inside black frame
             if (artworkImage)
             {
                 Sprite art = _cardData.artwork;
-                string src = "ScriptableObject";
                 if (art == null)
-                {
                     art = LoadCardArt(_cardData.cardId);
-                    src = "Resources";
-                }
                 if (art == null)
-                {
                     art = CardTextureGenerator.GenerateCardArt(
                         elem, _cardData.category, _cardData.rarity, _cardData.cardId);
-                    src = "Procedural";
-                }
-                Debug.Log($"[CardVisual] {_cardData.cardId} art from {src} | sprite={art != null}");
                 artworkImage.sprite = art;
                 artworkImage.color = Color.white;
             }

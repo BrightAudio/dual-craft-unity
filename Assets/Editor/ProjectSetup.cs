@@ -601,8 +601,25 @@ namespace DualCraft.Editor
             if (deckGuids.Length > 0) deck1 = AssetDatabase.LoadAssetAtPath<DeckData>(AssetDatabase.GUIDToAssetPath(deckGuids[0]));
             if (deckGuids.Length > 1) deck2 = AssetDatabase.LoadAssetAtPath<DeckData>(AssetDatabase.GUIDToAssetPath(deckGuids[1]));
 
+            // ─── Load UI texture assets ───
+            var spriteBattleBg    = LoadUISprite("battle-bg");
+            var spriteDaemonZone  = LoadUISprite("zone-daemon");
+            var spritePillarZone  = LoadUISprite("zone-pillar");
+            var spriteHandZone    = LoadUISprite("zone-hand");
+            var spritePanelDark   = LoadUISprite("panel-dark");
+            var spritePanelHeader = LoadUISprite("panel-header");
+            var spriteDividerGold = LoadUISprite("divider-gold");
+            var spriteBtnGold     = LoadUISprite("btn-gold");
+            var spriteBtnRed      = LoadUISprite("btn-red");
+            var spriteBarPlayer   = LoadUISprite("bar-player");
+            var spriteBarOpponent = LoadUISprite("bar-opponent");
+
             // ─── Full-screen background ───
             var bgPanel = CreatePanel(canvasGO, "Background", new Color(0.025f, 0.025f, 0.05f), true);
+            var bgImg = bgPanel.GetComponent<Image>();
+            ApplySprite(bgImg, spriteBattleBg, new Color(0.025f, 0.025f, 0.05f));
+            bgImg.type = Image.Type.Simple;
+            bgImg.preserveAspect = false;
 
             // ═══ LEFT SIDEBAR — Void/Discard Zones ══════
             // Matches HTML: left 160px column with discard per player
@@ -613,7 +630,8 @@ namespace DualCraft.Editor
             lsRT.offsetMin = Vector2.zero;
             lsRT.offsetMax = Vector2.zero;
             var lsBg = leftSidebar.AddComponent<Image>();
-            lsBg.color = new Color(0.03f, 0.03f, 0.05f, 0.6f);
+            ApplySprite(lsBg, spritePanelDark, new Color(0.03f, 0.03f, 0.05f, 0.6f));
+            lsBg.type = Image.Type.Simple;
 
             // P2 Void/Discard (top of left sidebar)
             var p2Void = CreateUIChild(leftSidebar, "P2VoidZone", Vector2.zero, Vector2.zero);
@@ -663,7 +681,8 @@ namespace DualCraft.Editor
             rsRT.offsetMin = Vector2.zero;
             rsRT.offsetMax = Vector2.zero;
             var rsBg = rightSidebar.AddComponent<Image>();
-            rsBg.color = new Color(0.03f, 0.03f, 0.05f, 0.6f);
+            ApplySprite(rsBg, spritePanelDark, new Color(0.03f, 0.03f, 0.05f, 0.6f));
+            rsBg.type = Image.Type.Simple;
 
             // P2 SE Pool (top-right)
             var p2SE = CreateUIChild(rightSidebar, "P2SEPool", Vector2.zero, Vector2.zero);
@@ -752,7 +771,8 @@ namespace DualCraft.Editor
             p2CzRT.offsetMin = Vector2.zero;
             p2CzRT.offsetMax = Vector2.zero;
             var p2CzBg = p2ConjZone.AddComponent<Image>();
-            p2CzBg.color = new Color(0.08f, 0.03f, 0.03f, 0.4f);
+            ApplySprite(p2CzBg, spriteBarOpponent, new Color(0.08f, 0.03f, 0.03f, 0.4f));
+            p2CzBg.type = Image.Type.Simple;
             // P2 info bar inside conjuror zone
             var p2InfoHLG = p2ConjZone.AddComponent<HorizontalLayoutGroup>();
             p2InfoHLG.spacing = 14;
@@ -803,8 +823,8 @@ namespace DualCraft.Editor
             p2PzBgRT.offsetMin = Vector2.zero;
             p2PzBgRT.offsetMax = Vector2.zero;
             var p2PzBgImg = p2PillarZoneBg.AddComponent<Image>();
-            p2PzBgImg.color = new Color(0.10f, 0.08f, 0.02f, 0.35f); // amber/gold tint for pillars
-            // Pillar zone border
+            ApplySprite(p2PzBgImg, spritePillarZone, new Color(0.10f, 0.08f, 0.02f, 0.35f));
+            p2PzBgImg.type = Image.Type.Simple;
             var p2PzOutline = p2PillarZoneBg.AddComponent<Outline>();
             p2PzOutline.effectColor = new Color(0.78f, 0.66f, 0.42f, 0.25f);
             p2PzOutline.effectDistance = new Vector2(1.5f, 1.5f);
@@ -825,8 +845,8 @@ namespace DualCraft.Editor
             p2FzBgRT.offsetMin = Vector2.zero;
             p2FzBgRT.offsetMax = Vector2.zero;
             var p2FzBgImg = p2FieldZoneBg.AddComponent<Image>();
-            p2FzBgImg.color = new Color(0.12f, 0.04f, 0.04f, 0.40f); // crimson tint for daemons
-            // Daemon zone border
+            ApplySprite(p2FzBgImg, spriteDaemonZone, new Color(0.12f, 0.04f, 0.04f, 0.40f));
+            p2FzBgImg.type = Image.Type.Simple;
             var p2FzOutline = p2FieldZoneBg.AddComponent<Outline>();
             p2FzOutline.effectColor = new Color(0.85f, 0.20f, 0.20f, 0.30f);
             p2FzOutline.effectDistance = new Vector2(2f, 2f);
@@ -857,7 +877,8 @@ namespace DualCraft.Editor
             divRT.offsetMin = Vector2.zero;
             divRT.offsetMax = Vector2.zero;
             var dividerImg = divider.AddComponent<Image>();
-            dividerImg.color = new Color(Gold.r, Gold.g, Gold.b, 0.35f);
+            ApplySprite(dividerImg, spriteDividerGold, new Color(Gold.r, Gold.g, Gold.b, 0.35f));
+            dividerImg.type = Image.Type.Simple;
 
             // Center controls panel
             var centerPanel = CreateUIChild(canvasGO, "CenterControls", Vector2.zero, Vector2.zero);
@@ -867,7 +888,8 @@ namespace DualCraft.Editor
             cpRT.offsetMin = Vector2.zero;
             cpRT.offsetMax = Vector2.zero;
             var centerBg = centerPanel.AddComponent<Image>();
-            centerBg.color = new Color(0.06f, 0.05f, 0.08f, 0.90f);
+            ApplySprite(centerBg, spritePanelHeader, new Color(0.06f, 0.05f, 0.08f, 0.90f));
+            centerBg.type = Image.Type.Simple;
 
             var centerHLG = centerPanel.AddComponent<HorizontalLayoutGroup>();
             centerHLG.spacing = 8;
@@ -958,7 +980,8 @@ namespace DualCraft.Editor
             p1PzBgRT.offsetMin = Vector2.zero;
             p1PzBgRT.offsetMax = Vector2.zero;
             var p1PzBgImg = p1PillarZoneBg.AddComponent<Image>();
-            p1PzBgImg.color = new Color(0.10f, 0.08f, 0.02f, 0.35f); // amber/gold tint
+            ApplySprite(p1PzBgImg, spritePillarZone, new Color(0.10f, 0.08f, 0.02f, 0.35f));
+            p1PzBgImg.type = Image.Type.Simple;
             var p1PzOutline = p1PillarZoneBg.AddComponent<Outline>();
             p1PzOutline.effectColor = new Color(0.78f, 0.66f, 0.42f, 0.25f);
             p1PzOutline.effectDistance = new Vector2(1.5f, 1.5f);
@@ -979,7 +1002,8 @@ namespace DualCraft.Editor
             p1FzBgRT.offsetMin = Vector2.zero;
             p1FzBgRT.offsetMax = Vector2.zero;
             var p1FzBgImg = p1FieldZoneBg.AddComponent<Image>();
-            p1FzBgImg.color = new Color(0.12f, 0.04f, 0.04f, 0.40f); // crimson tint
+            ApplySprite(p1FzBgImg, spriteDaemonZone, new Color(0.12f, 0.04f, 0.04f, 0.40f));
+            p1FzBgImg.type = Image.Type.Simple;
             var p1FzOutline = p1FieldZoneBg.AddComponent<Outline>();
             p1FzOutline.effectColor = new Color(0.85f, 0.20f, 0.20f, 0.30f);
             p1FzOutline.effectDistance = new Vector2(2f, 2f);
@@ -1000,7 +1024,8 @@ namespace DualCraft.Editor
             p1CzRT.offsetMin = Vector2.zero;
             p1CzRT.offsetMax = Vector2.zero;
             var p1CzBg = p1ConjZone.AddComponent<Image>();
-            p1CzBg.color = new Color(0.03f, 0.05f, 0.08f, 0.4f);
+            ApplySprite(p1CzBg, spriteBarPlayer, new Color(0.03f, 0.05f, 0.08f, 0.4f));
+            p1CzBg.type = Image.Type.Simple;
             var p1InfoHLG = p1ConjZone.AddComponent<HorizontalLayoutGroup>();
             p1InfoHLG.spacing = 14;
             p1InfoHLG.childAlignment = TextAnchor.MiddleCenter;
@@ -1044,6 +1069,9 @@ namespace DualCraft.Editor
 
             // ═══ GAME LOG (right sidebar) ════════════════
             var logPanel = CreatePanel(canvasGO, "GameLogPanel", new Color(0.04f, 0.04f, 0.06f, 0.92f), false);
+            var logPanelImg = logPanel.GetComponent<Image>();
+            ApplySprite(logPanelImg, spritePanelDark, new Color(0.04f, 0.04f, 0.06f, 0.92f));
+            logPanelImg.type = Image.Type.Simple;
             var logRT = logPanel.GetComponent<RectTransform>();
             logRT.anchorMin = new Vector2(0.82f, 0.02f);
             logRT.anchorMax = new Vector2(0.99f, 0.98f);
@@ -2677,6 +2705,38 @@ namespace DualCraft.Editor
         static bool AssetExists(string path)
         {
             return File.Exists(Path.Combine(Directory.GetCurrentDirectory(), path));
+        }
+
+        /// <summary>Load a sprite from the UI textures folder, returning null if not found.</summary>
+        static Sprite LoadUISprite(string name)
+        {
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/Resources/UI/{name}.png");
+            if (tex == null) return null;
+            // Ensure texture is imported as Sprite
+            var importer = AssetImporter.GetAtPath($"Assets/Resources/UI/{name}.png") as TextureImporter;
+            if (importer != null && importer.textureType != TextureImporterType.Sprite)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.SaveAndReimport();
+                tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/Resources/UI/{name}.png");
+            }
+            return AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/Resources/UI/{name}.png");
+        }
+
+        /// <summary>Apply a sprite to an Image, falling back to the given color if sprite is null.</summary>
+        static void ApplySprite(Image img, Sprite sprite, Color fallbackColor)
+        {
+            if (sprite != null)
+            {
+                img.sprite = sprite;
+                img.type = Image.Type.Sliced;
+                img.color = Color.white;
+            }
+            else
+            {
+                img.color = fallbackColor;
+            }
         }
     }
 }
