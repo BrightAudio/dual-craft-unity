@@ -169,6 +169,18 @@ namespace DualCraft.Battle
         {
             if (State.Phase != GamePhase.Draw)
                 return false;
+
+            // Deck-out loss (poketcg: if DrawCardFromDeck returns carry → LOSS)
+            if (player.Deck.Count == 0)
+            {
+                int loser = State.CurrentPlayer;
+                State.Winner = 1 - loser;
+                State.GameOver = true;
+                AddLog($"{player.Name} has no cards left — deck out!", LogEntryType.System);
+                OnGameOver?.Invoke(1 - loser, "Deck out!");
+                return true;
+            }
+
             DrawCard(player);
             // Transition to Main 1 after drawing one card
             State.Phase = GamePhase.Main1;
@@ -429,6 +441,15 @@ namespace DualCraft.Battle
             if (!attacker.CanAttack || attacker.HasAttacked || attacker.Frozen || attacker.Entangled)
                 return false;
 
+            // ─── Burn miss chance (poketcg: 50% miss when burned) ───
+            if (attacker.Burning && _rng.Next(2) == 0)
+            {
+                AddLog($"{attacker.Card.cardName} is burned and failed to attack!", LogEntryType.Combat);
+                attacker.HasAttacked = true;
+                OnStateChanged?.Invoke(State);
+                return true;
+            }
+
             // Fire OnAttack effects and check seals
             _effects.OnDaemonAttacking(playerIndex, attacker);
             if (_effects.ActionNegated)
@@ -438,8 +459,36 @@ namespace DualCraft.Battle
                 OnStateChanged?.Invoke(State);
                 return true;
             }
+
+            // ─── Taunt enforcement (poketcg/forge: must attack taunter) ───
+            if (action.Target == TargetType.Daemon)
+            {
+                var taunters = opponent.Field
+                    .Select((d, i) => (d, i))
+                    .Where(x => x.d.HasTaunt && !x.d.Stealthed)
+                    .ToList();
+                if (taunters.Count > 0)
+                {
+                    bool targetingTaunter = taunters.Any(t => t.i == action.TargetIndex);
+                    if (!targetingTaunter)
+                    {
+                        AddLog("Must attack a daemon with Taunt!", LogEntryType.System);
+                        return false;
+                    }
+                }
+            }
+
+            // ─── Stealth targeting immunity (poketcg: can't target stealthed) ───
+            if (action.Target == TargetType.Daemon
+                && action.TargetIndex >= 0 && action.TargetIndex < opponent.Field.Count
+                && opponent.Field[action.TargetIndex].Stealthed)
+            {
+                AddLog("Cannot target a stealthed daemon!", LogEntryType.System);
+                return false;
+            }
+
             // ─── Enforce attack order: Daemons → Pillars → Conjuror ───
-            bool opponentHasDaemons = opponent.Field.Count > 0;
+            bool opponentHasDaemons = opponent.Field.Any(d => !d.Stealthed);
             bool opponentHasPillars = opponent.Pillars.Exists(p => !p.Destroyed);
             switch (action.Target)
             {
@@ -458,6 +507,7 @@ namespace DualCraft.Battle
                     }
                     break;
             }
+
             // Roll a 6-sided die for damage modifier
             int diceRoll = _rng.Next(1, 7);
             float diceMod = diceRoll switch
@@ -471,20 +521,39 @@ namespace DualCraft.Battle
                 _ => 1.0f,
             };
             int baseDamage = attacker.Attack;
-            // Notify UI about the dice roll; callback currently unused
-            bool diceSuccess = diceRoll >= 4;
-            string rollDesc = diceRoll >= 5 ? "CRITICAL!" : diceRoll >= 4 ? "Hit!" : "Weak...";
+
+            // ─── Next Attack Double (poketcg: Swords Dance) ───
+            if (attacker.NextAttackDouble)
+            {
+                baseDamage *= 2;
+                attacker.NextAttackDouble = false;
+                AddLog($"{attacker.Card.cardName} unleashes a powered-up attack!", LogEntryType.Combat);
+            }
+
+            // Notify UI about the dice roll
             OnDiceRollRequested?.Invoke(attacker.Card.cardName, 4, (roll, success) => { /* UI hook */ });
+
             switch (action.Target)
             {
                 case TargetType.Daemon:
                     if (action.TargetIndex < 0 || action.TargetIndex >= opponent.Field.Count)
                         return false;
                     var targetDaemon = opponent.Field[action.TargetIndex];
+
                     // Element and creature matchups
                     float elemMult = ElementSystem.GetElementMatchup(attacker.Card.element, targetDaemon.Card.element);
                     float creatMult = ElementSystem.GetCreatureMatchup(attacker.Card.creatureType, targetDaemon.Card.creatureType);
                     int finalDamage = (int)Math.Round(baseDamage * elemMult * creatMult * diceMod);
+
+                    // ─── Damage reduction pipeline (poketcg: Defender -20, Reduce substatus) ───
+                    if (targetDaemon.DamageReduction > 0)
+                    {
+                        int reduced = Math.Min(finalDamage, targetDaemon.DamageReduction);
+                        finalDamage -= reduced;
+                        if (reduced > 0)
+                            AddLog($"Damage reduced by {reduced}!", LogEntryType.Effect);
+                    }
+
                     // Apply shield absorption
                     if (targetDaemon.ShieldAmount > 0)
                     {
@@ -494,6 +563,7 @@ namespace DualCraft.Battle
                         if (absorbed > 0)
                             AddLog($"Shield absorbs {absorbed} damage!", LogEntryType.Effect);
                     }
+
                     targetDaemon.CurrentAshe -= finalDamage;
                     string diceTag = diceRoll >= 5 ? " ★" : diceRoll <= 2 ? " ↓" : "";
                     AddLog($"{attacker.Card.cardName} attacks {targetDaemon.Card.cardName} for {finalDamage} [{diceRoll}]{diceTag}!", LogEntryType.Combat);
@@ -508,6 +578,14 @@ namespace DualCraft.Battle
                     // Fire OnDamaged effects
                     if (finalDamage > 0)
                         _effects.OnDaemonDamaged(1 - playerIndex, targetDaemon, finalDamage);
+
+                    // Stealth breaks on taking damage (poketcg: invisibility breaks on hit)
+                    if (finalDamage > 0 && targetDaemon.Stealthed)
+                    {
+                        targetDaemon.Stealthed = false;
+                        targetDaemon.StealthTurns = 0;
+                        AddLog($"{targetDaemon.Card.cardName} is revealed!", LogEntryType.Effect);
+                    }
 
                     if (targetDaemon.CurrentAshe <= 0)
                     {
@@ -566,6 +644,11 @@ namespace DualCraft.Battle
                     break;
             }
             attacker.HasAttacked = true;
+
+            // Check win conditions after every combat action (poketcg pattern)
+            if (!State.GameOver)
+                CheckWinConditions();
+
             OnStateChanged?.Invoke(State);
             return true;
         }
@@ -649,6 +732,29 @@ namespace DualCraft.Battle
                     return m.TurnsRemaining <= 0;
                 });
             }
+
+            // Fire turn-end effects for the player who just ended
+            _effects.OnTurnEnd(State.CurrentPlayer);
+
+            // ─── Poison/Burn damage between turns (poketcg pattern) ───
+            _effects.TickPoisonAndBurn(State.CurrentPlayer);
+
+            // Clean up daemons killed by poison/burn/turn effects
+            for (int pi = 0; pi < 2; pi++)
+            {
+                var dead = _effects.CleanupDead(pi);
+                foreach (var d in dead)
+                {
+                    AddLog($"{d.Card.cardName} was destroyed!", LogEntryType.Combat);
+                    _effects.OnDaemonDestroyed(pi, d);
+                }
+            }
+
+            // Check win conditions after poison/burn kills
+            if (State.GameOver) return true;
+            CheckWinConditions();
+            if (State.GameOver) return true;
+
             // Switch active player and increment turn count
             State.CurrentPlayer = 1 - State.CurrentPlayer;
             State.TurnNumber++;
@@ -657,9 +763,6 @@ namespace DualCraft.Battle
             if (nextPlayer.MaxWill < GameConstants.MaxWill)
                 nextPlayer.MaxWill++;
             nextPlayer.Will = nextPlayer.MaxWill;
-
-            // Fire turn-end effects for the player who just ended
-            _effects.OnTurnEnd(1 - State.CurrentPlayer);
 
             State.Phase = GamePhase.Draw;
 
@@ -671,7 +774,10 @@ namespace DualCraft.Battle
             {
                 var dead = _effects.CleanupDead(pi);
                 foreach (var d in dead)
+                {
+                    AddLog($"{d.Card.cardName} was destroyed!", LogEntryType.Combat);
                     _effects.OnDaemonDestroyed(pi, d);
+                }
             }
 
             AddLog($"Turn {State.TurnNumber} — {nextPlayer.Name}'s turn.", LogEntryType.System);

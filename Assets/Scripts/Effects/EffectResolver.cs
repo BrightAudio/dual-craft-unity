@@ -222,6 +222,34 @@ namespace DualCraft.Effects
                     d.TauntTurns--;
                     if (d.TauntTurns <= 0) d.HasTaunt = false;
                 }
+                // Damage Reduction (poketcg: Defender attachment)
+                if (d.DamageReductionTurns > 0)
+                {
+                    d.DamageReductionTurns--;
+                    if (d.DamageReductionTurns <= 0) d.DamageReduction = 0;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tick poison and burn at end of turn (poketcg pattern:
+        /// UpdateSubstatusConditions_EndOfTurn — poison damage dealt between turns).
+        /// </summary>
+        public void TickPoisonAndBurn(int playerIndex)
+        {
+            var player = _state.Players[playerIndex];
+            foreach (var d in player.Field.ToList())
+            {
+                if (d.Poisoned && d.PoisonDamage > 0)
+                {
+                    d.CurrentAshe -= d.PoisonDamage;
+                    Log($"{d.Card.cardName} takes {d.PoisonDamage} poison damage!");
+                }
+                if (d.Burning && d.BurnDamage > 0)
+                {
+                    d.CurrentAshe -= d.BurnDamage;
+                    Log($"{d.Card.cardName} takes {d.BurnDamage} burn damage!");
+                }
             }
         }
 
@@ -339,6 +367,12 @@ namespace DualCraft.Effects
                 "summon-token" => (EffectFunctionId.SummonToken, EffectTarget.None),
                 "restore-pillar" => (EffectFunctionId.RestorePillarHp, EffectTarget.AllFriendlyPillars),
                 "gain-loyalty" => (EffectFunctionId.GainLoyalty, EffectTarget.None),
+                "poison" => (EffectFunctionId.Poison, EffectTarget.TargetEnemyDaemon),
+                "poison-all" => (EffectFunctionId.PoisonAll, EffectTarget.AllEnemyDaemons),
+                "burn" => (EffectFunctionId.Burn, EffectTarget.TargetEnemyDaemon),
+                "burn-all" => (EffectFunctionId.BurnAll, EffectTarget.AllEnemyDaemons),
+                "damage-reduction" or "defend" => (EffectFunctionId.DamageReduction, EffectTarget.Self),
+                "next-attack-double" or "power-up" => (EffectFunctionId.NextAttackDouble, EffectTarget.Self),
                 _ => (EffectFunctionId.None, EffectTarget.None),
             };
 
@@ -403,6 +437,24 @@ namespace DualCraft.Effects
                     target = EffectTarget.AllFriendlyDaemons,
                     parameters = new[] { domain.effectValue },
                 },
+                DomainEffectType.PoisonAll => new EffectEntry
+                {
+                    functionId = EffectFunctionId.PoisonAll,
+                    target = EffectTarget.AllEnemyDaemons,
+                    parameters = new[] { domain.effectValue > 0 ? domain.effectValue : 1 },
+                },
+                DomainEffectType.BurnAll => new EffectEntry
+                {
+                    functionId = EffectFunctionId.BurnAll,
+                    target = EffectTarget.AllEnemyDaemons,
+                    parameters = new[] { domain.effectValue > 0 ? domain.effectValue : 1 },
+                },
+                DomainEffectType.WillDrain => new EffectEntry
+                {
+                    functionId = EffectFunctionId.DrainWill,
+                    target = EffectTarget.None,
+                    parameters = new[] { domain.effectValue },
+                },
                 _ => null,
             };
         }
@@ -448,6 +500,24 @@ namespace DualCraft.Effects
                     target = EffectTarget.TargetEnemyDaemon,
                     parameters = new[] { mask.effectValue },
                 },
+                MaskEffectType.Poison => new EffectEntry
+                {
+                    functionId = EffectFunctionId.Poison,
+                    target = EffectTarget.Self,
+                    parameters = new[] { mask.effectValue > 0 ? mask.effectValue : 1 },
+                },
+                MaskEffectType.Burn => new EffectEntry
+                {
+                    functionId = EffectFunctionId.Burn,
+                    target = EffectTarget.Self,
+                    parameters = new[] { mask.effectValue > 0 ? mask.effectValue : 1 },
+                },
+                MaskEffectType.DamageReduction => new EffectEntry
+                {
+                    functionId = EffectFunctionId.DamageReduction,
+                    target = EffectTarget.Self,
+                    parameters = new[] { mask.effectValue, mask.duration },
+                },
                 _ => null,
             };
         }
@@ -483,6 +553,24 @@ namespace DualCraft.Effects
                     functionId = EffectFunctionId.HealConjuror,
                     target = EffectTarget.FriendlyConjuror,
                     parameters = new[] { seal.effectValue },
+                },
+                SealEffectType.Poison => new EffectEntry
+                {
+                    functionId = EffectFunctionId.Poison,
+                    target = EffectTarget.AttackingDaemon,
+                    parameters = new[] { seal.effectValue > 0 ? seal.effectValue : 1 },
+                },
+                SealEffectType.Burn => new EffectEntry
+                {
+                    functionId = EffectFunctionId.Burn,
+                    target = EffectTarget.AttackingDaemon,
+                    parameters = new[] { seal.effectValue > 0 ? seal.effectValue : 1 },
+                },
+                SealEffectType.FreezeAttacker => new EffectEntry
+                {
+                    functionId = EffectFunctionId.Freeze,
+                    target = EffectTarget.AttackingDaemon,
+                    parameters = new[] { seal.effectValue > 0 ? seal.effectValue : 1 },
                 },
                 _ => null,
             };

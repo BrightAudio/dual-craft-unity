@@ -94,7 +94,10 @@ namespace DualCraft.Core
         ElementAtkBuff,
         ExtraDraw,
         PillarRestore,
-        PillarHeal
+        PillarHeal,
+        PoisonAll,
+        BurnAll,
+        WillDrain,
     }
 
     // Mask equipment effect types
@@ -105,7 +108,10 @@ namespace DualCraft.Core
         Haste,
         Stealth,
         Thorns,
-        Entangle
+        Entangle,
+        Poison,
+        Burn,
+        DamageReduction,
     }
 
     // Seal trap effect types
@@ -115,7 +121,10 @@ namespace DualCraft.Core
         Destroy,
         Negate,
         CounterSpell,
-        HealConjuror
+        HealConjuror,
+        Poison,
+        Burn,
+        FreezeAttacker,
     }
 
     // Identifies the type of action being processed

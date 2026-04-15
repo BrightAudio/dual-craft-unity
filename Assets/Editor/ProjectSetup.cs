@@ -42,11 +42,15 @@ namespace DualCraft.Editor
             EnsureFolder("Assets/Scenes");
             EnsureFolder("Assets/Resources/CardData/Cards");
             EnsureFolder("Assets/Resources/CardData/Decks");
+            EnsureFolder("Assets/Materials");
 
-            // Step 1: Create prefabs
+            // Step 1: Create prefabs + materials + theme
             Debug.Log("[ProjectSetup] Creating prefabs...");
             CreateCardPrefab();
             CreateLogEntryPrefab();
+            CreateHolographicMaterials();
+            CreateAnimatorController();
+            CreateDualCraftThemeAsset();
 
             // Step 2: Import cards from JSON
             Debug.Log("[ProjectSetup] Importing cards from JSON...");
@@ -202,6 +206,13 @@ namespace DualCraft.Editor
             SetPrivateField(visual, "cardBackImage", backImg);
             SetPrivateField(visual, "glowEffect", glowImg);
 
+            // Add Animator for card animations
+            var animator = cardGO.AddComponent<Animator>();
+            var animController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>("Assets/Animations/CardAnimator.controller");
+            if (animController != null)
+                animator.runtimeAnimatorController = animController;
+            SetPrivateField(visual, "cardAnimator", animator);
+
             // Add Button for interaction
             var btn = cardGO.AddComponent<Button>();
             btn.targetGraphic = outerImg;
@@ -235,6 +246,162 @@ namespace DualCraft.Editor
             PrefabUtility.SaveAsPrefabAsset(go, "Assets/Prefabs/LogEntryPrefab.prefab");
             Object.DestroyImmediate(go);
             Debug.Log("[ProjectSetup] Created LogEntryPrefab");
+        }
+
+        // ═══════════════════════════════════════════════════
+        //  HOLOGRAPHIC MATERIALS
+        // ═══════════════════════════════════════════════════
+
+        static void CreateHolographicMaterials()
+        {
+            EnsureFolder("Assets/Resources/Materials");
+            var shader = Shader.Find("DualCraft/CardHolographic");
+            if (shader == null)
+            {
+                Debug.LogWarning("[ProjectSetup] CardHolographic shader not found, skipping materials");
+                return;
+            }
+
+            // Create 4 rarity-tiered materials
+            CreateHoloMat(shader, "CardHolo_Common",    0, 0.0f, 0.0f, 0.0f);
+            CreateHoloMat(shader, "CardHolo_Rare",      1, 0.4f, 1.5f, 0.0f);
+            CreateHoloMat(shader, "CardHolo_Epic",      2, 0.6f, 2.0f, 0.4f);
+            CreateHoloMat(shader, "CardHolo_Legendary", 3, 0.8f, 3.0f, 0.6f);
+            Debug.Log("[ProjectSetup] Created holographic materials (4 rarity tiers)");
+        }
+
+        static void CreateHoloMat(Shader shader, string name, int rarity, float intensity, float shimmer, float prismatic)
+        {
+            string path = $"Assets/Resources/Materials/{name}.mat";
+            if (AssetExists(path)) return;
+
+            var mat = new Material(shader);
+            mat.name = name;
+            mat.SetFloat("_RarityLevel", rarity);
+            mat.SetFloat("_HoloIntensity", intensity);
+            mat.SetFloat("_ShimmerSpeed", shimmer);
+            mat.SetFloat("_PrismaticStrength", prismatic);
+            AssetDatabase.CreateAsset(mat, path);
+        }
+
+        // ═══════════════════════════════════════════════════
+        //  ANIMATOR CONTROLLER
+        // ═══════════════════════════════════════════════════
+
+        static void CreateAnimatorController()
+        {
+            string controllerPath = "Assets/Animations/CardAnimator.controller";
+            if (AssetExists(controllerPath)) return;
+
+            EnsureFolder("Assets/Animations");
+
+            var controller = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
+            var rootStateMachine = controller.layers[0].stateMachine;
+
+            // Idle state (default)
+            var idleState = rootStateMachine.AddState("Idle");
+            rootStateMachine.defaultState = idleState;
+
+            // Summon animation state
+            var summonState = rootStateMachine.AddState("Summon");
+            var summonClip = CreateAnimClip("CardSummon", "localScale", 0.3f,
+                new Keyframe[] { new(0, 0), new(0.1f, 1.15f), new(0.2f, 0.95f), new(0.3f, 1f) },
+                new Keyframe[] { new(0, 0), new(0.1f, 1.15f), new(0.2f, 0.95f), new(0.3f, 1f) },
+                new Keyframe[] { new(0, 1), new(0.3f, 1) });
+            summonState.motion = summonClip;
+
+            // Attack animation state
+            var attackState = rootStateMachine.AddState("Attack");
+            var attackClip = CreateAnimClip("CardAttack", "localPosition", 0.4f,
+                new Keyframe[] { new(0, 0), new(0.1f, 0), new(0.25f, 30), new(0.35f, -5), new(0.4f, 0) },
+                new Keyframe[] { new(0, 0), new(0.4f, 0) },
+                new Keyframe[] { new(0, 0), new(0.4f, 0) });
+            attackState.motion = attackClip;
+
+            // Destroy animation state
+            var destroyState = rootStateMachine.AddState("Destroy");
+            var destroyClip = new AnimationClip { name = "CardDestroy" };
+            var destroyScaleX = new AnimationCurve(new Keyframe(0, 1), new Keyframe(0.15f, 1.1f), new Keyframe(0.4f, 0));
+            var destroyScaleY = new AnimationCurve(new Keyframe(0, 1), new Keyframe(0.15f, 1.1f), new Keyframe(0.4f, 0));
+            destroyClip.SetCurve("", typeof(RectTransform), "m_LocalScale.x", destroyScaleX);
+            destroyClip.SetCurve("", typeof(RectTransform), "m_LocalScale.y", destroyScaleY);
+            AssetDatabase.CreateAsset(destroyClip, "Assets/Animations/CardDestroy.anim");
+            destroyState.motion = destroyClip;
+
+            // Flip animation state
+            var flipState = rootStateMachine.AddState("Flip");
+            var flipClip = new AnimationClip { name = "CardFlip" };
+            var flipScaleX = new AnimationCurve(new Keyframe(0, 1), new Keyframe(0.15f, 0), new Keyframe(0.3f, 1));
+            flipClip.SetCurve("", typeof(RectTransform), "m_LocalScale.x", flipScaleX);
+            AssetDatabase.CreateAsset(flipClip, "Assets/Animations/CardFlip.anim");
+            flipState.motion = flipClip;
+
+            // Transitions: Each trigger → state → back to Idle
+            AddTriggerTransition(controller, rootStateMachine, idleState, summonState, "Summon");
+            AddTriggerTransition(controller, rootStateMachine, idleState, attackState, "Attack");
+            AddTriggerTransition(controller, rootStateMachine, idleState, destroyState, "Destroy");
+            AddTriggerTransition(controller, rootStateMachine, idleState, flipState, "Flip");
+
+            AssetDatabase.SaveAssets();
+            Debug.Log("[ProjectSetup] Created CardAnimator controller with 4 animation clips");
+        }
+
+        static AnimationClip CreateAnimClip(string name, string property, float duration,
+            Keyframe[] xKeys, Keyframe[] yKeys, Keyframe[] zKeys)
+        {
+            var clip = new AnimationClip { name = name };
+            string propPrefix = property == "localScale" ? "m_LocalScale" : "m_AnchoredPosition";
+            clip.SetCurve("", typeof(RectTransform), $"{propPrefix}.x", new AnimationCurve(xKeys));
+            clip.SetCurve("", typeof(RectTransform), $"{propPrefix}.y", new AnimationCurve(yKeys));
+            if (property == "localScale")
+                clip.SetCurve("", typeof(RectTransform), $"{propPrefix}.z", new AnimationCurve(zKeys));
+            AssetDatabase.CreateAsset(clip, $"Assets/Animations/{name}.anim");
+            return clip;
+        }
+
+        static void AddTriggerTransition(
+            UnityEditor.Animations.AnimatorController controller,
+            UnityEditor.Animations.AnimatorStateMachine sm,
+            UnityEditor.Animations.AnimatorState idle,
+            UnityEditor.Animations.AnimatorState target,
+            string triggerName)
+        {
+            controller.AddParameter(triggerName, AnimatorControllerParameterType.Trigger);
+            var toTarget = idle.AddTransition(target);
+            toTarget.AddCondition(UnityEditor.Animations.AnimatorConditionMode.If, 0, triggerName);
+            toTarget.hasExitTime = false;
+            toTarget.duration = 0;
+            var toIdle = target.AddTransition(idle);
+            toIdle.hasExitTime = true;
+            toIdle.exitTime = 1f;
+            toIdle.duration = 0.05f;
+        }
+
+        // ═══════════════════════════════════════════════════
+        //  DUALCRAFT THEME ASSET
+        // ═══════════════════════════════════════════════════
+
+        static void CreateDualCraftThemeAsset()
+        {
+            string path = "Assets/Resources/DualCraftTheme.asset";
+            if (AssetExists(path)) return;
+
+            var theme = ScriptableObject.CreateInstance<DualCraft.UI.Visual.DualCraftVisualTheme>();
+
+            // Load and assign icon sprites
+            theme.iconSword  = LoadUISprite("icon-sword");
+            theme.iconShield = LoadUISprite("icon-shield");
+            theme.iconSkull  = LoadUISprite("icon-skull");
+            theme.iconHeart  = LoadUISprite("icon-heart");
+            theme.iconMana   = LoadUISprite("icon-mana");
+
+            // Load and assign UI sprites
+            theme.panelFrame     = LoadUISprite("panel-dark");
+            theme.zoneFrame      = LoadUISprite("divider-gold");
+            theme.buttonBg       = LoadUISprite("btn-gold");
+
+            AssetDatabase.CreateAsset(theme, path);
+            Debug.Log("[ProjectSetup] Created DualCraftTheme ScriptableObject");
         }
 
         // ═══════════════════════════════════════════════════
@@ -356,9 +523,33 @@ namespace DualCraft.Editor
         //  SCENE CREATION
         // ═══════════════════════════════════════════════════
 
-        static void CreateMainMenuScene()
+        [MenuItem("Dual Craft/Regenerate MainMenu Scene", false, 13)]
+        static void RegenerateMainMenuScene() { CreateMainMenuScene(true); }
+
+        [MenuItem("Dual Craft/Regenerate Collection Scene", false, 14)]
+        static void RegenerateCollectionScene() { CreateCollectionScene(true); }
+
+        [MenuItem("Dual Craft/Regenerate DeckBuilder Scene", false, 15)]
+        static void RegenerateDeckBuilderScene() { CreateDeckBuilderScene(true); }
+
+        [MenuItem("Dual Craft/Regenerate PackOpening Scene", false, 16)]
+        static void RegeneratePackOpeningScene() { CreatePackOpeningScene(true); }
+
+        [MenuItem("Dual Craft/Regenerate All Scenes", false, 20)]
+        static void RegenerateAllScenes()
         {
-            if (AssetExists("Assets/Scenes/MainMenu.unity")) return;
+            CreateMainMenuScene(true);
+            CreateBattleScene(true);
+            CreateCollectionScene(true);
+            CreateDeckBuilderScene(true);
+            CreatePackOpeningScene(true);
+            Debug.Log("[ProjectSetup] Regenerated ALL scenes");
+        }
+
+        static void CreateMainMenuScene() { CreateMainMenuScene(false); }
+        static void CreateMainMenuScene(bool force)
+        {
+            if (!force && AssetExists("Assets/Scenes/MainMenu.unity")) return;
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -376,8 +567,26 @@ namespace DualCraft.Editor
 
             var canvasGO = CreateCanvas("MainMenuCanvas");
 
+            // Load AI sprites
+            var spriteMenuBg      = LoadUISprite("menu-bg");
+            var spriteMenuGrad    = LoadUISprite("menu-gradient");
+            var spriteShowcaseBg  = LoadUISprite("pack-showcase-bg");
+            var spritePackInferno = LoadUISprite("pack-inferno");
+            var spritePackShadow  = LoadUISprite("pack-shadow");
+            var spritePackVerdant = LoadUISprite("pack-verdant");
+            var spriteNavBar      = LoadUISprite("nav-bar-bg");
+            var spriteFeatureBattle   = LoadUISprite("feature-battle");
+            var spriteFeatureGrimoire = LoadUISprite("feature-grimoire");
+            var spriteFeatureDecks    = LoadUISprite("feature-decks");
+            var spriteFeatureShop     = LoadUISprite("feature-shop");
+            var spriteFeatureStory    = LoadUISprite("feature-story");
+
             // ─── Background: dark with subtle gradient ───
             var bgPanel = CreatePanel(canvasGO, "Background", new Color(0.02f, 0.02f, 0.06f), true);
+            var bgImg = bgPanel.GetComponent<Image>();
+            ApplySprite(bgImg, spriteMenuBg, new Color(0.02f, 0.02f, 0.06f));
+            bgImg.type = Image.Type.Simple;
+            bgImg.preserveAspect = false;
 
             // Top gradient accent (like PTCG Pocket's gradient header)
             var topGrad = CreateUIChild(canvasGO, "TopGradient", Vector2.zero, Vector2.zero);
@@ -387,7 +596,8 @@ namespace DualCraft.Editor
             topGradRT.offsetMin = Vector2.zero;
             topGradRT.offsetMax = Vector2.zero;
             var topGradImg = topGrad.AddComponent<Image>();
-            topGradImg.color = new Color(Gold.r * 0.15f, Gold.g * 0.1f, Gold.b * 0.05f, 0.4f);
+            ApplySprite(topGradImg, spriteMenuGrad, new Color(Gold.r * 0.15f, Gold.g * 0.1f, Gold.b * 0.05f, 0.4f));
+            topGradImg.type = Image.Type.Simple;
 
             // ─── Logo / Title area (top center, hub style) ───
             var titleContainer = CreateUIChild(canvasGO, "TitleContainer", Vector2.zero, Vector2.zero);
@@ -422,7 +632,8 @@ namespace DualCraft.Editor
             psRT.offsetMin = Vector2.zero;
             psRT.offsetMax = Vector2.zero;
             var psBg = packShowcase.AddComponent<Image>();
-            psBg.color = new Color(0.05f, 0.04f, 0.08f, 0.6f);
+            ApplySprite(psBg, spriteShowcaseBg, new Color(0.05f, 0.04f, 0.08f, 0.6f));
+            psBg.type = Image.Type.Simple;
 
             // Pack title
             var packTitleGO = CreateUIChild(packShowcase, "PackTitle", Vector2.zero, Vector2.zero);
@@ -446,6 +657,7 @@ namespace DualCraft.Editor
                 new Color(0.4f, 0.2f, 0.6f, 0.8f), // Dark
                 new Color(0.2f, 0.8f, 0.3f, 0.8f), // Nature
             };
+            Sprite[] packSprites = { spritePackInferno, spritePackShadow, spritePackVerdant };
             string[] packNames = { "INFERNO", "SHADOW", "VERDANT" };
 
             for (int i = 0; i < 3; i++)
@@ -454,7 +666,9 @@ namespace DualCraft.Editor
                 float yOff = i == 1 ? 0f : -10f;
                 var packCard = CreateUIChild(packShowcase, $"PackCard{i}", new Vector2(packXOffsets[i], yOff - 15), new Vector2(140 * scale, 200 * scale));
                 var pcImg = packCard.AddComponent<Image>();
-                pcImg.color = packColors[i];
+                ApplySprite(pcImg, packSprites[i], packColors[i]);
+                pcImg.type = Image.Type.Simple;
+                pcImg.preserveAspect = true;
 
                 // Pack border
                 var packBorder = CreateUIChild(packCard, "Border", Vector2.zero, new Vector2(144 * scale, 204 * scale));
@@ -498,13 +712,16 @@ namespace DualCraft.Editor
 
             // Battle card
             var battleCard = CreateFeatureCard(featureRow, "BattleCard", "BATTLE", "Versus & Solo", new Color(0.15f, 0.25f, 0.45f));
+            ApplyFeatureCardSprite(battleCard, spriteFeatureBattle);
             var aiBtn = battleCard; // Use as AI duel button
 
             // Grimoire card
             var collCard = CreateFeatureCard(featureRow, "GrimoireCard", "GRIMOIRE", "117 Cards", new Color(0.25f, 0.15f, 0.35f));
+            ApplyFeatureCardSprite(collCard, spriteFeatureGrimoire);
 
             // Deck Builder card
             var deckCard = CreateFeatureCard(featureRow, "DeckCard", "DECKS", "Build & Edit", new Color(0.15f, 0.30f, 0.20f));
+            ApplyFeatureCardSprite(deckCard, spriteFeatureDecks);
 
             // ─── Bottom action row ───
             var bottomRow = CreateUIChild(canvasGO, "BottomRow", Vector2.zero, Vector2.zero);
@@ -521,11 +738,13 @@ namespace DualCraft.Editor
             brHLG.padding = new RectOffset(8, 8, 6, 6);
 
             var shopBtn = CreateFeatureCard(bottomRow, "ShopCard", "SHOP", "Coming Soon", new Color(0.3f, 0.25f, 0.15f));
+            ApplyFeatureCardSprite(shopBtn, spriteFeatureShop);
             var storyBtn = CreateFeatureCard(bottomRow, "StoryCard", "STORY", "Campaign", new Color(0.2f, 0.15f, 0.30f));
+            ApplyFeatureCardSprite(storyBtn, spriteFeatureStory);
             var settingsBtn = CreateFeatureCard(bottomRow, "SettingsCard", "SETTINGS", "", new Color(0.12f, 0.12f, 0.15f));
 
             // ─── Bottom nav bar (PTCG Pocket style persistent tab bar) ───
-            CreateBottomNavBar(canvasGO);
+            CreateBottomNavBar(canvasGO, spriteNavBar);
 
             // ─── Version text ───
             var verGO = CreateUIChild(canvasGO, "VersionText", Vector2.zero, Vector2.zero);
@@ -601,8 +820,25 @@ namespace DualCraft.Editor
             if (deckGuids.Length > 0) deck1 = AssetDatabase.LoadAssetAtPath<DeckData>(AssetDatabase.GUIDToAssetPath(deckGuids[0]));
             if (deckGuids.Length > 1) deck2 = AssetDatabase.LoadAssetAtPath<DeckData>(AssetDatabase.GUIDToAssetPath(deckGuids[1]));
 
+            // ─── Load UI texture assets ───
+            var spriteBattleBg    = LoadUISprite("battle-bg");
+            var spriteDaemonZone  = LoadUISprite("zone-daemon");
+            var spritePillarZone  = LoadUISprite("zone-pillar");
+            var spriteHandZone    = LoadUISprite("zone-hand");
+            var spritePanelDark   = LoadUISprite("panel-dark");
+            var spritePanelHeader = LoadUISprite("panel-header");
+            var spriteDividerGold = LoadUISprite("divider-gold");
+            var spriteBtnGold     = LoadUISprite("btn-gold");
+            var spriteBtnRed      = LoadUISprite("btn-red");
+            var spriteBarPlayer   = LoadUISprite("bar-player");
+            var spriteBarOpponent = LoadUISprite("bar-opponent");
+
             // ─── Full-screen background ───
             var bgPanel = CreatePanel(canvasGO, "Background", new Color(0.025f, 0.025f, 0.05f), true);
+            var bgImg = bgPanel.GetComponent<Image>();
+            ApplySprite(bgImg, spriteBattleBg, new Color(0.025f, 0.025f, 0.05f));
+            bgImg.type = Image.Type.Simple;
+            bgImg.preserveAspect = false;
 
             // ═══ LEFT SIDEBAR — Void/Discard Zones ══════
             // Matches HTML: left 160px column with discard per player
@@ -613,7 +849,8 @@ namespace DualCraft.Editor
             lsRT.offsetMin = Vector2.zero;
             lsRT.offsetMax = Vector2.zero;
             var lsBg = leftSidebar.AddComponent<Image>();
-            lsBg.color = new Color(0.03f, 0.03f, 0.05f, 0.6f);
+            ApplySprite(lsBg, spritePanelDark, new Color(0.03f, 0.03f, 0.05f, 0.6f));
+            lsBg.type = Image.Type.Simple;
 
             // P2 Void/Discard (top of left sidebar)
             var p2Void = CreateUIChild(leftSidebar, "P2VoidZone", Vector2.zero, Vector2.zero);
@@ -663,7 +900,8 @@ namespace DualCraft.Editor
             rsRT.offsetMin = Vector2.zero;
             rsRT.offsetMax = Vector2.zero;
             var rsBg = rightSidebar.AddComponent<Image>();
-            rsBg.color = new Color(0.03f, 0.03f, 0.05f, 0.6f);
+            ApplySprite(rsBg, spritePanelDark, new Color(0.03f, 0.03f, 0.05f, 0.6f));
+            rsBg.type = Image.Type.Simple;
 
             // P2 SE Pool (top-right)
             var p2SE = CreateUIChild(rightSidebar, "P2SEPool", Vector2.zero, Vector2.zero);
@@ -752,7 +990,8 @@ namespace DualCraft.Editor
             p2CzRT.offsetMin = Vector2.zero;
             p2CzRT.offsetMax = Vector2.zero;
             var p2CzBg = p2ConjZone.AddComponent<Image>();
-            p2CzBg.color = new Color(0.08f, 0.03f, 0.03f, 0.4f);
+            ApplySprite(p2CzBg, spriteBarOpponent, new Color(0.08f, 0.03f, 0.03f, 0.4f));
+            p2CzBg.type = Image.Type.Simple;
             // P2 info bar inside conjuror zone
             var p2InfoHLG = p2ConjZone.AddComponent<HorizontalLayoutGroup>();
             p2InfoHLG.spacing = 14;
@@ -803,8 +1042,8 @@ namespace DualCraft.Editor
             p2PzBgRT.offsetMin = Vector2.zero;
             p2PzBgRT.offsetMax = Vector2.zero;
             var p2PzBgImg = p2PillarZoneBg.AddComponent<Image>();
-            p2PzBgImg.color = new Color(0.10f, 0.08f, 0.02f, 0.35f); // amber/gold tint for pillars
-            // Pillar zone border
+            ApplySprite(p2PzBgImg, spritePillarZone, new Color(0.10f, 0.08f, 0.02f, 0.35f));
+            p2PzBgImg.type = Image.Type.Simple;
             var p2PzOutline = p2PillarZoneBg.AddComponent<Outline>();
             p2PzOutline.effectColor = new Color(0.78f, 0.66f, 0.42f, 0.25f);
             p2PzOutline.effectDistance = new Vector2(1.5f, 1.5f);
@@ -825,8 +1064,8 @@ namespace DualCraft.Editor
             p2FzBgRT.offsetMin = Vector2.zero;
             p2FzBgRT.offsetMax = Vector2.zero;
             var p2FzBgImg = p2FieldZoneBg.AddComponent<Image>();
-            p2FzBgImg.color = new Color(0.12f, 0.04f, 0.04f, 0.40f); // crimson tint for daemons
-            // Daemon zone border
+            ApplySprite(p2FzBgImg, spriteDaemonZone, new Color(0.12f, 0.04f, 0.04f, 0.40f));
+            p2FzBgImg.type = Image.Type.Simple;
             var p2FzOutline = p2FieldZoneBg.AddComponent<Outline>();
             p2FzOutline.effectColor = new Color(0.85f, 0.20f, 0.20f, 0.30f);
             p2FzOutline.effectDistance = new Vector2(2f, 2f);
@@ -857,7 +1096,8 @@ namespace DualCraft.Editor
             divRT.offsetMin = Vector2.zero;
             divRT.offsetMax = Vector2.zero;
             var dividerImg = divider.AddComponent<Image>();
-            dividerImg.color = new Color(Gold.r, Gold.g, Gold.b, 0.35f);
+            ApplySprite(dividerImg, spriteDividerGold, new Color(Gold.r, Gold.g, Gold.b, 0.35f));
+            dividerImg.type = Image.Type.Simple;
 
             // Center controls panel
             var centerPanel = CreateUIChild(canvasGO, "CenterControls", Vector2.zero, Vector2.zero);
@@ -867,7 +1107,8 @@ namespace DualCraft.Editor
             cpRT.offsetMin = Vector2.zero;
             cpRT.offsetMax = Vector2.zero;
             var centerBg = centerPanel.AddComponent<Image>();
-            centerBg.color = new Color(0.06f, 0.05f, 0.08f, 0.90f);
+            ApplySprite(centerBg, spritePanelHeader, new Color(0.06f, 0.05f, 0.08f, 0.90f));
+            centerBg.type = Image.Type.Simple;
 
             var centerHLG = centerPanel.AddComponent<HorizontalLayoutGroup>();
             centerHLG.spacing = 8;
@@ -958,7 +1199,8 @@ namespace DualCraft.Editor
             p1PzBgRT.offsetMin = Vector2.zero;
             p1PzBgRT.offsetMax = Vector2.zero;
             var p1PzBgImg = p1PillarZoneBg.AddComponent<Image>();
-            p1PzBgImg.color = new Color(0.10f, 0.08f, 0.02f, 0.35f); // amber/gold tint
+            ApplySprite(p1PzBgImg, spritePillarZone, new Color(0.10f, 0.08f, 0.02f, 0.35f));
+            p1PzBgImg.type = Image.Type.Simple;
             var p1PzOutline = p1PillarZoneBg.AddComponent<Outline>();
             p1PzOutline.effectColor = new Color(0.78f, 0.66f, 0.42f, 0.25f);
             p1PzOutline.effectDistance = new Vector2(1.5f, 1.5f);
@@ -979,7 +1221,8 @@ namespace DualCraft.Editor
             p1FzBgRT.offsetMin = Vector2.zero;
             p1FzBgRT.offsetMax = Vector2.zero;
             var p1FzBgImg = p1FieldZoneBg.AddComponent<Image>();
-            p1FzBgImg.color = new Color(0.12f, 0.04f, 0.04f, 0.40f); // crimson tint
+            ApplySprite(p1FzBgImg, spriteDaemonZone, new Color(0.12f, 0.04f, 0.04f, 0.40f));
+            p1FzBgImg.type = Image.Type.Simple;
             var p1FzOutline = p1FieldZoneBg.AddComponent<Outline>();
             p1FzOutline.effectColor = new Color(0.85f, 0.20f, 0.20f, 0.30f);
             p1FzOutline.effectDistance = new Vector2(2f, 2f);
@@ -1000,7 +1243,8 @@ namespace DualCraft.Editor
             p1CzRT.offsetMin = Vector2.zero;
             p1CzRT.offsetMax = Vector2.zero;
             var p1CzBg = p1ConjZone.AddComponent<Image>();
-            p1CzBg.color = new Color(0.03f, 0.05f, 0.08f, 0.4f);
+            ApplySprite(p1CzBg, spriteBarPlayer, new Color(0.03f, 0.05f, 0.08f, 0.4f));
+            p1CzBg.type = Image.Type.Simple;
             var p1InfoHLG = p1ConjZone.AddComponent<HorizontalLayoutGroup>();
             p1InfoHLG.spacing = 14;
             p1InfoHLG.childAlignment = TextAnchor.MiddleCenter;
@@ -1044,6 +1288,9 @@ namespace DualCraft.Editor
 
             // ═══ GAME LOG (right sidebar) ════════════════
             var logPanel = CreatePanel(canvasGO, "GameLogPanel", new Color(0.04f, 0.04f, 0.06f, 0.92f), false);
+            var logPanelImg = logPanel.GetComponent<Image>();
+            ApplySprite(logPanelImg, spritePanelDark, new Color(0.04f, 0.04f, 0.06f, 0.92f));
+            logPanelImg.type = Image.Type.Simple;
             var logRT = logPanel.GetComponent<RectTransform>();
             logRT.anchorMin = new Vector2(0.82f, 0.02f);
             logRT.anchorMax = new Vector2(0.99f, 0.98f);
@@ -1186,9 +1433,10 @@ namespace DualCraft.Editor
             Debug.Log("[ProjectSetup] Created Battle scene (full-field layout)");
         }
 
-        static void CreateCollectionScene()
+        static void CreateCollectionScene() { CreateCollectionScene(false); }
+        static void CreateCollectionScene(bool force)
         {
-            if (AssetExists("Assets/Scenes/Collection.unity")) return;
+            if (!force && AssetExists("Assets/Scenes/Collection.unity")) return;
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -1207,8 +1455,20 @@ namespace DualCraft.Editor
             var cardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CardPrefab.prefab");
             var cardDb = AssetDatabase.LoadAssetAtPath<CardDatabase>("Assets/Resources/CardData/CardDatabase.asset");
 
+            // Load AI sprites
+            var spriteCollBg    = LoadUISprite("collection-bg");
+            var spriteHeaderBar = LoadUISprite("header-dark");
+            var spriteFilterBar = LoadUISprite("filter-bar-bg");
+            var spriteSearchBg  = LoadUISprite("search-input-bg");
+            var spriteDetailBg  = LoadUISprite("detail-panel-bg");
+            var spriteNavBar    = LoadUISprite("nav-bar-bg");
+
             // ─── Background ───
-            CreatePanel(canvasGO, "Background", new Color(0.025f, 0.025f, 0.05f), true);
+            var bgPanel = CreatePanel(canvasGO, "Background", new Color(0.025f, 0.025f, 0.05f), true);
+            var bgImg = bgPanel.GetComponent<Image>();
+            ApplySprite(bgImg, spriteCollBg, new Color(0.025f, 0.025f, 0.05f));
+            bgImg.type = Image.Type.Simple;
+            bgImg.preserveAspect = false;
 
             // ─── Top banner (header + back button) ───
             var headerBar = CreateUIChild(canvasGO, "HeaderBar", Vector2.zero, Vector2.zero);
@@ -1218,7 +1478,8 @@ namespace DualCraft.Editor
             hbRT.offsetMin = Vector2.zero;
             hbRT.offsetMax = Vector2.zero;
             var hbImg = headerBar.AddComponent<Image>();
-            hbImg.color = new Color(0.04f, 0.04f, 0.07f, 0.95f);
+            ApplySprite(hbImg, spriteHeaderBar, new Color(0.04f, 0.04f, 0.07f, 0.95f));
+            hbImg.type = Image.Type.Simple;
 
             var backBtn = CreateMenuButton(headerBar, "BackButton", "< BACK", new Color(0.6f, 0.6f, 0.6f));
             var backRT = backBtn.GetComponent<RectTransform>();
@@ -1250,7 +1511,8 @@ namespace DualCraft.Editor
             fbRT.offsetMin = new Vector2(8, 2);
             fbRT.offsetMax = new Vector2(-8, -2);
             var fbImg = filterBar.AddComponent<Image>();
-            fbImg.color = new Color(0.05f, 0.05f, 0.08f, 0.85f);
+            ApplySprite(fbImg, spriteFilterBar, new Color(0.05f, 0.05f, 0.08f, 0.85f));
+            fbImg.type = Image.Type.Simple;
             var filterHLG = filterBar.AddComponent<HorizontalLayoutGroup>();
             filterHLG.spacing = 8;
             filterHLG.childAlignment = TextAnchor.MiddleCenter;
@@ -1261,7 +1523,8 @@ namespace DualCraft.Editor
             // Search input
             var searchGO = CreateUIChild(filterBar, "SearchInput", Vector2.zero, new Vector2(220, 32));
             var searchBg = searchGO.AddComponent<Image>();
-            searchBg.color = new Color(0.08f, 0.08f, 0.10f);
+            ApplySprite(searchBg, spriteSearchBg, new Color(0.08f, 0.08f, 0.10f));
+            searchBg.type = Image.Type.Simple;
             var searchInput = searchGO.AddComponent<TMP_InputField>();
             var searchTextGO = CreateUIChild(searchGO, "Text", Vector2.zero, new Vector2(210, 28));
             var searchText = searchTextGO.AddComponent<TextMeshProUGUI>();
@@ -1326,7 +1589,8 @@ namespace DualCraft.Editor
             // Detail backdrop
             var detailBackdrop = CreateUIChild(detailPanel, "DetailBackdrop", Vector2.zero, new Vector2(680, 420));
             var dbImg = detailBackdrop.AddComponent<Image>();
-            dbImg.color = new Color(0.05f, 0.05f, 0.08f, 0.98f);
+            ApplySprite(dbImg, spriteDetailBg, new Color(0.05f, 0.05f, 0.08f, 0.98f));
+            dbImg.type = Image.Type.Simple;
 
             var detailCard = CreateUIChild(detailBackdrop, "DetailCardVisual", new Vector2(-180, 0), new Vector2(240, 340));
             var dcBg = detailCard.AddComponent<Image>();
@@ -1392,7 +1656,7 @@ namespace DualCraft.Editor
             SetPrivateField(cs, "resultCountText", resultText);
 
             // Bottom nav bar
-            CreateBottomNavBar(canvasGO);
+            CreateBottomNavBar(canvasGO, spriteNavBar);
 
             // Music hook
             var colMusic = canvasGO.AddComponent<MusicSceneHook>();
@@ -1402,9 +1666,10 @@ namespace DualCraft.Editor
             Debug.Log("[ProjectSetup] Created Collection scene (PTCG-inspired)");
         }
 
-        static void CreateDeckBuilderScene()
+        static void CreateDeckBuilderScene() { CreateDeckBuilderScene(false); }
+        static void CreateDeckBuilderScene(bool force)
         {
-            if (AssetExists("Assets/Scenes/DeckBuilder.unity")) return;
+            if (!force && AssetExists("Assets/Scenes/DeckBuilder.unity")) return;
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -1422,7 +1687,19 @@ namespace DualCraft.Editor
             var cardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CardPrefab.prefab");
             var cardDb = AssetDatabase.LoadAssetAtPath<CardDatabase>("Assets/Resources/CardData/CardDatabase.asset");
 
-            CreatePanel(canvasGO, "Background", new Color(0.025f, 0.025f, 0.05f), true);
+            // Load AI sprites
+            var spriteDeckBg    = LoadUISprite("deckbuilder-bg");
+            var spriteHeaderBar = LoadUISprite("header-dark");
+            var spritePoolPanel = LoadUISprite("pool-panel-bg");
+            var spriteDeckPanel = LoadUISprite("deck-panel-bg");
+            var spriteConfigBar = LoadUISprite("config-bar-bg");
+            var spriteNavBar    = LoadUISprite("nav-bar-bg");
+
+            var bgPanel = CreatePanel(canvasGO, "Background", new Color(0.025f, 0.025f, 0.05f), true);
+            var bgImg = bgPanel.GetComponent<Image>();
+            ApplySprite(bgImg, spriteDeckBg, new Color(0.025f, 0.025f, 0.05f));
+            bgImg.type = Image.Type.Simple;
+            bgImg.preserveAspect = false;
 
             // ─── Top bar (header + back) ───
             var headerBar = CreateUIChild(canvasGO, "HeaderBar", Vector2.zero, Vector2.zero);
@@ -1432,7 +1709,8 @@ namespace DualCraft.Editor
             hbRT.offsetMin = Vector2.zero;
             hbRT.offsetMax = Vector2.zero;
             var hbImg = headerBar.AddComponent<Image>();
-            hbImg.color = new Color(0.04f, 0.04f, 0.07f, 0.95f);
+            ApplySprite(hbImg, spriteHeaderBar, new Color(0.04f, 0.04f, 0.07f, 0.95f));
+            hbImg.type = Image.Type.Simple;
 
             var backBtn = CreateMenuButton(headerBar, "BackButton", "< BACK", new Color(0.6f, 0.6f, 0.6f));
             var backRT = backBtn.GetComponent<RectTransform>();
@@ -1458,6 +1736,9 @@ namespace DualCraft.Editor
 
             // ─── Left side — Card Pool ───
             var poolPanel = CreatePanel(canvasGO, "CardPoolPanel", new Color(0.04f, 0.04f, 0.06f, 0.92f), false);
+            var poolPanelImg = poolPanel.GetComponent<Image>();
+            ApplySprite(poolPanelImg, spritePoolPanel, new Color(0.04f, 0.04f, 0.06f, 0.92f));
+            poolPanelImg.type = Image.Type.Simple;
             var poolRT = poolPanel.GetComponent<RectTransform>();
             poolRT.anchorMin = new Vector2(0.01f, 0.08f);
             poolRT.anchorMax = new Vector2(0.62f, 0.91f);
@@ -1472,7 +1753,8 @@ namespace DualCraft.Editor
             pfRT.offsetMin = new Vector2(6, 0);
             pfRT.offsetMax = new Vector2(-6, -4);
             var pfBg = poolFilterRow.AddComponent<Image>();
-            pfBg.color = new Color(0.05f, 0.05f, 0.08f, 0.8f);
+            ApplySprite(pfBg, spriteConfigBar, new Color(0.05f, 0.05f, 0.08f, 0.8f));
+            pfBg.type = Image.Type.Simple;
             var pfHLG = poolFilterRow.AddComponent<HorizontalLayoutGroup>();
             pfHLG.spacing = 8;
             pfHLG.childAlignment = TextAnchor.MiddleCenter;
@@ -1520,6 +1802,9 @@ namespace DualCraft.Editor
 
             // ─── Right side — Deck Panel ───
             var deckPanel = CreatePanel(canvasGO, "DeckPanel", new Color(0.04f, 0.04f, 0.06f, 0.92f), false);
+            var deckPanelImg = deckPanel.GetComponent<Image>();
+            ApplySprite(deckPanelImg, spriteDeckPanel, new Color(0.04f, 0.04f, 0.06f, 0.92f));
+            deckPanelImg.type = Image.Type.Simple;
             var deckPanelRT = deckPanel.GetComponent<RectTransform>();
             deckPanelRT.anchorMin = new Vector2(0.63f, 0.08f);
             deckPanelRT.anchorMax = new Vector2(0.99f, 0.91f);
@@ -1534,7 +1819,8 @@ namespace DualCraft.Editor
             dcRT.offsetMin = new Vector2(6, 0);
             dcRT.offsetMax = new Vector2(-6, -4);
             var dcConfigBg = deckConfigRow.AddComponent<Image>();
-            dcConfigBg.color = new Color(0.05f, 0.05f, 0.08f, 0.8f);
+            ApplySprite(dcConfigBg, spriteConfigBar, new Color(0.05f, 0.05f, 0.08f, 0.8f));
+            dcConfigBg.type = Image.Type.Simple;
             var dcHLG = deckConfigRow.AddComponent<HorizontalLayoutGroup>();
             dcHLG.spacing = 8;
             dcHLG.childAlignment = TextAnchor.MiddleCenter;
@@ -1644,7 +1930,7 @@ namespace DualCraft.Editor
             SetPrivateField(dbs, "clearButton", clearBtn.GetComponent<Button>());
 
             // Bottom nav bar
-            CreateBottomNavBar(canvasGO);
+            CreateBottomNavBar(canvasGO, spriteNavBar);
 
             // Music hook
             var dbMusic = canvasGO.AddComponent<MusicSceneHook>();
@@ -1658,9 +1944,10 @@ namespace DualCraft.Editor
         //  PACK OPENING SCENE
         // ═══════════════════════════════════════════════════
 
-        static void CreatePackOpeningScene()
+        static void CreatePackOpeningScene() { CreatePackOpeningScene(false); }
+        static void CreatePackOpeningScene(bool force)
         {
-            if (AssetExists("Assets/Scenes/PackOpening.unity")) return;
+            if (!force && AssetExists("Assets/Scenes/PackOpening.unity")) return;
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -1679,8 +1966,22 @@ namespace DualCraft.Editor
             var cardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CardPrefab.prefab");
             var cardDb = AssetDatabase.LoadAssetAtPath<CardDatabase>("Assets/Resources/CardData/CardDatabase.asset");
 
+            // Load AI sprites
+            var spritePackOpenBg   = LoadUISprite("packopen-bg");
+            var spritePackOpenGrad = LoadUISprite("packopen-gradient");
+            var spritePackGlow     = LoadUISprite("pack-glow");
+            var spritePackInferno  = LoadUISprite("pack-inferno");
+            var spritePackShadow   = LoadUISprite("pack-shadow");
+            var spritePackVerdant  = LoadUISprite("pack-verdant");
+            var spriteCeremonyBg   = LoadUISprite("ceremony-bg");
+            var spriteNavBar       = LoadUISprite("nav-bar-bg");
+
             // ─── Background ───
-            CreatePanel(canvasGO, "Background", new Color(0.02f, 0.02f, 0.05f), true);
+            var bgPanel = CreatePanel(canvasGO, "Background", new Color(0.02f, 0.02f, 0.05f), true);
+            var bgImg = bgPanel.GetComponent<Image>();
+            ApplySprite(bgImg, spritePackOpenBg, new Color(0.02f, 0.02f, 0.05f));
+            bgImg.type = Image.Type.Simple;
+            bgImg.preserveAspect = false;
 
             // Top gradient accent
             var topGrad = CreateUIChild(canvasGO, "TopGradient", Vector2.zero, Vector2.zero);
@@ -1690,7 +1991,8 @@ namespace DualCraft.Editor
             tgRT.offsetMin = Vector2.zero;
             tgRT.offsetMax = Vector2.zero;
             var tgImg = topGrad.AddComponent<Image>();
-            tgImg.color = new Color(Gold.r * 0.15f, Gold.g * 0.1f, 0.2f, 0.4f);
+            ApplySprite(tgImg, spritePackOpenGrad, new Color(Gold.r * 0.15f, Gold.g * 0.1f, 0.2f, 0.4f));
+            tgImg.type = Image.Type.Simple;
 
             // ═══ PACK SELECT PANEL ═══════════════════════
             var packSelectPanel = CreatePanel(canvasGO, "PackSelectPanel", new Color(0, 0, 0, 0), true);
@@ -1726,7 +2028,8 @@ namespace DualCraft.Editor
             pgRT.offsetMin = Vector2.zero;
             pgRT.offsetMax = Vector2.zero;
             var pgImg = packGlowArea.AddComponent<Image>();
-            pgImg.color = new Color(Gold.r, Gold.g, Gold.b, 0.08f);
+            ApplySprite(pgImg, spritePackGlow, new Color(Gold.r, Gold.g, Gold.b, 0.08f));
+            pgImg.type = Image.Type.Simple;
 
             // Side packs (left / right, smaller, faded)
             var leftPack = CreateUIChild(packDisplay, "LeftPack", Vector2.zero, Vector2.zero);
@@ -1736,7 +2039,9 @@ namespace DualCraft.Editor
             lpRT.offsetMin = Vector2.zero;
             lpRT.offsetMax = Vector2.zero;
             var lpImg = leftPack.AddComponent<Image>();
-            lpImg.color = new Color(0.15f, 0.12f, 0.25f, 0.5f);
+            ApplySprite(lpImg, spritePackShadow, new Color(0.15f, 0.12f, 0.25f, 0.5f));
+            lpImg.type = Image.Type.Simple;
+            lpImg.preserveAspect = true;
             leftPack.AddComponent<Button>().onClick.AddListener(() => { }); // handled by controller
 
             var rightPack = CreateUIChild(packDisplay, "RightPack", Vector2.zero, Vector2.zero);
@@ -1746,7 +2051,9 @@ namespace DualCraft.Editor
             rpRT.offsetMin = Vector2.zero;
             rpRT.offsetMax = Vector2.zero;
             var rpImg = rightPack.AddComponent<Image>();
-            rpImg.color = new Color(0.15f, 0.12f, 0.25f, 0.5f);
+            ApplySprite(rpImg, spritePackVerdant, new Color(0.15f, 0.12f, 0.25f, 0.5f));
+            rpImg.type = Image.Type.Simple;
+            rpImg.preserveAspect = true;
             rightPack.AddComponent<Button>().onClick.AddListener(() => { });
 
             // Center pack (main, full color like PTCG ceremony)
@@ -1757,7 +2064,9 @@ namespace DualCraft.Editor
             cpRT.offsetMin = Vector2.zero;
             cpRT.offsetMax = Vector2.zero;
             var cpImg = centerPack.AddComponent<Image>();
-            cpImg.color = new Color(0.4f, 0.2f, 0.6f, 1f); // default pack color
+            ApplySprite(cpImg, spritePackInferno, new Color(0.4f, 0.2f, 0.6f, 1f));
+            cpImg.type = Image.Type.Simple;
+            cpImg.preserveAspect = true;
 
             // Pack name label
             var packNameGO = CreateUIChild(packSelectPanel, "PackNameText", Vector2.zero, Vector2.zero);
@@ -1819,15 +2128,21 @@ namespace DualCraft.Editor
 
             // ═══ CEREMONY PANEL ═════════════════════════
             var ceremonyPanel = CreatePanel(canvasGO, "CeremonyPanel", new Color(0.01f, 0.01f, 0.04f, 0.98f), true);
+            var ceremBgImg = ceremonyPanel.GetComponent<Image>();
+            ApplySprite(ceremBgImg, spriteCeremonyBg, new Color(0.01f, 0.01f, 0.04f, 0.98f));
+            ceremBgImg.type = Image.Type.Simple;
 
             var ceremPackGlow = CreateUIChild(ceremonyPanel, "PackGlow", Vector2.zero, new Vector2(500, 500));
             var cpgImg = ceremPackGlow.AddComponent<Image>();
-            cpgImg.color = new Color(1f, 1f, 1f, 0.05f);
+            ApplySprite(cpgImg, spritePackGlow, new Color(1f, 1f, 1f, 0.05f));
+            cpgImg.type = Image.Type.Simple;
             ceremPackGlow.SetActive(false);
 
             var ceremPackImg = CreateUIChild(ceremonyPanel, "PackImage", Vector2.zero, new Vector2(250, 360));
             var cpiImg = ceremPackImg.AddComponent<Image>();
-            cpiImg.color = new Color(0.4f, 0.2f, 0.6f);
+            ApplySprite(cpiImg, spritePackInferno, new Color(0.4f, 0.2f, 0.6f));
+            cpiImg.type = Image.Type.Simple;
+            cpiImg.preserveAspect = true;
 
             ceremonyPanel.SetActive(false);
 
@@ -1883,7 +2198,7 @@ namespace DualCraft.Editor
             resultsPanel.SetActive(false);
 
             // ─── Bottom nav bar ───
-            CreateBottomNavBar(canvasGO);
+            CreateBottomNavBar(canvasGO, spriteNavBar);
 
             // ─── Wire BoosterPackController ───
             var bpc = canvasGO.AddComponent<BoosterPackController>();
@@ -2291,7 +2606,7 @@ namespace DualCraft.Editor
         }
 
         /// <summary>PTCG Pocket-style bottom navigation bar with 5 tab icons.</summary>
-        static void CreateBottomNavBar(GameObject canvas)
+        static void CreateBottomNavBar(GameObject canvas, Sprite navBarSprite = null)
         {
             var navBar = CreateUIChild(canvas, "BottomNavBar", Vector2.zero, Vector2.zero);
             var nbRT = navBar.GetComponent<RectTransform>();
@@ -2300,7 +2615,8 @@ namespace DualCraft.Editor
             nbRT.offsetMin = Vector2.zero;
             nbRT.offsetMax = Vector2.zero;
             var nbBg = navBar.AddComponent<Image>();
-            nbBg.color = new Color(0.04f, 0.04f, 0.06f, 0.97f);
+            ApplySprite(nbBg, navBarSprite, new Color(0.04f, 0.04f, 0.06f, 0.97f));
+            nbBg.type = Image.Type.Simple;
 
             // Gold accent line at top of nav bar
             var navAccent = CreateUIChild(navBar, "NavAccent", Vector2.zero, Vector2.zero);
@@ -2677,6 +2993,50 @@ namespace DualCraft.Editor
         static bool AssetExists(string path)
         {
             return File.Exists(Path.Combine(Directory.GetCurrentDirectory(), path));
+        }
+
+        /// <summary>Load a sprite from the UI textures folder, returning null if not found.</summary>
+        static Sprite LoadUISprite(string name)
+        {
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/Resources/UI/{name}.png");
+            if (tex == null) return null;
+            // Ensure texture is imported as Sprite
+            var importer = AssetImporter.GetAtPath($"Assets/Resources/UI/{name}.png") as TextureImporter;
+            if (importer != null && importer.textureType != TextureImporterType.Sprite)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.SaveAndReimport();
+                tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/Resources/UI/{name}.png");
+            }
+            return AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/Resources/UI/{name}.png");
+        }
+
+        /// <summary>Apply a sprite to an Image, falling back to the given color if sprite is null.</summary>
+        static void ApplySprite(Image img, Sprite sprite, Color fallbackColor)
+        {
+            if (sprite != null)
+            {
+                img.sprite = sprite;
+                img.type = Image.Type.Sliced;
+                img.color = Color.white;
+            }
+            else
+            {
+                img.color = fallbackColor;
+            }
+        }
+
+        /// <summary>Apply a sprite as background to a feature card's Image component.</summary>
+        static void ApplyFeatureCardSprite(GameObject featureCard, Sprite sprite)
+        {
+            if (sprite == null || featureCard == null) return;
+            var img = featureCard.GetComponent<Image>();
+            if (img == null) return;
+            img.sprite = sprite;
+            img.type = Image.Type.Simple;
+            img.color = Color.white;
+            img.preserveAspect = false;
         }
     }
 }

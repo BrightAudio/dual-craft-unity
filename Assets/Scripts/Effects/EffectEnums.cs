@@ -117,9 +117,17 @@ namespace DualCraft.Effects
         // ─── Summoning ───────────────────────────────────
         SummonToken = 80,         // params: [tokenAtk, tokenAshe, count]
 
+        // ─── Status (poketcg-inspired) ─────────────────────
+        Poison = 26,              // params: [damagePerTurn] — takes damage each turn end
+        Burn = 27,                // params: [damagePerTurn] — damage + 50% miss chance
+        DamageReduction = 28,     // params: [amount, turns] — flat damage reduction
+        NextAttackDouble = 29,    // params: [] — next attack deals ×2 (Swords Dance)
+
         // ─── Multi-effect (combo) ────────────────────────
         DamageAndDraw = 90,       // params: [damage, drawCount]
         BuffAndHeal = 91,         // params: [atkBuff, healAmount]
         DamageAllAndHealSelf = 92,// params: [damage, healAmount]
+        PoisonAll = 93,           // params: [damagePerTurn] — poison all enemy daemons
+        BurnAll = 94,             // params: [damagePerTurn] — burn all enemy daemons
     }
 }

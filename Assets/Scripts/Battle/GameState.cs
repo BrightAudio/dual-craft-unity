@@ -87,6 +87,22 @@ namespace DualCraft.Battle
         public int ShieldAmount;
         public int ThornsDamage;
         public bool Silenced;
+
+        // ─── New statuses (poketcg-inspired) ─────────
+        /// <summary>Poison: takes damage each turn at end of turn.</summary>
+        public bool Poisoned;
+        public int PoisonDamage;   // default 1, double-poison = 2
+
+        /// <summary>Burn: takes damage each turn + 50% chance to miss attack.</summary>
+        public bool Burning;
+        public int BurnDamage;     // default 1
+
+        /// <summary>Damage reduction shield (flat reduction per hit, not absorb).</summary>
+        public int DamageReduction;
+        public int DamageReductionTurns;
+
+        /// <summary>Next attack deals double damage (like Swords Dance).</summary>
+        public bool NextAttackDouble;
     }
 
     public class PillarInstance

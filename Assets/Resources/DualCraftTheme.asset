@@ -1,0 +1,141 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bcf08c15596444b685edbbc78a8d155, type: 3}
+  m_Name: DualCraftTheme
+  m_EditorClassIdentifier: DualCraft::DualCraft.UI.Visual.DualCraftVisualTheme
+  bgDark: {r: 0.043, g: 0.043, b: 0.043, a: 1}
+  bgPanel: {r: 0.08, g: 0.08, b: 0.12, a: 0.92}
+  gold: {r: 0.784, g: 0.663, b: 0.416, a: 1}
+  cream: {r: 0.961, g: 0.941, b: 0.91, a: 1}
+  accent: {r: 0.42, g: 0.36, b: 0.91, a: 1}
+  danger: {r: 0.9, g: 0.22, b: 0.22, a: 1}
+  healing: {r: 0.25, g: 0.85, b: 0.45, a: 1}
+  manaBlue: {r: 0.3, g: 0.55, b: 0.95, a: 1}
+  glowDefault: {r: 0.5, g: 0.45, b: 0.85, a: 0.5}
+  glowHighlight: {r: 0.85, g: 0.75, b: 0.35, a: 0.7}
+  glowDanger: {r: 0.95, g: 0.15, b: 0.15, a: 0.6}
+  glowHealing: {r: 0.2, g: 0.9, b: 0.4, a: 0.5}
+  glowMana: {r: 0.3, g: 0.5, b: 1, a: 0.55}
+  zoneHand: {r: 0.12, g: 0.1, b: 0.18, a: 0.85}
+  zoneDaemon: {r: 0.14, g: 0.08, b: 0.08, a: 0.8}
+  zonePillar: {r: 0.1, g: 0.1, b: 0.06, a: 0.8}
+  zoneSeal: {r: 0.06, g: 0.12, b: 0.12, a: 0.75}
+  zoneDomain: {r: 0.08, g: 0.06, b: 0.16, a: 0.8}
+  zoneConjuror: {r: 0.1, g: 0.08, b: 0.14, a: 0.9}
+  zoneGlowHand: {r: 0.5, g: 0.45, b: 0.85, a: 0.4}
+  zoneGlowDaemon: {r: 0.85, g: 0.25, b: 0.25, a: 0.45}
+  zoneGlowPillar: {r: 0.78, g: 0.66, b: 0.42, a: 0.45}
+  zoneGlowSeal: {r: 0.22, g: 0.72, b: 0.55, a: 0.4}
+  zoneGlowDomain: {r: 0.42, g: 0.36, b: 0.91, a: 0.45}
+  elFlame: {r: 0.95, g: 0.35, b: 0.1, a: 1}
+  elIce: {r: 0.55, g: 0.85, b: 0.98, a: 1}
+  elWater: {r: 0.15, g: 0.45, b: 0.95, a: 1}
+  elEarth: {r: 0.55, g: 0.4, b: 0.22, a: 1}
+  elAir: {r: 0.8, g: 0.9, b: 0.95, a: 1}
+  elLight: {r: 1, g: 0.95, b: 0.6, a: 1}
+  elDark: {r: 0.35, g: 0.15, b: 0.55, a: 1}
+  elNature: {r: 0.2, g: 0.75, b: 0.3, a: 1}
+  rarCommon: {r: 0.65, g: 0.65, b: 0.65, a: 1}
+  rarRare: {r: 0.3, g: 0.55, b: 0.95, a: 1}
+  rarEpic: {r: 0.65, g: 0.3, b: 0.9, a: 1}
+  rarLegendary: {r: 0.95, g: 0.75, b: 0.15, a: 1}
+  fadeTime: 0.25
+  popTime: 0.15
+  slideTime: 0.35
+  pulseTime: 0.6
+  hoverScale: 1.08
+  clickScale: 0.92
+  floatTextSpeed: 120
+  floatTextLife: 1.2
+  screenShakeMag: 8
+  screenShakeTime: 0.25
+  fontTitle: {fileID: 0}
+  fontBody: {fileID: 0}
+  fontNumbers: {fileID: 0}
+  panelFrame: {fileID: 21300000, guid: 7bfd61f49bfc04f71810d4c0c9c472d4, type: 3}
+  zoneFrame: {fileID: 21300000, guid: 66dc82eb45e6346328ab49ab59d11735, type: 3}
+  buttonBg: {fileID: 21300000, guid: ae7d7b41e1fba42718f24cd666b7f468, type: 3}
+  glowRing: {fileID: 0}
+  vignetteOverlay: {fileID: 0}
+  iconSword: {fileID: 21300000, guid: 2ae243bd84add44a4b8a2d75a812e13b, type: 3}
+  iconShield: {fileID: 21300000, guid: a4f55561b7bd348b8b75c0007f723062, type: 3}
+  iconSkull: {fileID: 21300000, guid: 4b7b383bc0e534ea6a40f2167ad9e241, type: 3}
+  iconHeart: {fileID: 21300000, guid: 41f42ad68af6644dcb31253113d57538, type: 3}
+  iconMana: {fileID: 21300000, guid: 24f6ddffc393642ef8d59634d9d28e87, type: 3}
+  panelSurface: {r: 0.1, g: 0.09, b: 0.15, a: 0.94}
+  panelElevated: {r: 0.13, g: 0.11, b: 0.2, a: 0.96}
+  panelOverlay: {r: 0.16, g: 0.14, b: 0.24, a: 0.98}
+  panelBorder: {r: 0.3, g: 0.26, b: 0.5, a: 0.35}
+  panelBorderGold: {r: 0.78, g: 0.66, b: 0.42, a: 0.3}
+  separator: {r: 0.4, g: 0.35, b: 0.65, a: 0.18}
+  textPrimary: {r: 0.96, g: 0.94, b: 0.91, a: 1}
+  textSecondary: {r: 0.72, g: 0.68, b: 0.78, a: 1}
+  textMuted: {r: 0.45, g: 0.42, b: 0.52, a: 1}
+  textGold: {r: 0.9, g: 0.78, b: 0.52, a: 1}
+  textShadowAlpha: 0.6
+  glowIntensity: 1.4
+  glowPulseMin: 0.2
+  glowPulseMax: 0.7
+  glowBreathSpeed: 1.2
+  glowInnerRing: {r: 1, g: 0.92, b: 0.65, a: 0.25}
+  glowOuterSoft: {r: 0.42, g: 0.36, b: 0.91, a: 0.1}
+  gradTopDark: {r: 0.02, g: 0.02, b: 0.06, a: 1}
+  gradBottomDark: {r: 0.06, g: 0.05, b: 0.12, a: 1}
+  gradGoldTop: {r: 0.9, g: 0.78, b: 0.5, a: 1}
+  gradGoldBottom: {r: 0.6, g: 0.45, b: 0.18, a: 1}
+  gradDangerTop: {r: 0.95, g: 0.3, b: 0.2, a: 1}
+  gradDangerBot: {r: 0.55, g: 0.08, b: 0.08, a: 1}
+  critShakeIntensity: 14
+  critShakeDuration: 0.3
+  critFlashAlpha: 0.55
+  hitPauseTime: 0.04
+  comboTextScale: 1.8
+  overkillColor: {r: 1, g: 0.4, b: 0.1, a: 1}
+  immuneColor: {r: 0.5, g: 0.7, b: 1, a: 1}
+  blockedColor: {r: 0.6, g: 0.6, b: 0.7, a: 1}
+  sceneTransitionTime: 0.6
+  menuTransitionTime: 0.35
+  cardFlipTime: 0.4
+  phaseRevealTime: 0.5
+  victoryFanfareDelay: 0.8
+  btnPrimaryBg: {r: 0.78, g: 0.66, b: 0.42, a: 0.9}
+  btnPrimaryText: {r: 0.04, g: 0.04, b: 0.06, a: 1}
+  btnSecondaryBg: {r: 0.14, g: 0.12, b: 0.22, a: 0.92}
+  btnSecondaryText: {r: 0.9, g: 0.85, b: 0.78, a: 1}
+  btnGhostBg: {r: 0.1, g: 0.09, b: 0.15, a: 0.25}
+  btnGhostText: {r: 0.7, g: 0.65, b: 0.78, a: 1}
+  btnDangerBg: {r: 0.75, g: 0.15, b: 0.15, a: 0.88}
+  btnDangerText: {r: 1, g: 0.92, b: 0.9, a: 1}
+  wispColor: {r: 0.42, g: 0.36, b: 0.91, a: 0.4}
+  sparkleColor: {r: 1, g: 0.95, b: 0.75, a: 0.55}
+  emberColor: {r: 1, g: 0.55, b: 0.15, a: 0.5}
+  mistColor: {r: 0.25, g: 0.22, b: 0.4, a: 0.12}
+  godRayColor: {r: 0.9, g: 0.82, b: 0.6, a: 0.06}
+  panelPadding: 16
+  zonePadding: 8
+  cardGap: 6
+  hudHeight: 64
+  phaseBarHeight: 4
+  activePlayerGlow: {r: 0.78, g: 0.66, b: 0.42, a: 0.35}
+  inactivePlayerGlow: {r: 0.3, g: 0.28, b: 0.4, a: 0.1}
+  turnTimerFull: {r: 0.25, g: 0.85, b: 0.45, a: 1}
+  turnTimerLow: {r: 0.9, g: 0.22, b: 0.22, a: 1}
+  turnTimerBg: {r: 0.08, g: 0.08, b: 0.1, a: 0.75}
+  overlayDim: {r: 0, g: 0, b: 0, a: 0.65}
+  tooltipBg: {r: 0.1, g: 0.09, b: 0.16, a: 0.96}
+  tooltipBorder: {r: 0.45, g: 0.4, b: 0.65, a: 0.4}
+  victoryColor: {r: 0.95, g: 0.82, b: 0.35, a: 1}
+  defeatColor: {r: 0.55, g: 0.25, b: 0.25, a: 1}
+  badgeNew: {r: 0.3, g: 0.75, b: 0.45, a: 1}
+  badgeHot: {r: 0.95, g: 0.45, b: 0.1, a: 1}
+  badgeSale: {r: 0.85, g: 0.2, b: 0.35, a: 1}
+  badgeFeatured: {r: 0.78, g: 0.66, b: 0.42, a: 1}

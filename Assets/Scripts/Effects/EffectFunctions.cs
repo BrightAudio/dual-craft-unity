@@ -84,6 +84,14 @@ namespace DualCraft.Effects
             { EffectFunctionId.DamageAndDraw, DamageAndDraw },
             { EffectFunctionId.BuffAndHeal, BuffAndHeal },
             { EffectFunctionId.DamageAllAndHealSelf, DamageAllAndHealSelf },
+
+            // Status (poketcg-inspired)
+            { EffectFunctionId.Poison, ApplyPoison },
+            { EffectFunctionId.Burn, ApplyBurn },
+            { EffectFunctionId.DamageReduction, ApplyDamageReduction },
+            { EffectFunctionId.NextAttackDouble, ApplyNextAttackDouble },
+            { EffectFunctionId.PoisonAll, PoisonAllEnemies },
+            { EffectFunctionId.BurnAll, BurnAllEnemies },
         };
 
         /// <summary>Look up and execute a function by its ID.</summary>
@@ -552,6 +560,73 @@ namespace DualCraft.Effects
                 ctx.SourceDaemon.CurrentAshe = Math.Min(
                     ctx.SourceDaemon.CurrentAshe + heal, ctx.SourceDaemon.MaxAshe);
             return $"{damage} to all enemies, heal self {heal}";
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //  STATUS EFFECTS (poketcg-inspired: Poison, Burn, etc.)
+        // ═══════════════════════════════════════════════════════
+
+        private static string ApplyPoison(EffectContext ctx, int[] p)
+        {
+            int dmg = P(p, 0, 1);
+            foreach (var d in ResolveTargetDaemons(ctx))
+            {
+                d.Poisoned = true;
+                d.PoisonDamage = Math.Max(d.PoisonDamage, dmg);
+            }
+            return $"Poisoned! ({dmg} damage/turn)";
+        }
+
+        private static string ApplyBurn(EffectContext ctx, int[] p)
+        {
+            int dmg = P(p, 0, 1);
+            foreach (var d in ResolveTargetDaemons(ctx))
+            {
+                d.Burning = true;
+                d.BurnDamage = Math.Max(d.BurnDamage, dmg);
+            }
+            return $"Burning! ({dmg} damage/turn, 50% miss)";
+        }
+
+        private static string ApplyDamageReduction(EffectContext ctx, int[] p)
+        {
+            int amount = P(p, 0, 2);
+            int turns = P(p, 1, 2);
+            foreach (var d in ResolveTargetDaemons(ctx))
+            {
+                d.DamageReduction += amount;
+                d.DamageReductionTurns = Math.Max(d.DamageReductionTurns, turns);
+            }
+            return $"Damage reduced by {amount} for {turns} turn(s)";
+        }
+
+        private static string ApplyNextAttackDouble(EffectContext ctx, int[] p)
+        {
+            foreach (var d in ResolveTargetDaemons(ctx))
+                d.NextAttackDouble = true;
+            return "Next attack deals double damage!";
+        }
+
+        private static string PoisonAllEnemies(EffectContext ctx, int[] p)
+        {
+            int dmg = P(p, 0, 1);
+            foreach (var d in ctx.Opponent.Field)
+            {
+                d.Poisoned = true;
+                d.PoisonDamage = Math.Max(d.PoisonDamage, dmg);
+            }
+            return $"All enemies poisoned! ({dmg}/turn)";
+        }
+
+        private static string BurnAllEnemies(EffectContext ctx, int[] p)
+        {
+            int dmg = P(p, 0, 1);
+            foreach (var d in ctx.Opponent.Field)
+            {
+                d.Burning = true;
+                d.BurnDamage = Math.Max(d.BurnDamage, dmg);
+            }
+            return $"All enemies burning! ({dmg}/turn)";
         }
 
         // ═══════════════════════════════════════════════════════
