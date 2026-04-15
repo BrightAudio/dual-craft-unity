@@ -8,6 +8,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
 
 namespace DualCraft.UI
 {
@@ -46,6 +47,16 @@ namespace DualCraft.UI
         private CardData _cardData;
         private bool _isFaceDown;
         private static Sprite _cardBackSprite;
+        private static readonly Dictionary<string, Sprite> _artCache = new();
+
+        private static Sprite LoadCardArt(string cardId)
+        {
+            if (string.IsNullOrEmpty(cardId)) return null;
+            if (_artCache.TryGetValue(cardId, out var cached)) return cached;
+            var sprite = Resources.Load<Sprite>("CardArt/" + cardId);
+            if (sprite != null) _artCache[cardId] = sprite;
+            return sprite;
+        }
 
         public CardData Data => _cardData;
 
@@ -134,11 +145,13 @@ namespace DualCraft.UI
             // Artwork — fills edge-to-edge inside black frame
             if (artworkImage)
             {
-                if (_cardData.artwork != null)
-                    artworkImage.sprite = _cardData.artwork;
-                else
-                    artworkImage.sprite = CardTextureGenerator.GenerateCardArt(
+                Sprite art = _cardData.artwork;
+                if (art == null)
+                    art = LoadCardArt(_cardData.cardId);
+                if (art == null)
+                    art = CardTextureGenerator.GenerateCardArt(
                         elem, _cardData.category, _cardData.rarity, _cardData.cardId);
+                artworkImage.sprite = art;
                 artworkImage.color = Color.white;
             }
 
