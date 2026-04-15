@@ -1,0 +1,472 @@
+{
+  "bar-opponent": {
+    "task_id": "019d9264-48a6-7f61-92c4-c4a1ee5d524f",
+    "status": "PENDING",
+    "folder": "UI"
+  },
+  "bar-player": {
+    "task_id": "019d9264-4c86-7684-b29a-504af4bd1db6",
+    "status": "PENDING",
+    "folder": "UI"
+  },
+  "battle-bg": {
+    "task_id": "019d9264-5046-7684-9960-35bf7c1e9f9f",
+    "status": "PENDING",
+    "folder": "UI"
+  },
+  "card-back": {
+    "task_id": "019d9264-6455-7f6a-94ed-fb2e56e72325",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "card-back-premium": {
+    "task_id": "019d9264-6855-7c41-b4d5-664ec7f9134e",
+    "status": "PENDING",
+    "folder": "UI"
+  },
+  "ceremony-bg": {
+    "task_id": "019d9264-6c22-7f6b-a9e7-ca198bb9dacb",
+    "status": "PENDING",
+    "folder": "UI"
+  },
+  "cj-air": {
+    "task_id": "019d9264-70af-7c41-b038-8521a66e7d5a",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "cj-dark": {
+    "task_id": "019d9264-7489-7f6b-9767-f7a95fc2292d",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "cj-earth": {
+    "task_id": "019d9264-787d-7763-8b87-096b93d5787f",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "cj-flame": {
+    "task_id": "019d9264-7c3e-7f6b-88d1-5b56710cea6f",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "cj-ice": {
+    "task_id": "019d9264-802f-7763-bf34-efb031e28b4f",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "cj-light": {
+    "task_id": "019d9264-8424-7685-8edb-cadc370a5f18",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "cj-nature": {
+    "task_id": "019d9264-880d-7c42-9d5f-872c7fada61d",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "cj-water": {
+    "task_id": "019d9264-8d53-7c42-a7a7-8fb7739b9b06",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "collection-bg": {
+    "task_id": "019d9264-9172-7f90-8a02-e79e81c6a900",
+    "status": "PENDING",
+    "folder": "UI"
+  },
+  "config-bar-bg": {
+    "task_id": "019d9264-9555-7685-ba13-c183f74dcb58",
+    "status": "PENDING",
+    "folder": "UI"
+  },
+  "d-air-1": {
+    "task_id": "019d9264-9952-7c42-b6b9-c42faa098e4d",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-air-2": {
+    "task_id": "019d9264-9d93-7685-8fbb-13119fc61ecd",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-air-3": {
+    "task_id": "019d9264-a18e-7c43-8dc1-df1edbf0ff0d",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-air-4": {
+    "task_id": "019d9264-a5a0-7685-958a-7b63686da066",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-air-5": {
+    "task_id": "019d9264-a990-7766-9497-c7764dcf9d61",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-air-6": {
+    "task_id": "019d9264-ad8e-7f93-886d-0d693f8e74a7",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-air-7": {
+    "task_id": "019d9264-b188-7770-99ce-8251ad8ceae5",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-dark-1": {
+    "task_id": "019d9264-b584-768a-bc95-ad64be630358",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-dark-2": {
+    "task_id": "019d9264-b974-768b-a99e-32160e90f117",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-dark-3": {
+    "task_id": "019d9264-bd71-7771-aa1f-a066c8fa74bf",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-dark-4": {
+    "task_id": "019d9264-c267-7f94-a118-5be48cc6a14a",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-dark-5": {
+    "task_id": "019d9264-c65a-777b-a21d-b22125182bcd",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-dark-6": {
+    "task_id": "019d9264-ca57-777d-ba16-1947cc155907",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-dark-7": {
+    "task_id": "019d9264-ce54-7696-99af-455dd699024b",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-earth-1": {
+    "task_id": "019d9264-d21d-7f94-8018-9390e6fc8646",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-earth-2": {
+    "task_id": "019d9264-d5fc-7f94-9ee6-17baa84feb8a",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-earth-3": {
+    "task_id": "019d9264-d9f6-7c60-b277-a994f4718a0b",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-earth-4": {
+    "task_id": "019d9264-ddbf-7f94-a595-8e66f7a70e04",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-earth-5": {
+    "task_id": "019d9264-e189-7791-8319-49735b0456bb",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-earth-6": {
+    "task_id": "019d9264-e572-7791-b756-26ba922a2757",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-earth-7": {
+    "task_id": "019d9264-e962-7c77-8be5-4ea948902ca0",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-fenrir": {
+    "task_id": "019d9264-f102-7c78-9c1d-03ca4fe3a7fb",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-flame-1": {
+    "task_id": "019d9264-f4f7-7f9f-bef4-e9e56044d6a2",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-flame-2": {
+    "task_id": "019d9264-f904-769c-b906-ce4f7e9b7167",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-flame-3": {
+    "task_id": "019d9264-fcd0-76a0-9326-181fb5ffd31b",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-flame-4": {
+    "task_id": "019d9265-00b3-7795-a4cd-38bf010fe4b7",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-flame-5": {
+    "task_id": "019d9265-047e-7f9f-8fe3-9c860018dd5d",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-flame-6": {
+    "task_id": "019d9265-0854-76a0-a1ae-095a11495b07",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-flame-7": {
+    "task_id": "019d9265-0d35-7796-aa2e-74b6916140ff",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-fox-fledgling": {
+    "task_id": "019d9265-112a-7796-b8c9-119cda858b9a",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-fox-grey": {
+    "task_id": "019d9265-1513-7797-80ad-f59c25e8fc8e",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-ice-1": {
+    "task_id": "019d9265-18fb-76a0-9b51-07556afa8008",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-ice-2": {
+    "task_id": "019d9265-1ced-7c7a-a3a7-874e8424f77c",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-ice-3": {
+    "task_id": "019d9265-20fa-7798-85e3-acf2eb264133",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-ice-4": {
+    "task_id": "019d9265-2529-7fa3-8edb-5dfc42f1bcf1",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-ice-5": {
+    "task_id": "019d9265-2909-76b2-ab09-85e87ff91846",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-ice-6": {
+    "task_id": "019d9265-2d02-76b2-96cc-9e6628c8bf38",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-ice-7": {
+    "task_id": "019d9265-30d6-7798-b248-a5582fb323d1",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-light-1": {
+    "task_id": "019d9265-34da-7798-9dbb-d28c8e6ac034",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-light-2": {
+    "task_id": "019d9265-38ed-76b2-8713-65946203c9eb",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-light-3": {
+    "task_id": "019d9265-3cf3-7fc2-9de9-6e794e09ff6d",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-light-4": {
+    "task_id": "019d9265-40d9-779e-8f61-641745714903",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-light-5": {
+    "task_id": "019d9265-448e-7c7b-8ea1-4573432de821",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-light-6": {
+    "task_id": "019d9265-488e-7fc7-9576-7f443c8af4cb",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-light-7": {
+    "task_id": "019d9265-4ddc-7c80-aff5-6c065767423b",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-nature-1": {
+    "task_id": "019d9265-5202-7fc7-b71e-2053032871d0",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-nature-2": {
+    "task_id": "019d9265-55f5-76b2-b864-bbcb6535b0b4",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-nature-3": {
+    "task_id": "019d9265-5a4a-779e-a382-57c9fed4ed44",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-nature-4": {
+    "task_id": "019d9265-5ec7-7c9b-806f-f63d76683f85",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-nature-5": {
+    "task_id": "019d9265-6287-77a0-8e2a-1335ab64140c",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-nature-6": {
+    "task_id": "019d9265-667d-7fc7-8772-44865177de03",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-nature-7": {
+    "task_id": "019d9265-6a93-7fc7-8aac-bf549deab0ab",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-water-1": {
+    "task_id": "019d9265-7022-76b2-82dc-d1d98e4c3630",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-water-2": {
+    "task_id": "019d9265-746a-77b3-9a5f-746178e82998",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-water-3": {
+    "task_id": "019d9265-78a2-77b3-a25c-472b56bc70a5",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-water-4": {
+    "task_id": "019d9265-7cd5-76b2-8d35-8e601f40ed4c",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-water-5": {
+    "task_id": "019d9265-80a9-77b3-85f0-db3347e951c3",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-water-6": {
+    "task_id": "019d9265-853a-7c9f-b61a-53358459e542",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "d-water-7": {
+    "task_id": "019d9265-8947-77b3-91cc-9f919acb8b0d",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "deck-panel-bg": {
+    "task_id": "019d9265-8dc9-77b3-a7b8-5a73b7f592c4",
+    "status": "PENDING",
+    "folder": "UI"
+  },
+  "deckbuilder-bg": {
+    "task_id": "019d9265-9245-7ca9-a298-9dfa357d6dbd",
+    "status": "PENDING",
+    "folder": "UI"
+  },
+  "detail-panel-bg": {
+    "task_id": "019d9265-965e-77b3-b215-b9bf4d7d7d3b",
+    "status": "PENDING",
+    "folder": "UI"
+  },
+  "disp-1": {
+    "task_id": "019d9265-9a50-7fcb-96c5-4e181c3d8230",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "disp-2": {
+    "task_id": "019d9262-0202-7b7c-9ce8-46cbfbf352a7",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "disp-3": {
+    "task_id": "019d9262-0ab9-7b7c-aa12-9055f5d418b5",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "disp-4": {
+    "task_id": "019d9262-1368-7ed6-bc3a-8727046fac52",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "disp-5": {
+    "task_id": "019d9262-1bde-7ed6-b395-7601124c2ea0",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "disp-6": {
+    "task_id": "019d9262-24f0-7b83-8418-8af9c554c340",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "disp-7": {
+    "task_id": "019d9262-2ebd-7641-946c-6789ae59f58a",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "f-1": {
+    "task_id": "019d9262-6105-7713-a456-3deff59a1182",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "f-2": {
+    "task_id": "019d9262-6a91-7714-affc-2ea8c9e0cacb",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "f-3": {
+    "task_id": "019d9262-7376-7714-a963-15d1e9aee2cb",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "f-4": {
+    "task_id": "019d9262-7ae9-7b91-a43c-5a55058e53c2",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "f-5": {
+    "task_id": "019d9262-88bc-7ee2-b538-e4efba436140",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "f-6": {
+    "task_id": "019d9262-952a-7b96-b36e-bcecf5440d97",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "f-7": {
+    "task_id": "019d9262-9f1b-771c-a5ef-3d4f81aed665",
+    "status": "PENDING",
+    "folder": "CardArt"
+  },
+  "btn-gold": {
+    "task_id": "019d9264-541d-7762-a67f-7a1d44311e7b",
+    "status": "PENDING",
+    "folder": "UI"
+  },
+  "btn-red": {
+    "task_id": "019d9264-5cb4-7685-bd6a-6ec0bf5f55ec",
+    "status": "PENDING",
+    "folder": "UI"
+  }
+}

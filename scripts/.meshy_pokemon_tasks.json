@@ -1,0 +1,797 @@
+{
+  "d-flame-1": {
+    "task_id": "019d926a-bbca-716e-86ef-0b407c6eac26",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-flame-2": {
+    "task_id": "019d926a-c5bc-7deb-9f18-c797315df069",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-flame-3": {
+    "task_id": "019d926a-cfd6-716e-9535-d9bcb5d80276",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-flame-4": {
+    "task_id": "019d926a-d89c-716e-a9cf-5cfa9b862c4c",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-flame-5": {
+    "task_id": "019d926a-e339-7174-bc6c-cef3607b0564",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-flame-6": {
+    "task_id": "019d926a-f2e4-7179-9df4-524a25c702f9",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-flame-7": {
+    "task_id": "019d926a-fe1f-7e0b-b8f6-caabaa2f7289",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-fox-fledgling": {
+    "task_id": "019d926b-0a16-777c-a170-967bd00cc7b9",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-fox-grey": {
+    "task_id": "019d926b-1393-7e0b-b0eb-c93d2f1a7b32",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-ice-1": {
+    "task_id": "019d926b-1e40-78d3-b3bc-fdd77c1ee928",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-ice-2": {
+    "task_id": "019d926b-2cb9-7191-9d67-392d2dad4c81",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-ice-3": {
+    "task_id": "019d926b-36c6-7783-bcc1-84dd4ad60308",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-ice-4": {
+    "task_id": "019d926b-40c1-78d8-a858-75dc478b1928",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-ice-5": {
+    "task_id": "019d926b-4994-7793-99be-0b06a75ba001",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-ice-6": {
+    "task_id": "019d926b-52fb-78e0-9a17-ac4ab50130b8",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-ice-7": {
+    "task_id": "019d926b-61ed-7793-93fd-3e2e7424928c",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-fenrir": {
+    "task_id": "019d926b-6c4f-7197-a6e3-00172389fac8",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-water-1": {
+    "task_id": "019d926b-7656-7793-899b-5c6e1f738191",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-water-2": {
+    "task_id": "019d926b-7fdf-7e18-9de6-78d5b6fe2a1b",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-water-3": {
+    "task_id": "019d926b-88d4-78e6-9744-03eee1ebf215",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-water-4": {
+    "task_id": "019d926b-98dc-78e7-adaa-76339b1ad725",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-water-5": {
+    "task_id": "019d926b-a1c0-779a-bd0b-2d2fcbd61bea",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-water-6": {
+    "task_id": "019d926b-abc8-7e1d-bb3d-39b3ef711def",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-water-7": {
+    "task_id": "019d926b-b514-779d-b260-0e68eff86108",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-earth-1": {
+    "task_id": "019d926b-bf51-71ec-82ae-27bc2ff9c13a",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-earth-2": {
+    "task_id": "019d926b-cea4-71ec-aa09-9730b1b38837",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-earth-3": {
+    "task_id": "019d926b-d8b6-779d-b1f8-46b2c4176534",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-earth-4": {
+    "task_id": "019d926c-0872-7e48-90ff-190d903d709c",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-earth-5": {
+    "task_id": "019d926c-20f6-7e58-bd98-9e1fba1c119f",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-earth-6": {
+    "task_id": "019d926c-2bf7-7e76-8aa8-9e4c055d6dbd",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-earth-7": {
+    "task_id": "019d926c-3c91-790f-8cc5-f362387d9f56",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-air-1": {
+    "task_id": "019d926c-487f-7e95-9bbf-6d2658fe2020",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-air-2": {
+    "task_id": "019d926c-527c-7230-9781-3b86a15e6809",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-air-3": {
+    "task_id": "019d926c-5cbc-7235-92fc-f2e1db0c966e",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-air-4": {
+    "task_id": "019d926c-66b2-781f-b269-3cdd5d4985e7",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-air-5": {
+    "task_id": "019d926c-7710-7e96-82e6-0a689dce9714",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-air-6": {
+    "task_id": "019d926c-8062-7e96-b9c9-84bb3d942c53",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-light-1": {
+    "task_id": "019d926d-8aa8-7994-9805-7b2aa34393b1",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-light-2": {
+    "task_id": "019d926d-94ba-7995-93c2-cd8664d38dd6",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-light-3": {
+    "task_id": "019d926d-a45d-7286-a63b-fe0c1cdc216e",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-light-4": {
+    "task_id": "019d926d-ad97-7889-87d6-ceeda2e1370c",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-light-5": {
+    "task_id": "019d926d-bd8d-7889-87b9-810a67ea4d57",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-light-6": {
+    "task_id": "019d926d-c927-7291-8a2d-3b1b8958f74d",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-light-7": {
+    "task_id": "019d926d-d8db-79a9-b67b-a1a08de48d56",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-dark-1": {
+    "task_id": "019d926d-e8b1-72a1-873b-e61e83bba772",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-dark-2": {
+    "task_id": "019d926d-f26a-7efb-898e-8ca8c48fd069",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-dark-3": {
+    "task_id": "019d926d-fd1e-789a-869b-9aca582222b0",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-dark-4": {
+    "task_id": "019d926e-0f76-79d2-ab49-3d57ec93dddf",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-dark-5": {
+    "task_id": "019d926e-1cd4-79d7-b718-cfcdad3f96f0",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-dark-6": {
+    "task_id": "019d926e-2be4-789b-ad7a-148d171fdbcf",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-dark-7": {
+    "task_id": "019d926e-3615-72b3-8235-18ba1117029e",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-nature-1": {
+    "task_id": "019d926e-3f89-78a9-a52e-7a29605b5b55",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-nature-2": {
+    "task_id": "019d926e-48db-78aa-be59-73d27e5bd9ef",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-nature-3": {
+    "task_id": "019d926e-53db-78ab-866d-3a8e9d3e488c",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-nature-4": {
+    "task_id": "019d926e-629f-78b0-be95-f864cd69ba52",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-nature-5": {
+    "task_id": "019d926e-6bf8-78b0-9f36-7ab05782f2d4",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-nature-6": {
+    "task_id": "019d926e-74b3-79e9-a6a6-0fcd410d0caa",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "d-nature-7": {
+    "task_id": "019d926e-7e20-79eb-9056-8e4d64fd189c",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "cj-flame": {
+    "task_id": "019d926e-87c6-7f02-92f9-360c0a9aa208",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "cj-ice": {
+    "task_id": "019d926e-95cd-7f02-ada6-df18dd8bc82a",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "cj-water": {
+    "task_id": "019d926e-9ed3-7f02-9240-59c9126f01f5",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "cj-earth": {
+    "task_id": "019d926e-a7f8-79ec-adb2-a50b777871de",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "cj-air": {
+    "task_id": "019d926e-b65f-79ed-891a-c05b2a88cc4f",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "cj-light": {
+    "task_id": "019d926e-bf2a-79ed-9aa5-8fe420346d5c",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "cj-dark": {
+    "task_id": "019d926e-cdef-78c3-a844-a73085b59644",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "cj-nature": {
+    "task_id": "019d926e-d714-79f4-8336-13a437f2355f",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-flame-1": {
+    "task_id": "019d926e-e16f-7f1c-93bb-9b4062340ae4",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-flame-2": {
+    "task_id": "019d926e-ea10-78dc-ae53-26fd71d3bd08",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-ice-1": {
+    "task_id": "019d926e-f36d-7a03-a14d-e973bd916f6f",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-ice-2": {
+    "task_id": "019d926f-0270-7f1f-9ce4-d117ab76e580",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-water-1": {
+    "task_id": "019d926f-0b7f-72d8-890e-1e52601aec62",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-water-2": {
+    "task_id": "019d926f-1453-78df-80a1-4b3aaad66112",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-earth-1": {
+    "task_id": "019d926f-2043-78df-8d30-bd31613cafaa",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-earth-2": {
+    "task_id": "019d926f-29ba-7a0a-baf4-6e06f7e5e8ef",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-air-1": {
+    "task_id": "019d926f-391e-7a1b-ac98-51b7ac8f6f55",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-air-2": {
+    "task_id": "019d926f-4359-7a1d-b9b5-064860e89b08",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-light-1": {
+    "task_id": "019d926f-4ce3-72e3-a73a-af4a6606a1be",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-light-2": {
+    "task_id": "019d926f-56c2-72e3-878e-01e55b434621",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-dark-1": {
+    "task_id": "019d926f-5f37-72e3-9dec-9f94e77a6896",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-dark-2": {
+    "task_id": "019d926f-6e0f-78e5-b267-af8038279c26",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-nature-1": {
+    "task_id": "019d926f-7782-7a20-abe9-9650607281b7",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-nature-2": {
+    "task_id": "019d926f-81b2-7a20-8aca-db4f2d0292f3",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-elemental-1": {
+    "task_id": "019d926f-8b18-78e6-84dc-fee1f47d0caa",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-elemental-2": {
+    "task_id": "019d926f-93d2-7f61-8244-0255c25501f0",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-spirit-1": {
+    "task_id": "019d926f-a2f3-7a20-aac5-0f7d80bdb370",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-spirit-2": {
+    "task_id": "019d926f-ade1-7306-9fbd-38972fe098a8",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-machine-1": {
+    "task_id": "019d926f-b602-7307-9d86-e3615903e16b",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-machine-2": {
+    "task_id": "019d926f-bdfa-7307-b31f-d2e846380896",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-artificial-1": {
+    "task_id": "019d926f-c65d-7903-bdce-6f69dd78f9ad",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-artificial-2": {
+    "task_id": "019d926f-d59d-7307-8118-cf1f49b949f0",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-undead-1": {
+    "task_id": "019d926f-dfce-7f81-820f-d53cb8173167",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "p-undead-2": {
+    "task_id": "019d926f-e8ae-7f81-ba87-37ab523d7702",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "disp-1": {
+    "task_id": "019d926f-f3da-7f81-8543-5ca684c3ae63",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "disp-2": {
+    "task_id": "019d926f-fd21-790b-b16c-0efed336c9b9",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "disp-3": {
+    "task_id": "019d9270-0b73-731f-8eae-abde021a2820",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "disp-4": {
+    "task_id": "019d9270-139c-7f82-af3a-759dffc31fe7",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "disp-5": {
+    "task_id": "019d9270-1bc6-7914-9b13-0837d5d42948",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "disp-6": {
+    "task_id": "019d9270-2b14-7a33-96e7-bab4f4c23131",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "disp-7": {
+    "task_id": "019d9270-3515-792e-9dcd-2a577c58c720",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "f-1": {
+    "task_id": "019d9270-4377-792e-86da-9737585c92e6",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "f-2": {
+    "task_id": "019d9270-4cd1-792f-9f21-c54840ee7003",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "f-3": {
+    "task_id": "019d9270-55e1-7a33-bbad-fe856927e766",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "f-4": {
+    "task_id": "019d9270-5f93-7a39-bb8f-f9a8dc6cb815",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "f-5": {
+    "task_id": "019d9270-69f7-7335-9872-b39e5a6a5f3c",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "f-6": {
+    "task_id": "019d9270-7ee8-7335-af80-bd5a85485148",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "f-7": {
+    "task_id": "019d9270-88ac-7a3f-8a37-a5ab422a6284",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "m-1": {
+    "task_id": "019d9270-9144-7937-a2e7-092e4c8b5e75",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "m-2": {
+    "task_id": "019d9270-99fa-7937-b1f9-04dc89ebb723",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "m-3": {
+    "task_id": "019d9270-a27d-794d-9539-294771d6eef6",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "m-4": {
+    "task_id": "019d9270-b1df-7a40-b7f5-80dcb7cb3fd0",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "m-5": {
+    "task_id": "019d9270-bd85-734d-9f10-1e4f0fc82dff",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "s-1": {
+    "task_id": "019d9270-c664-7a59-8748-e546ef29a7a2",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "s-2": {
+    "task_id": "019d9270-ceaa-7351-884f-93a38d0af37f",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "s-3": {
+    "task_id": "019d9270-d7ec-7352-8d2a-09e4d6a46788",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "s-4": {
+    "task_id": "019d9270-e818-7953-ab41-b6cf2e8e0fc6",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "s-5": {
+    "task_id": "019d9270-f14e-7a62-8237-4b7b9015e8d2",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "card-back": {
+    "task_id": "019d9270-fb7b-7953-9eb1-f9f2bed57dc5",
+    "status": "SUCCEEDED",
+    "is_ui": false
+  },
+  "battle-bg": {
+    "task_id": "019d9271-05c5-7fbc-9862-2b7e9a4ccc87",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "menu-bg": {
+    "task_id": "019d9271-0e87-7fc1-b478-896bf3944f51",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "collection-bg": {
+    "task_id": "019d9271-1d8c-7fd6-ab63-2e43654a841d",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "deckbuilder-bg": {
+    "task_id": "019d9271-2746-7954-ad05-179226aa2a00",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "ceremony-bg": {
+    "task_id": "019d9271-301e-7954-91a3-553f449fce71",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "packopen-bg": {
+    "task_id": "019d9271-3916-7fdb-89a5-b11335129d10",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "frame-daemon": {
+    "task_id": "019d9271-4246-7fe5-809e-0f735947efe8",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "frame-pillar": {
+    "task_id": "019d9271-5155-7a8a-97b4-7062f6dd50d7",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "frame-conjuror": {
+    "task_id": "019d9271-5b76-7a8a-9870-3dbd6d67f29f",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "frame-spell": {
+    "task_id": "019d9271-6cfc-7365-b018-89eb259d98dc",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "card-back-premium": {
+    "task_id": "019d9271-753e-7366-912b-02e77cb06010",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "zone-daemon": {
+    "task_id": "019d9271-7e72-7967-82c1-c7f10d85f3f0",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "zone-pillar": {
+    "task_id": "019d9271-8cad-7a93-96bd-f5227dbb0951",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "zone-hand": {
+    "task_id": "019d9271-9884-737e-9882-30ab923f21e3",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "pack-inferno": {
+    "task_id": "019d9271-a248-7012-a421-080a6e9c5609",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "pack-shadow": {
+    "task_id": "019d9271-ab4e-7012-8fed-34b906f7add6",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "pack-verdant": {
+    "task_id": "019d9271-b4f6-798b-9367-81f9a40442a5",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "pack-glow": {
+    "task_id": "019d9271-c53d-7aa1-afc3-7c4338184d11",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "pack-showcase-bg": {
+    "task_id": "019d9271-cf66-79a7-bbd8-e412604afe17",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "feature-battle": {
+    "task_id": "019d9271-d843-7aa3-a3a1-8d4acb1961a4",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "feature-decks": {
+    "task_id": "019d9271-e0dc-79a7-8efd-34c7d5ca4afe",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "feature-grimoire": {
+    "task_id": "019d9271-ea16-7aa3-a344-e2e85b1d9f76",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "feature-shop": {
+    "task_id": "019d9271-feb4-79ae-bbea-b9e71fc0fec2",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "feature-story": {
+    "task_id": "019d9272-0867-79b8-98a7-50ee08faec70",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "icon-heart": {
+    "task_id": "019d9272-11a0-7020-874c-61f0c25d424a",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "icon-mana": {
+    "task_id": "019d9272-1ade-7ab5-a8cd-580be2eddf2f",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "icon-shield": {
+    "task_id": "019d9272-24ac-79b9-82ce-8ea05e9466c4",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "icon-skull": {
+    "task_id": "019d9272-33b8-7399-9d93-6254a1df46d6",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "icon-sword": {
+    "task_id": "019d9272-3cbe-79bc-9aa2-eda3c2c477c0",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "panel-dark": {
+    "task_id": "019d9272-4696-79bc-8c59-1602e19e3736",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "panel-header": {
+    "task_id": "019d9272-4fa4-7021-952a-3ffb8ded4b86",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "header-dark": {
+    "task_id": "019d9272-58dd-79cb-9082-5a30ea4980f3",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "menu-gradient": {
+    "task_id": "019d9272-678d-73b7-8a02-843d204e72ff",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "packopen-gradient": {
+    "task_id": "019d9272-77d0-7041-b90c-0585767b3b98",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "bar-player": {
+    "task_id": "019d9272-8119-73b7-91c6-cb30a5220561",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "bar-opponent": {
+    "task_id": "019d9272-8c1d-73b7-a22f-2260c050cd6b",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "nav-bar-bg": {
+    "task_id": "019d9272-abfc-79f0-bdf1-dd82a90bd9e9",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "config-bar-bg": {
+    "task_id": "019d9272-b71e-79f0-a8d1-58e90c2235a9",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "detail-panel-bg": {
+    "task_id": "019d9273-3e7d-7072-b9a8-36d2eef0ce54",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "filter-bar-bg": {
+    "task_id": "019d9273-49c2-7072-b1bf-608583646dae",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "search-input-bg": {
+    "task_id": "019d9273-54d6-7a3d-85a2-9c17dc2573c9",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  },
+  "pool-panel-bg": {
+    "task_id": "019d9273-5e60-7a3e-83d9-e5f9004f110a",
+    "status": "SUCCEEDED",
+    "is_ui": true
+  }
+}
