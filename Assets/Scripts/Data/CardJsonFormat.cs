@@ -8,6 +8,8 @@ using System;
 
 namespace DualCraft.Data
 {
+    using Effects;
+
     // Root wrapper — matches all_cards.json
     [Serializable]
     public class CardDatabaseJson
@@ -24,19 +26,21 @@ namespace DualCraft.Data
         }
     }
 
-    // Unified card entry — all card types in one structure
+    // Unified card entry — all card types in one row
+    // Every possible stat/effect/property is a column (Reddit post 1)
     [Serializable]
     public class CardJsonEntry
     {
-        // Common fields
+        // ─── Identity columns ────────────────────────────
         public string id;
         public string name;
-        public string category; // daemon, pillar, domain, mask, seal, dispel, conjuror
-        public string rarity;   // common, rare, epic, legendary
+        public string category;
+        public string rarity;
         public string description;
         public string flavorText;
+        public int willCost = -1;
 
-        // Daemon fields
+        // ─── Stat columns (daemon) ───────────────────────
         public string element;
         public string creatureType;
         public int ashe;
@@ -44,31 +48,124 @@ namespace DualCraft.Data
         public int asheCost;
         public string evolvesTo;
         public int evolutionCost;
-        public AbilityJsonEntry ability;
 
-        // Pillar fields
+        // ─── Pillar stat columns ─────────────────────────
         public int hp;
         public int loyalty;
         public string passiveAbility;
+
+        // ─── Mask stat columns ───────────────────────────
+        public int duration;
+
+        // ─── Seal stat columns ───────────────────────────
+        public string trigger;
+
+        // ─── Dispel stat columns ─────────────────────────
+        public string target;
+
+        // ─── Legacy effect data (backwards compat) ───────
+        public AbilityJsonEntry ability;
         public EffectJsonEntry passiveEffect;
         public EffectJsonEntry onDestroyedEffect;
         public ActivatedAbilityJsonEntry[] activatedAbilities;
-
-        // Domain fields
         public EffectJsonEntry effect;
-
-        // Mask fields
-        public int duration;
-
-        // Seal fields
-        public string trigger; // on-attack, on-spell, on-daemon-destroy, on-summon
-
-        // Dispel fields
-        public string target; // domain, mask, seal, any
         public EffectJsonEntry counterEffect;
-
-        // Conjuror fields
         public ConjurorAbilityJsonEntry[] abilities;
+
+        // ─── New: function-based effects (Post 2) ────────
+        // Each card can have multiple effects. Each effect is a row with:
+        //   trigger, target, functionId, and up to 5 int parameters.
+        // "Untap X Mana of Y Type" = one function, change X and Y.
+        public EffectJsonData[] effects;
+    }
+
+    // ─── Function-based effect data (the "function column + 5 param columns") ───
+    [Serializable]
+    public class EffectJsonData
+    {
+        public string trigger;     // maps to EffectTrigger enum
+        public string target;      // maps to EffectTarget enum
+        public int functionId;     // maps to EffectFunctionId enum
+        public int p0;             // parameter 0
+        public int p1;             // parameter 1
+        public int p2;             // parameter 2
+        public int p3;             // parameter 3
+        public int p4;             // parameter 4
+        public string description; // human-readable tooltip
+
+        public int[] GetParams()
+        {
+            // Return only non-zero trailing params to keep it compact
+            if (p4 != 0) return new[] { p0, p1, p2, p3, p4 };
+            if (p3 != 0) return new[] { p0, p1, p2, p3 };
+            if (p2 != 0) return new[] { p0, p1, p2 };
+            if (p1 != 0) return new[] { p0, p1 };
+            if (p0 != 0) return new[] { p0 };
+            return System.Array.Empty<int>();
+        }
+
+        public EffectEntry ToEffectEntry()
+        {
+            return new EffectEntry
+            {
+                trigger = ParseTrigger(trigger),
+                target = ParseTarget(target),
+                functionId = (EffectFunctionId)functionId,
+                parameters = GetParams(),
+                description = description,
+            };
+        }
+
+        private static EffectTrigger ParseTrigger(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return EffectTrigger.None;
+            return s.ToLowerInvariant().Replace("-", "").Replace("_", "") switch
+            {
+                "onsummon" => EffectTrigger.OnSummon,
+                "ondestroy" => EffectTrigger.OnDestroy,
+                "onattack" => EffectTrigger.OnAttack,
+                "ondamaged" => EffectTrigger.OnDamaged,
+                "passive" => EffectTrigger.Passive,
+                "activated" => EffectTrigger.Activated,
+                "onturnstart" => EffectTrigger.OnTurnStart,
+                "onturnend" => EffectTrigger.OnTurnEnd,
+                "ondraw" => EffectTrigger.OnDraw,
+                "onplay" => EffectTrigger.OnPlay,
+                "onsealtriggered" => EffectTrigger.OnSealTriggered,
+                "onpillarreveal" => EffectTrigger.OnPillarReveal,
+                "onevolve" => EffectTrigger.OnEvolve,
+                "onmaskequipped" => EffectTrigger.OnMaskEquipped,
+                "onmaskexpired" => EffectTrigger.OnMaskExpired,
+                _ => EffectTrigger.None,
+            };
+        }
+
+        private static EffectTarget ParseTarget(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return EffectTarget.None;
+            return s.ToLowerInvariant().Replace("-", "").Replace("_", "") switch
+            {
+                "self" => EffectTarget.Self,
+                "allfriendlydaemons" => EffectTarget.AllFriendlyDaemons,
+                "allenemydaemons" => EffectTarget.AllEnemyDaemons,
+                "alldaemons" => EffectTarget.AllDaemons,
+                "randomenemydaemon" => EffectTarget.RandomEnemyDaemon,
+                "randomfriendlydaemon" => EffectTarget.RandomFriendlyDaemon,
+                "friendlyconjuror" => EffectTarget.FriendlyConjuror,
+                "enemyconjuror" => EffectTarget.EnemyConjuror,
+                "targetdaemon" => EffectTarget.TargetDaemon,
+                "targetenemydaemon" => EffectTarget.TargetEnemyDaemon,
+                "targetfriendlydaemon" => EffectTarget.TargetFriendlyDaemon,
+                "allfriendlypillars" => EffectTarget.AllFriendlyPillars,
+                "allenemypillars" => EffectTarget.AllEnemyPillars,
+                "strongestenemy" => EffectTarget.StrongestEnemy,
+                "weakestenemy" => EffectTarget.WeakestEnemy,
+                "allplayers" => EffectTarget.AllPlayers,
+                "attackingdaemon" => EffectTarget.AttackingDaemon,
+                "triggersource" => EffectTarget.TriggerSource,
+                _ => EffectTarget.None,
+            };
+        }
     }
 
     [Serializable]

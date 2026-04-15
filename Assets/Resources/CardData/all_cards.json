@@ -20,7 +20,21 @@
         "description": "Deals 1 damage to all enemy Daemons on summon.",
         "type": "on-summon",
         "effect": "blaze-trail"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnSummon",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 1 damage to all enemy Daemons on summon."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-flame-2",
@@ -35,7 +49,8 @@
       "description": "A mechanical guardian powered by a molten furnace core.",
       "flavorText": "\"It knows neither mercy nor rust.\"",
       "evolvesTo": "d-flame-1",
-      "evolutionCost": 3
+      "evolutionCost": 3,
+      "willCost": 1
     },
     {
       "id": "d-flame-3",
@@ -54,7 +69,21 @@
         "description": "When destroyed, deals 3 damage to the enemy Conjuror.",
         "type": "on-destroy",
         "effect": "immolate"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnDestroy",
+          "target": "EnemyConjuror",
+          "functionId": "DamageConjuror",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 3 damage to enemy Conjuror on death."
+        }
+      ],
+      "willCost": 3
     },
     {
       "id": "d-flame-4",
@@ -67,7 +96,8 @@
       "attack": 4,
       "asheCost": 1,
       "description": "A reptilian beast that hurls globs of molten rock from its maw.",
-      "flavorText": "\"It never stops chewing. It never stops spitting.\""
+      "flavorText": "\"It never stops chewing. It never stops spitting.\"",
+      "willCost": 1
     },
     {
       "id": "d-flame-5",
@@ -86,7 +116,21 @@
         "description": "When destroyed, deals 2 damage to all enemy Daemons.",
         "type": "on-destroy",
         "effect": "cinder-cloud"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnDestroy",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 2 damage to all enemies on death."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-flame-6",
@@ -99,7 +143,8 @@
       "attack": 4,
       "asheCost": 1,
       "description": "A spectral fox that ignites the ground wherever it runs.",
-      "flavorText": "\"Follow the burning pawprints—if you dare.\""
+      "flavorText": "\"Follow the burning pawprints—if you dare.\"",
+      "willCost": 1
     },
     {
       "id": "d-flame-7",
@@ -118,7 +163,21 @@
         "description": "Gains +1 ATK each time a Daemon is destroyed.",
         "type": "passive",
         "effect": "reforge"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "Self",
+          "functionId": "BuffAttack",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Gains +1 ATK while on field."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-ice-1",
@@ -137,7 +196,21 @@
         "description": "Freezes target Daemon for 1 turn when attacking.",
         "type": "passive",
         "effect": "frostbite"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "RandomEnemyDaemon",
+          "functionId": "Freeze",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Freezes a random enemy each turn."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-ice-2",
@@ -150,7 +223,8 @@
       "attack": 2,
       "asheCost": 1,
       "description": "A massive construct of ancient glacial ice, nearly indestructible.",
-      "flavorText": "\"It has stood since before the first thaw.\""
+      "flavorText": "\"It has stood since before the first thaw.\"",
+      "willCost": 1
     },
     {
       "id": "d-ice-3",
@@ -169,7 +243,21 @@
         "description": "Cannot be targeted by Seals.",
         "type": "passive",
         "effect": "seal-immune"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "Self",
+          "functionId": "Shield",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Immune to seal effects."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-ice-4",
@@ -182,7 +270,8 @@
       "attack": 3,
       "asheCost": 1,
       "description": "A frozen corpse that prowls the tundra, patient and relentless.",
-      "flavorText": "\"It waited a thousand years. It can wait one more turn.\""
+      "flavorText": "\"It waited a thousand years. It can wait one more turn.\"",
+      "willCost": 1
     },
     {
       "id": "d-ice-5",
@@ -201,7 +290,21 @@
         "description": "Deals 2 damage to a random enemy Daemon on summon.",
         "type": "on-summon",
         "effect": "landslide"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnSummon",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 2 damage to all enemies on summon."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-ice-6",
@@ -214,7 +317,8 @@
       "attack": 2,
       "asheCost": 1,
       "description": "An armored crustacean encased in layers of permafrost plating.",
-      "flavorText": "\"Its shell grows thicker with every storm.\""
+      "flavorText": "\"Its shell grows thicker with every storm.\"",
+      "willCost": 1
     },
     {
       "id": "d-ice-7",
@@ -233,7 +337,21 @@
         "description": "Freezes the attacked Daemon for 1 turn.",
         "type": "passive",
         "effect": "frostbite"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "RandomEnemyDaemon",
+          "functionId": "Freeze",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Freezes a random enemy each turn."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-water-1",
@@ -252,7 +370,21 @@
         "description": "Heals 2 Ashe at the start of your turn.",
         "type": "passive",
         "effect": "tidal-regen"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "Self",
+          "functionId": "HealAshe",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals 1 Ashe at start of turn."
+        }
+      ],
+      "willCost": 1
     },
     {
       "id": "d-water-2",
@@ -265,7 +397,8 @@
       "attack": 3,
       "asheCost": 1,
       "description": "A living machine encrusted with deep-sea coral and barnacles.",
-      "flavorText": "\"Half drowned, half alive, entirely lethal.\""
+      "flavorText": "\"Half drowned, half alive, entirely lethal.\"",
+      "willCost": 1
     },
     {
       "id": "d-water-3",
@@ -284,7 +417,21 @@
         "description": "When destroyed, return 1 card from your Ashe Pile to hand.",
         "type": "on-destroy",
         "effect": "undertow"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnDestroy",
+          "target": "AllEnemyDaemons",
+          "functionId": "DebuffAttack",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Debuffs all enemy ATK by 1 on death."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-water-4",
@@ -297,7 +444,8 @@
       "attack": 4,
       "asheCost": 1,
       "description": "A crackling eel that rides the currents and strikes like lightning.",
-      "flavorText": "\"The sea has teeth, and they are electric.\""
+      "flavorText": "\"The sea has teeth, and they are electric.\"",
+      "willCost": 1
     },
     {
       "id": "d-water-5",
@@ -316,7 +464,21 @@
         "description": "Draw 1 card when this Daemon is summoned.",
         "type": "on-summon",
         "effect": "deep-grasp"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnSummon",
+          "target": "RandomEnemyDaemon",
+          "functionId": "Entangle",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Entangles a random enemy for 2 turns."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-water-6",
@@ -329,7 +491,8 @@
       "attack": 3,
       "asheCost": 1,
       "description": "A drone ship piloted by parasitic barnacles in perfect unison.",
-      "flavorText": "\"The barnacles steer. The hull obeys.\""
+      "flavorText": "\"The barnacles steer. The hull obeys.\"",
+      "willCost": 1
     },
     {
       "id": "d-water-7",
@@ -348,7 +511,21 @@
         "description": "Heals all your Daemons for 1 Ashe at start of turn.",
         "type": "passive",
         "effect": "healing-rain"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals all allies 1 Ashe per turn."
+        }
+      ],
+      "willCost": 1
     },
     {
       "id": "d-earth-1",
@@ -367,7 +544,21 @@
         "description": "Takes 1 less damage from all attacks.",
         "type": "passive",
         "effect": "fortify"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "Self",
+          "functionId": "Shield",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Gains 2 shield while on field."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-earth-2",
@@ -380,7 +571,8 @@
       "attack": 3,
       "asheCost": 1,
       "description": "An ancient tree spirit whose roots crush and entangle.",
-      "flavorText": "\"The forest floor is its domain and its weapon.\""
+      "flavorText": "\"The forest floor is its domain and its weapon.\"",
+      "willCost": 1
     },
     {
       "id": "d-earth-3",
@@ -399,7 +591,21 @@
         "description": "Gains +1 Ashe when any Daemon is destroyed.",
         "type": "passive",
         "effect": "ore-armor"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "Self",
+          "functionId": "Shield",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Gains 3 shield while on field."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-earth-4",
@@ -412,7 +618,8 @@
       "attack": 3,
       "asheCost": 1,
       "description": "A massive beetle whose steps crack the earth and topple walls.",
-      "flavorText": "\"It does not dig through stone. Stone moves aside.\""
+      "flavorText": "\"It does not dig through stone. Stone moves aside.\"",
+      "willCost": 1
     },
     {
       "id": "d-earth-5",
@@ -431,7 +638,21 @@
         "description": "Takes 1 less damage from all attacks.",
         "type": "passive",
         "effect": "fortify"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "Self",
+          "functionId": "Shield",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Gains 2 shield while on field."
+        }
+      ],
+      "willCost": 1
     },
     {
       "id": "d-earth-6",
@@ -444,7 +665,8 @@
       "attack": 4,
       "asheCost": 1,
       "description": "A mud spirit that rides a wall of sludge into battle.",
-      "flavorText": "\"You hear it coming. You smell it first.\""
+      "flavorText": "\"You hear it coming. You smell it first.\"",
+      "willCost": 1
     },
     {
       "id": "d-earth-7",
@@ -463,7 +685,21 @@
         "description": "Deals double damage to Pillars.",
         "type": "passive",
         "effect": "pillar-crusher"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "AllEnemyPillars",
+          "functionId": "DealDamage",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 1 damage to enemy pillars each turn."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-air-1",
@@ -482,7 +718,21 @@
         "description": "Can attack the turn it is summoned.",
         "type": "passive",
         "effect": "haste"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "Self",
+          "functionId": "BuffAttack",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Can attack the turn it is summoned."
+        }
+      ],
+      "willCost": 1
     },
     {
       "id": "d-air-2",
@@ -495,7 +745,8 @@
       "attack": 3,
       "asheCost": 1,
       "description": "A spirit of the four winds, elusive and unpredictable.",
-      "flavorText": "\"Try to strike it—you'll only hit the breeze.\""
+      "flavorText": "\"Try to strike it—you'll only hit the breeze.\"",
+      "willCost": 1
     },
     {
       "id": "d-air-3",
@@ -514,7 +765,21 @@
         "description": "Deals double damage to Pillars.",
         "type": "passive",
         "effect": "pillar-crusher"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "AllEnemyPillars",
+          "functionId": "DealDamage",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 1 damage to enemy pillars each turn."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-air-4",
@@ -527,7 +792,8 @@
       "attack": 4,
       "asheCost": 1,
       "description": "A small but vicious bird that strikes faster than the eye can follow.",
-      "flavorText": "\"Blink and you bleed.\""
+      "flavorText": "\"Blink and you bleed.\"",
+      "willCost": 1
     },
     {
       "id": "d-air-5",
@@ -546,7 +812,21 @@
         "description": "Deals 2 damage to a random enemy Daemon on summon.",
         "type": "on-summon",
         "effect": "shockwave"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnSummon",
+          "target": "AllDaemons",
+          "functionId": "DealDamage",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 1 damage to ALL daemons on summon."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-air-6",
@@ -559,7 +839,8 @@
       "attack": 3,
       "asheCost": 1,
       "description": "A mechanical dragon that harnesses wind to power its flight.",
-      "flavorText": "\"It hums a tune of turbines and tailwinds.\""
+      "flavorText": "\"It hums a tune of turbines and tailwinds.\"",
+      "willCost": 1
     },
     {
       "id": "d-air-7",
@@ -578,7 +859,21 @@
         "description": "Returns to hand instead of being destroyed (once per game).",
         "type": "on-destroy",
         "effect": "eye-of-storm"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnDestroy",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 3 damage to all enemies on death."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-light-1",
@@ -597,7 +892,21 @@
         "description": "When destroyed, returns to the field with 4 Ashe (once per game).",
         "type": "on-destroy",
         "effect": "rebirth"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnDestroy",
+          "target": "Self",
+          "functionId": "HealConjuror",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals conjuror for 3 on death."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-light-2",
@@ -610,7 +919,8 @@
       "attack": 3,
       "asheCost": 1,
       "description": "A crystalline machine that refracts light into devastating beams.",
-      "flavorText": "\"A single ray enters. A thousand razors exit.\""
+      "flavorText": "\"A single ray enters. A thousand razors exit.\"",
+      "willCost": 1
     },
     {
       "id": "d-light-3",
@@ -629,7 +939,21 @@
         "description": "Heals your Conjuror for 2 HP on summon.",
         "type": "on-summon",
         "effect": "healing-light"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnSummon",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals all allies for 2 on summon."
+        }
+      ],
+      "willCost": 1
     },
     {
       "id": "d-light-4",
@@ -644,7 +968,8 @@
       "description": "A tiny fae of concentrated starlight that darts across the field.",
       "flavorText": "\"It giggled. Then the shadow screamed.\"",
       "evolvesTo": "d-light-1",
-      "evolutionCost": 4
+      "evolutionCost": 4,
+      "willCost": 1
     },
     {
       "id": "d-light-5",
@@ -663,7 +988,21 @@
         "description": "+2 ATK when your Conjuror has more than half HP.",
         "type": "passive",
         "effect": "solar-charge"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "Self",
+          "functionId": "BuffAttack",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Gains +1 ATK each turn."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-light-6",
@@ -676,7 +1015,8 @@
       "attack": 2,
       "asheCost": 1,
       "description": "A stationary light cannon that sweeps the field with searing beams.",
-      "flavorText": "\"It does not move. Everything else does.\""
+      "flavorText": "\"It does not move. Everything else does.\"",
+      "willCost": 1
     },
     {
       "id": "d-light-7",
@@ -695,7 +1035,21 @@
         "description": "Heals your Conjuror for 3 HP on summon.",
         "type": "on-summon",
         "effect": "divine-descent"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnSummon",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttack",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Gives all allies +2 ATK on summon."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-dark-1",
@@ -714,7 +1068,21 @@
         "description": "Steals 1 Ashe from the target when attacking.",
         "type": "passive",
         "effect": "void-drain"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "StrongestEnemy",
+          "functionId": "DrainAshe",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Drains 2 Ashe from strongest enemy each turn."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-dark-2",
@@ -733,7 +1101,21 @@
         "description": "Gains +1 ATK for each Daemon in your Ashe Pile.",
         "type": "passive",
         "effect": "soul-reap"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "WeakestEnemy",
+          "functionId": "DealDamage",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 2 damage to weakest enemy each turn."
+        }
+      ],
+      "willCost": 3
     },
     {
       "id": "d-dark-3",
@@ -746,7 +1128,8 @@
       "attack": 3,
       "asheCost": 1,
       "description": "A machine powered by dark matter, disrupting all nearby magic.",
-      "flavorText": "\"It was built by no one. It serves nothing.\""
+      "flavorText": "\"It was built by no one. It serves nothing.\"",
+      "willCost": 1
     },
     {
       "id": "d-dark-4",
@@ -761,7 +1144,8 @@
       "description": "A multilimbed horror that skitters through the spaces between shadows.",
       "flavorText": "\"Check under the bed. Now check the ceiling.\"",
       "evolvesTo": "d-dark-5",
-      "evolutionCost": 3
+      "evolutionCost": 3,
+      "willCost": 1
     },
     {
       "id": "d-dark-5",
@@ -780,7 +1164,21 @@
         "description": "Cannot be targeted while you have Seals set.",
         "type": "passive",
         "effect": "dream-shroud"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "Self",
+          "functionId": "Stealth",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Has stealth while on field."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-dark-6",
@@ -793,7 +1191,8 @@
       "attack": 3,
       "asheCost": 1,
       "description": "A clockwork soldier that only activates when the sun sets.",
-      "flavorText": "\"Tick. Tick. Tick. Silence.\""
+      "flavorText": "\"Tick. Tick. Tick. Silence.\"",
+      "willCost": 1
     },
     {
       "id": "d-dark-7",
@@ -812,7 +1211,21 @@
         "description": "When destroyed, the opponent discards 1 random card.",
         "type": "on-destroy",
         "effect": "oblivion"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnDestroy",
+          "target": "AllDaemons",
+          "functionId": "DealDamage",
+          "p0": 4,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 4 damage to ALL daemons on death."
+        }
+      ],
+      "willCost": 3
     },
     {
       "id": "d-nature-1",
@@ -825,7 +1238,8 @@
       "attack": 3,
       "asheCost": 1,
       "description": "A massive serpent of living vines that coils around its prey, squeezing the fight from them.",
-      "flavorText": "\"It does not strike. It simply holds, and holds, and holds.\""
+      "flavorText": "\"It does not strike. It simply holds, and holds, and holds.\"",
+      "willCost": 1
     },
     {
       "id": "d-nature-2",
@@ -846,7 +1260,21 @@
         "effect": "haste"
       },
       "evolvesTo": "d-nature-5",
-      "evolutionCost": 2
+      "evolutionCost": 2,
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "Self",
+          "functionId": "BuffAttack",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Can attack the turn it is summoned."
+        }
+      ],
+      "willCost": 1
     },
     {
       "id": "d-nature-3",
@@ -865,7 +1293,21 @@
         "description": "Reduces incoming damage by 1.",
         "type": "passive",
         "effect": "fortify"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "Self",
+          "functionId": "Shield",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Gains 2 shield while on field."
+        }
+      ],
+      "willCost": 1
     },
     {
       "id": "d-nature-4",
@@ -884,7 +1326,21 @@
         "description": "Regenerates 2 Ashe at the start of your turn.",
         "type": "passive",
         "effect": "tidal-regen"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "Self",
+          "functionId": "HealAshe",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals 1 Ashe at start of turn."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-nature-5",
@@ -903,7 +1359,21 @@
         "description": "Heals your Conjuror for 3 HP on summon.",
         "type": "on-summon",
         "effect": "divine-descent"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnSummon",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttack",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Gives all allies +2 ATK on summon."
+        }
+      ],
+      "willCost": 1
     },
     {
       "id": "d-nature-6",
@@ -922,7 +1392,21 @@
         "description": "When destroyed, returns to the field with 4 Ashe (once per game).",
         "type": "on-destroy",
         "effect": "rebirth"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnDestroy",
+          "target": "Self",
+          "functionId": "HealConjuror",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals conjuror for 3 on death."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-nature-7",
@@ -941,7 +1425,21 @@
         "description": "When destroyed, all your Daemons heal 3 Ashe.",
         "type": "on-destroy",
         "effect": "undying-pack"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnDestroy",
+          "target": "None",
+          "functionId": "SummonToken",
+          "p0": 1,
+          "p1": 1,
+          "p2": 2,
+          "p3": 0,
+          "p4": 0,
+          "description": "Summons two 1/1 tokens on death."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-fenrir",
@@ -960,7 +1458,21 @@
         "description": "When Fenrir is destroyed, all your other Daemons gain +2 ATK and heal 3 Ashe. He fights on through them.",
         "type": "on-destroy",
         "effect": "undying-pack"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnDestroy",
+          "target": "None",
+          "functionId": "SummonToken",
+          "p0": 1,
+          "p1": 1,
+          "p2": 2,
+          "p3": 0,
+          "p4": 0,
+          "description": "Summons two 1/1 tokens on death."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "d-fox-fledgling",
@@ -981,7 +1493,21 @@
         "effect": "haste"
       },
       "evolvesTo": "d-fox-grey",
-      "evolutionCost": 3
+      "evolutionCost": 3,
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "Self",
+          "functionId": "BuffAttack",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Can attack the turn it is summoned."
+        }
+      ],
+      "willCost": 1
     },
     {
       "id": "d-fox-grey",
@@ -1000,7 +1526,21 @@
         "description": "Cannot be targeted by Seals. When The Grey Fox attacks, it cannot take counter-damage.",
         "type": "passive",
         "effect": "shadow-step"
-      }
+      },
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "Self",
+          "functionId": "Stealth",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Has stealth for 1 turn after summoning."
+        }
+      ],
+      "willCost": 2
     },
     {
       "id": "p-flame-1",
@@ -1033,7 +1573,54 @@
           "loyaltyCost": -3,
           "effect": "pil-flame1-burst"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 1 damage to all enemies at turn start."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 3 to all enemies on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "RandomEnemyDaemon",
+          "functionId": "DealDamage",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Deal 2 damage to a random enemy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 4,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-3] Deal 4 damage to all enemies."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-flame-2",
@@ -1067,7 +1654,54 @@
           "loyaltyCost": -4,
           "effect": "pil-flame2-hellgate"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttackConditional",
+          "p0": 2,
+          "p1": 1,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Buffs matching element daemons +2 ATK."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 2 to all enemies on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "TargetEnemyDaemon",
+          "functionId": "DealDamage",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Deal 3 damage to target enemy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 5,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] Deal 5 damage to all enemies."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-ice-1",
@@ -1100,7 +1734,54 @@
           "loyaltyCost": -3,
           "effect": "pil-ice1-prison"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttackConditional",
+          "p0": 1,
+          "p1": 2,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Buffs matching element daemons +1 ATK."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "RandomEnemyDaemon",
+          "functionId": "Freeze",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Freezes a random enemy on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "TargetEnemyDaemon",
+          "functionId": "Freeze",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Freeze target enemy for 1 turn."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllEnemyDaemons",
+          "functionId": "Freeze",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-3] Freeze all enemies for 1 turn."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-ice-2",
@@ -1132,7 +1813,54 @@
           "loyaltyCost": -4,
           "effect": "pil-ice2-perma"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "AllEnemyDaemons",
+          "functionId": "ReduceCost",
+          "p0": -1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Enemy daemons cost 1 more."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "RandomEnemyDaemon",
+          "functionId": "Freeze",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Freezes a random enemy on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "TargetEnemyDaemon",
+          "functionId": "Freeze",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Freeze target enemy for 1 turn."
+        },
+        {
+          "trigger": "Activated",
+          "target": "StrongestEnemy",
+          "functionId": "Freeze",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] Freeze strongest enemy for 3 turns."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-water-1",
@@ -1165,7 +1893,54 @@
           "loyaltyCost": -3,
           "effect": "pil-water1-whirl"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals matching element daemons 1 Ashe."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "None",
+          "functionId": "ReturnToHand",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Returns a card from ashepile to hand on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "TargetFriendlyDaemon",
+          "functionId": "HealAshe",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Heal target daemon for 3."
+        },
+        {
+          "trigger": "Activated",
+          "target": "RandomEnemyDaemon",
+          "functionId": "ReturnToHand",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-3] Return random enemy to hand."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-water-2",
@@ -1198,7 +1973,54 @@
           "loyaltyCost": -4,
           "effect": "pil-water2-surge"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "FriendlyConjuror",
+          "functionId": "HealConjuror",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals conjuror for 1 at turn start."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "None",
+          "functionId": "DrawCards",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Draw 2 cards on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Heal all allies for 2."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAshe",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] All allies gain +3 Ashe."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-earth-1",
@@ -1233,7 +2055,54 @@
           "loyaltyCost": -4,
           "effect": "pil-earth1-tec"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAshe",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "All friendly daemons gain +2 max Ashe."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "None",
+          "functionId": "SummonToken",
+          "p0": 1,
+          "p1": 1,
+          "p2": 2,
+          "p3": 0,
+          "p4": 0,
+          "description": "Summons 2 tokens on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "Shield",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] All allies gain 2 shield."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "Shield",
+          "p0": 5,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] All allies gain 5 shield."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-earth-2",
@@ -1269,7 +2138,54 @@
           "loyaltyCost": -5,
           "effect": "pil-earth2-aval"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttackConditional",
+          "p0": 1,
+          "p1": 4,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Buffs matching element daemons +1 ATK."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "None",
+          "functionId": "SummonToken",
+          "p0": 1,
+          "p1": 1,
+          "p2": 2,
+          "p3": 0,
+          "p4": 0,
+          "description": "Summons 2 tokens on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "TargetFriendlyDaemon",
+          "functionId": "BuffAttack",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Target daemon gains +2 ATK."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-5] Deal 3 damage to all enemies."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-air-1",
@@ -1301,7 +2217,54 @@
           "loyaltyCost": -3,
           "effect": "pil-air1-tempest"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "None",
+          "functionId": "DrawCards",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Draw an extra card every other turn."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "None",
+          "functionId": "ReturnToHand",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Returns all masks to hand on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "TargetEnemyDaemon",
+          "functionId": "ReturnToHand",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Return target enemy to hand."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-3] Deal 2 damage to all enemies."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-air-2",
@@ -1335,7 +2298,54 @@
           "loyaltyCost": -3,
           "effect": "pil-air2-thunder"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttackConditional",
+          "p0": 2,
+          "p1": 5,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Buffs matching element daemons +2 ATK."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "None",
+          "functionId": "DrawCards",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Draw 3 cards on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttack",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] All allies gain +1 ATK."
+        },
+        {
+          "trigger": "Activated",
+          "target": "StrongestEnemy",
+          "functionId": "DealDamage",
+          "p0": 5,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-3] Deal 5 damage to strongest enemy."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-light-1",
@@ -1368,7 +2378,54 @@
           "loyaltyCost": -4,
           "effect": "pil-light1-purify"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "FriendlyConjuror",
+          "functionId": "HealConjuror",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals conjuror for 1 at turn start."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "None",
+          "functionId": "DrawCards",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Draw 2 cards on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Heal all allies for 2."
+        },
+        {
+          "trigger": "Activated",
+          "target": "TargetEnemyDaemon",
+          "functionId": "Silence",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] Silence target enemy daemon."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-light-2",
@@ -1402,7 +2459,54 @@
           "loyaltyCost": -4,
           "effect": "pil-light2-judge"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttackConditional",
+          "p0": 2,
+          "p1": 6,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Buffs matching element daemons +2 ATK."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 2 to all enemies on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttack",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] All allies gain +2 ATK."
+        },
+        {
+          "trigger": "Activated",
+          "target": "StrongestEnemy",
+          "functionId": "DealDamage",
+          "p0": 6,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] Deal 6 damage to strongest enemy."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-dark-1",
@@ -1434,7 +2538,54 @@
           "loyaltyCost": -3,
           "effect": "pil-dark1-void"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "AllEnemyDaemons",
+          "functionId": "ReduceCost",
+          "p0": -1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Enemy daemons cost 1 more."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "WeakestEnemy",
+          "functionId": "DestroyTarget",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Destroys weakest enemy on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "StrongestEnemy",
+          "functionId": "DrainAshe",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Drain 3 from strongest enemy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "WeakestEnemy",
+          "functionId": "DestroyTarget",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-3] Destroy weakest enemy daemon."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-dark-2",
@@ -1467,7 +2618,54 @@
           "loyaltyCost": -4,
           "effect": "pil-dark2-eclipse"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttackConditional",
+          "p0": 2,
+          "p1": 7,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Buffs matching element daemons +2 ATK."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "WeakestEnemy",
+          "functionId": "DestroyTarget",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Destroys weakest enemy on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "TargetEnemyDaemon",
+          "functionId": "DebuffAttack",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Reduce target ATK by 2."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 4,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] Deal 4 damage to all enemies."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-nature-1",
@@ -1500,7 +2698,54 @@
           "loyaltyCost": -4,
           "effect": "pil-nature1-over"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "Passive",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAshe",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "All friendly daemons gain +2 max Ashe."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 4,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals all allies 4 on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Heal all allies for 2."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAshe",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] All allies gain +3 Ashe."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-nature-2",
@@ -1534,7 +2779,54 @@
           "loyaltyCost": -4,
           "effect": "pil-nature2-genesis"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttackConditional",
+          "p0": 2,
+          "p1": 8,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Buffs matching element daemons +2 ATK."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals all allies 3 on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttack",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] All allies gain +1 ATK."
+        },
+        {
+          "trigger": "Activated",
+          "target": "None",
+          "functionId": "SummonToken",
+          "p0": 2,
+          "p1": 2,
+          "p2": 2,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] Summon two 2/2 tokens."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-machine-1",
@@ -1571,7 +2863,54 @@
           "loyaltyCost": -3,
           "effect": "pil-mach1-produce"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttack",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "All friendly daemons gain +2 ATK."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "None",
+          "functionId": "SummonToken",
+          "p0": 1,
+          "p1": 1,
+          "p2": 2,
+          "p3": 0,
+          "p4": 0,
+          "description": "Summons 2 tokens on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "TargetFriendlyDaemon",
+          "functionId": "BuffAttack",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Target gains +3 ATK."
+        },
+        {
+          "trigger": "Activated",
+          "target": "None",
+          "functionId": "SummonToken",
+          "p0": 1,
+          "p1": 1,
+          "p2": 2,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-3] Summon two 1/1 tokens."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-machine-2",
@@ -1606,7 +2945,54 @@
           "loyaltyCost": -4,
           "effect": "pil-mach2-overload"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAshe",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "All friendly daemons gain +2 Ashe."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 3 to all enemies on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Heal all allies for 2."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 4,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] Deal 4 damage to all enemies."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-artificial-1",
@@ -1641,7 +3027,54 @@
           "loyaltyCost": -4,
           "effect": "pil-art1-master"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttack",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "All friendly daemons gain +2 ATK."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "None",
+          "functionId": "DrawCards",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Draw 3 cards on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "None",
+          "functionId": "DrawCards",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Draw 2 cards."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttack",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] All allies gain +2 ATK."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-artificial-2",
@@ -1676,7 +3109,54 @@
           "loyaltyCost": -3,
           "effect": "pil-art2-design"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals all friendly daemons 1 Ashe."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals all allies 3 on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "None",
+          "functionId": "SummonToken",
+          "p0": 2,
+          "p1": 2,
+          "p2": 1,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Summon a 2/2 token."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-3] Heal all allies for 3."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-spirit-1",
@@ -1710,7 +3190,54 @@
           "loyaltyCost": -3,
           "effect": "pil-spi1-walk"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttack",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "All friendly daemons gain +2 ATK."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "RandomEnemyDaemon",
+          "functionId": "Freeze",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Freezes a random enemy on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "TargetEnemyDaemon",
+          "functionId": "Freeze",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Freeze target for 2 turns."
+        },
+        {
+          "trigger": "Activated",
+          "target": "Self",
+          "functionId": "Stealth",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-3] Gain stealth for 2 turns."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-spirit-2",
@@ -1744,7 +3271,54 @@
           "loyaltyCost": -4,
           "effect": "pil-spi2-possess"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals all friendly daemons 1 Ashe."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "None",
+          "functionId": "ReturnToHand",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Returns a card from ashepile to hand on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "None",
+          "functionId": "DrawCards",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Draw 1 card."
+        },
+        {
+          "trigger": "Activated",
+          "target": "TargetEnemyDaemon",
+          "functionId": "Entangle",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] Entangle target for 3 turns."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-undead-1",
@@ -1778,7 +3352,54 @@
           "loyaltyCost": -3,
           "effect": "pil-und1-wave"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttack",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "All friendly daemons gain +2 ATK."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "WeakestEnemy",
+          "functionId": "DestroyTarget",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Destroys weakest enemy on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "None",
+          "functionId": "SummonToken",
+          "p0": 2,
+          "p1": 1,
+          "p2": 1,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Summon a 2/1 token."
+        },
+        {
+          "trigger": "Activated",
+          "target": "None",
+          "functionId": "SummonToken",
+          "p0": 1,
+          "p1": 1,
+          "p2": 3,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-3] Summon three 1/1 tokens."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-undead-2",
@@ -1812,7 +3433,54 @@
           "loyaltyCost": -4,
           "effect": "pil-und2-pandemic"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 1 damage to all enemies at turn start."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 4,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 4 to all enemies on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Deal 2 damage to all enemies."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllDaemons",
+          "functionId": "DealDamage",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] Deal 3 damage to ALL daemons."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-elemental-1",
@@ -1847,7 +3515,54 @@
           "loyaltyCost": -3,
           "effect": "pil-elem1-fury"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttack",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "All friendly daemons gain +1 ATK."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deals 2 to all enemies on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "TargetFriendlyDaemon",
+          "functionId": "BuffAttack",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Target gains +2 ATK."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-3] Deal 3 damage to all enemies."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "p-elemental-2",
@@ -1882,7 +3597,54 @@
           "loyaltyCost": -4,
           "effect": "pil-elem2-surge"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals all friendly daemons 1 Ashe."
+        },
+        {
+          "trigger": "OnDestroy",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heals all allies 3 on destroy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Heal all allies for 2."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttack",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] All allies gain +2 ATK."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "f-1",
@@ -1893,7 +3655,21 @@
       "effect": {
         "type": "atk-buff-all",
         "value": 1
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnPlay",
+          "target": "AllDaemons",
+          "functionId": "AtkBuffAll",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "All daemons gain +1 ATK."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "f-2",
@@ -1904,7 +3680,21 @@
       "effect": {
         "type": "damage-all-end",
         "value": 2
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnTurnEnd",
+          "target": "AllDaemons",
+          "functionId": "DamageAllEnd",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "All daemons take 2 damage at end of turn."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "f-3",
@@ -1915,7 +3705,21 @@
       "effect": {
         "type": "protection",
         "value": 1
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnPlay",
+          "target": "AllFriendlyDaemons",
+          "functionId": "Shield",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "All allies gain 1 shield."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "f-4",
@@ -1926,7 +3730,21 @@
       "effect": {
         "type": "element-atk-buff",
         "value": 2
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnPlay",
+          "target": "AllFriendlyDaemons",
+          "functionId": "ElementAtkBuff",
+          "p0": 0,
+          "p1": 2,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Element daemons gain +2 ATK."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "f-5",
@@ -1937,7 +3755,21 @@
       "effect": {
         "type": "extra-draw",
         "value": 1
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "None",
+          "functionId": "ExtraDraw",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Draw 1 extra card(s) per turn."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "f-6",
@@ -1949,7 +3781,21 @@
       "effect": {
         "type": "pillar-restore",
         "value": 1
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyPillars",
+          "functionId": "RestorePillarHp",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Restore 1 HP to all friendly pillars."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "f-7",
@@ -1961,7 +3807,21 @@
       "effect": {
         "type": "pillar-heal",
         "value": 4
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnTurnStart",
+          "target": "AllFriendlyPillars",
+          "functionId": "PillarHealDomain",
+          "p0": 4,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heal all friendly pillars for 4."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "m-1",
@@ -1973,7 +3833,21 @@
       "effect": {
         "type": "atk-boost",
         "value": 3
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnMaskEquipped",
+          "target": "Self",
+          "functionId": "BuffAttack",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Gain +3 ATK."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "m-2",
@@ -1985,7 +3859,21 @@
       "effect": {
         "type": "ashe-boost",
         "value": 5
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnMaskEquipped",
+          "target": "Self",
+          "functionId": "BuffAshe",
+          "p0": 5,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Gain +5 Ashe."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "m-3",
@@ -1997,7 +3885,21 @@
       "effect": {
         "type": "haste",
         "value": 1
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnMaskEquipped",
+          "target": "Self",
+          "functionId": "BuffAttack",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Can attack immediately."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "m-4",
@@ -2009,7 +3911,21 @@
       "effect": {
         "type": "stealth",
         "value": 1
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnMaskEquipped",
+          "target": "Self",
+          "functionId": "Stealth",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Gain stealth for 1 turns."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "m-5",
@@ -2021,7 +3937,21 @@
       "effect": {
         "type": "thorns",
         "value": 2
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnMaskEquipped",
+          "target": "Self",
+          "functionId": "Thorns",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Reflect 2 damage when hit."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "s-1",
@@ -2033,7 +3963,21 @@
       "effect": {
         "type": "drain",
         "value": 3
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnSealTriggered",
+          "target": "AttackingDaemon",
+          "functionId": "SealDrain",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Drain 3 from attacker."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "s-2",
@@ -2045,7 +3989,21 @@
       "effect": {
         "type": "destroy",
         "value": 0
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnSealTriggered",
+          "target": "AttackingDaemon",
+          "functionId": "DestroyTarget",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Destroy the attacker."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "s-3",
@@ -2057,7 +4015,21 @@
       "effect": {
         "type": "negate",
         "value": 3
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnSealTriggered",
+          "target": "None",
+          "functionId": "NegateAction",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Negate the attack."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "s-4",
@@ -2069,7 +4041,21 @@
       "effect": {
         "type": "counter-spell",
         "value": 0
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnSealTriggered",
+          "target": "AttackingDaemon",
+          "functionId": "CounterAndDamage",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Counter spell and deal damage."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "s-5",
@@ -2081,7 +4067,21 @@
       "effect": {
         "type": "heal-conjuror",
         "value": 4
-      }
+      },
+      "effects": [
+        {
+          "trigger": "OnSealTriggered",
+          "target": "FriendlyConjuror",
+          "functionId": "HealConjuror",
+          "p0": 4,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heal conjuror for 4."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "disp-1",
@@ -2094,7 +4094,21 @@
         "value": 3
       },
       "description": "Dissolve the active Domain and mend the damage it wrought. Heals your Conjuror for 3 HP.",
-      "flavorText": "\"Where corruption festers, radiance cleanses.\""
+      "flavorText": "\"Where corruption festers, radiance cleanses.\"",
+      "effects": [
+        {
+          "trigger": "OnPlay",
+          "target": "FriendlyConjuror",
+          "functionId": "HealConjuror",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Heal conjuror for 3."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "disp-2",
@@ -2107,7 +4121,21 @@
         "value": 1
       },
       "description": "Strip a Mask from an enemy Daemon and weaken all enemies. All enemy Daemons lose 1 ATK.",
-      "flavorText": "\"The false skin peels away, and what remains is fragile.\""
+      "flavorText": "\"The false skin peels away, and what remains is fragile.\"",
+      "effects": [
+        {
+          "trigger": "OnPlay",
+          "target": "AllEnemyDaemons",
+          "functionId": "DebuffAttack",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Weaken all enemies by 1."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "disp-3",
@@ -2120,7 +4148,21 @@
         "value": 2
       },
       "description": "Destroy an enemy Seal and release its energy as shrapnel. Deals 2 damage to all enemy Daemons.",
-      "flavorText": "\"The trap shatters — but the shards still cut.\""
+      "flavorText": "\"The trap shatters — but the shards still cut.\"",
+      "effects": [
+        {
+          "trigger": "OnPlay",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deal 2 damage to all enemies."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "disp-4",
@@ -2133,7 +4175,21 @@
         "value": 2
       },
       "description": "Erase any Domain, Mask, or Seal and drain the caster's reserves. Opponent loses 2 Will.",
-      "flavorText": "\"Magic unmade is magic stolen.\""
+      "flavorText": "\"Magic unmade is magic stolen.\"",
+      "effects": [
+        {
+          "trigger": "OnPlay",
+          "target": "None",
+          "functionId": "DrainWill",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Drain 2 will from opponent."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "disp-5",
@@ -2146,7 +4202,21 @@
         "value": 5
       },
       "description": "Smite any enchantment and punish its caster. Deals 5 damage to the opponent's Conjuror.",
-      "flavorText": "\"The light judges all equally — and finds you wanting.\""
+      "flavorText": "\"The light judges all equally — and finds you wanting.\"",
+      "effects": [
+        {
+          "trigger": "OnPlay",
+          "target": "EnemyConjuror",
+          "functionId": "DamageConjuror",
+          "p0": 5,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Deal 5 damage to enemy conjuror."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "disp-6",
@@ -2159,7 +4229,21 @@
         "value": 2
       },
       "description": "Wash away an enchantment and read the currents. Draw 2 cards.",
-      "flavorText": "\"The waters recede, leaving knowledge on the shore.\""
+      "flavorText": "\"The waters recede, leaving knowledge on the shore.\"",
+      "effects": [
+        {
+          "trigger": "OnPlay",
+          "target": "None",
+          "functionId": "DrawCards",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Draw 2 cards."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "disp-7",
@@ -2172,7 +4256,21 @@
         "value": 1
       },
       "description": "Unmake an enchantment and pull a soul from the void. Return 1 card from your Ashe Pile to hand.",
-      "flavorText": "\"What the void takes, the void can return — for a price.\""
+      "flavorText": "\"What the void takes, the void can return — for a price.\"",
+      "effects": [
+        {
+          "trigger": "OnPlay",
+          "target": "None",
+          "functionId": "ReturnToHand",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "Reclaim 1 card(s) from ashepile."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "cj-flame",
@@ -2202,7 +4300,43 @@
           "loyaltyCost": -5,
           "effect": "cj-flame-ult"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAttackConditional",
+          "p0": 1,
+          "p1": 1,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Flame daemons gain +1 ATK."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-2] Deal 2 damage to all enemies."
+        },
+        {
+          "trigger": "Activated",
+          "target": "EnemyConjuror",
+          "functionId": "DamageConjuror",
+          "p0": 8,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-5] Deal 8 damage to enemy conjuror."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "cj-ice",
@@ -2232,7 +4366,43 @@
           "loyaltyCost": -6,
           "effect": "cj-ice-ult"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "Activated",
+          "target": "RandomEnemyDaemon",
+          "functionId": "Freeze",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Freeze a random enemy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "Shield",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-2] All allies gain 2 shield."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllEnemyDaemons",
+          "functionId": "Freeze",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-6] Freeze all enemies for 2 turns."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "cj-water",
@@ -2262,7 +4432,43 @@
           "loyaltyCost": -5,
           "effect": "cj-water-ult"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Heal all allies for 2."
+        },
+        {
+          "trigger": "Activated",
+          "target": "None",
+          "functionId": "DrawCards",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-2] Draw 2 cards."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAndHeal",
+          "p0": 2,
+          "p1": 5,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-5] All allies gain +2 ATK and heal 5."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "cj-earth",
@@ -2292,7 +4498,43 @@
           "loyaltyCost": -6,
           "effect": "cj-earth-ult"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "Shield",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] All allies gain 3 shield."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-3] Deal 2 damage to all enemies."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllDaemons",
+          "functionId": "DealDamage",
+          "p0": 4,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-6] Deal 4 damage to ALL daemons."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "cj-air",
@@ -2322,7 +4564,43 @@
           "loyaltyCost": -4,
           "effect": "cj-air-ult"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "Activated",
+          "target": "None",
+          "functionId": "DrawCards",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Draw 1 card."
+        },
+        {
+          "trigger": "Activated",
+          "target": "RandomEnemyDaemon",
+          "functionId": "DamageAndDraw",
+          "p0": 2,
+          "p1": 1,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-2] Deal 2 damage to random enemy and draw 1."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllEnemyDaemons",
+          "functionId": "ReturnToHand",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-4] Return all enemies to hand."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "cj-light",
@@ -2352,7 +4630,43 @@
           "loyaltyCost": -7,
           "effect": "cj-light-ult"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "Activated",
+          "target": "FriendlyConjuror",
+          "functionId": "HealConjuror",
+          "p0": 5,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Heal conjuror for 5."
+        },
+        {
+          "trigger": "Activated",
+          "target": "TargetEnemyDaemon",
+          "functionId": "Silence",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-3] Silence target enemy daemon."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "DamageAllAndHealSelf",
+          "p0": 0,
+          "p1": 8,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-7] Heal all allies fully."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "cj-dark",
@@ -2382,7 +4696,43 @@
           "loyaltyCost": -5,
           "effect": "cj-dark-ult"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "Activated",
+          "target": "StrongestEnemy",
+          "functionId": "DrainAshe",
+          "p0": 3,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Drain 3 from strongest enemy."
+        },
+        {
+          "trigger": "Activated",
+          "target": "WeakestEnemy",
+          "functionId": "DestroyTarget",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-2] Destroy weakest enemy daemon."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllEnemyDaemons",
+          "functionId": "DealDamage",
+          "p0": 5,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-5] Deal 5 damage to all enemies."
+        }
+      ],
+      "willCost": 0
     },
     {
       "id": "cj-nature",
@@ -2412,7 +4762,43 @@
           "loyaltyCost": -6,
           "effect": "cj-nature-ult"
         }
-      ]
+      ],
+      "effects": [
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "HealAshe",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:1] Heal all allies for 2."
+        },
+        {
+          "trigger": "Activated",
+          "target": "StrongestEnemy",
+          "functionId": "Entangle",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-2] Entangle strongest enemy for 2 turns."
+        },
+        {
+          "trigger": "Activated",
+          "target": "AllFriendlyDaemons",
+          "functionId": "BuffAndHeal",
+          "p0": 3,
+          "p1": 3,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0,
+          "description": "[Cost:-6] All allies gain +3 ATK and heal 3."
+        }
+      ],
+      "willCost": 0
     }
   ],
   "decks": [
