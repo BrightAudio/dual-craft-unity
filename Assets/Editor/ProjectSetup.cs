@@ -803,7 +803,11 @@ namespace DualCraft.Editor
             p2PzBgRT.offsetMin = Vector2.zero;
             p2PzBgRT.offsetMax = Vector2.zero;
             var p2PzBgImg = p2PillarZoneBg.AddComponent<Image>();
-            p2PzBgImg.color = new Color(0.06f, 0.02f, 0.08f, 0.25f);
+            p2PzBgImg.color = new Color(0.10f, 0.08f, 0.02f, 0.35f); // amber/gold tint for pillars
+            // Pillar zone border
+            var p2PzOutline = p2PillarZoneBg.AddComponent<Outline>();
+            p2PzOutline.effectColor = new Color(0.78f, 0.66f, 0.42f, 0.25f);
+            p2PzOutline.effectDistance = new Vector2(1.5f, 1.5f);
 
             var p2Pillar = CreateHorizontalContainer(canvasGO, "P2PillarContainer", Vector2.zero, Vector2.zero);
             var p2PillarRT = p2Pillar.GetComponent<RectTransform>();
@@ -821,7 +825,11 @@ namespace DualCraft.Editor
             p2FzBgRT.offsetMin = Vector2.zero;
             p2FzBgRT.offsetMax = Vector2.zero;
             var p2FzBgImg = p2FieldZoneBg.AddComponent<Image>();
-            p2FzBgImg.color = new Color(0.08f, 0.04f, 0.04f, 0.3f);
+            p2FzBgImg.color = new Color(0.12f, 0.04f, 0.04f, 0.40f); // crimson tint for daemons
+            // Daemon zone border
+            var p2FzOutline = p2FieldZoneBg.AddComponent<Outline>();
+            p2FzOutline.effectColor = new Color(0.85f, 0.20f, 0.20f, 0.30f);
+            p2FzOutline.effectDistance = new Vector2(2f, 2f);
 
             var p2Field = CreateHorizontalContainer(canvasGO, "P2FieldContainer", Vector2.zero, Vector2.zero);
             var p2FieldRT = p2Field.GetComponent<RectTransform>();
@@ -931,7 +939,7 @@ namespace DualCraft.Editor
             diceArea.SetActive(false);
 
             // ═══ PLAYER 1 SIDE (BOTTOM 45%) ══════════════
-            // Layout from bottom: Hand → DaemonField → PillarRow → Conjuror zone
+            // Layout from bottom: Hand → Pillars (back) → Daemons (front) → Conjuror
 
             // P1 Hand (bottom edge)
             var p1Hand = CreateHorizontalContainer(canvasGO, "P1HandContainer", Vector2.zero, Vector2.zero);
@@ -942,41 +950,47 @@ namespace DualCraft.Editor
             p1HandRT.offsetMax = new Vector2(-8, 0);
             p1Hand.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
 
-            // P1 Daemon field
-            var p1FieldZoneBg = CreateUIChild(canvasGO, "P1FieldZoneBg", Vector2.zero, Vector2.zero);
-            var p1FzBgRT = p1FieldZoneBg.GetComponent<RectTransform>();
-            p1FzBgRT.anchorMin = new Vector2(0.05f, 0.13f);
-            p1FzBgRT.anchorMax = new Vector2(0.80f, 0.30f);
-            p1FzBgRT.offsetMin = Vector2.zero;
-            p1FzBgRT.offsetMax = Vector2.zero;
-            var p1FzBgImg = p1FieldZoneBg.AddComponent<Image>();
-            p1FzBgImg.color = new Color(0.04f, 0.04f, 0.08f, 0.3f);
-
-            var p1Field = CreateHorizontalContainer(canvasGO, "P1FieldContainer", Vector2.zero, Vector2.zero);
-            var p1FieldRT = p1Field.GetComponent<RectTransform>();
-            p1FieldRT.anchorMin = new Vector2(0.05f, 0.13f);
-            p1FieldRT.anchorMax = new Vector2(0.80f, 0.30f);
-            p1FieldRT.offsetMin = new Vector2(8, 2);
-            p1FieldRT.offsetMax = new Vector2(-8, -2);
-            p1Field.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
-
-            // P1 Pillar row
+            // P1 Pillar row (back line, behind daemons — near hand)
             var p1PillarZoneBg = CreateUIChild(canvasGO, "P1PillarZoneBg", Vector2.zero, Vector2.zero);
             var p1PzBgRT = p1PillarZoneBg.GetComponent<RectTransform>();
-            p1PzBgRT.anchorMin = new Vector2(0.1f, 0.31f);
-            p1PzBgRT.anchorMax = new Vector2(0.75f, 0.42f);
+            p1PzBgRT.anchorMin = new Vector2(0.10f, 0.13f);
+            p1PzBgRT.anchorMax = new Vector2(0.75f, 0.24f);
             p1PzBgRT.offsetMin = Vector2.zero;
             p1PzBgRT.offsetMax = Vector2.zero;
             var p1PzBgImg = p1PillarZoneBg.AddComponent<Image>();
-            p1PzBgImg.color = new Color(0.02f, 0.04f, 0.08f, 0.25f);
+            p1PzBgImg.color = new Color(0.10f, 0.08f, 0.02f, 0.35f); // amber/gold tint
+            var p1PzOutline = p1PillarZoneBg.AddComponent<Outline>();
+            p1PzOutline.effectColor = new Color(0.78f, 0.66f, 0.42f, 0.25f);
+            p1PzOutline.effectDistance = new Vector2(1.5f, 1.5f);
 
             var p1Pillar = CreateHorizontalContainer(canvasGO, "P1PillarContainer", Vector2.zero, Vector2.zero);
             var p1PillarRT = p1Pillar.GetComponent<RectTransform>();
-            p1PillarRT.anchorMin = new Vector2(0.1f, 0.31f);
-            p1PillarRT.anchorMax = new Vector2(0.75f, 0.42f);
+            p1PillarRT.anchorMin = new Vector2(0.10f, 0.13f);
+            p1PillarRT.anchorMax = new Vector2(0.75f, 0.24f);
             p1PillarRT.offsetMin = new Vector2(8, 2);
             p1PillarRT.offsetMax = new Vector2(-8, -2);
             p1Pillar.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
+
+            // P1 Daemon field (front line — faces opponent, near center)
+            var p1FieldZoneBg = CreateUIChild(canvasGO, "P1FieldZoneBg", Vector2.zero, Vector2.zero);
+            var p1FzBgRT = p1FieldZoneBg.GetComponent<RectTransform>();
+            p1FzBgRT.anchorMin = new Vector2(0.05f, 0.25f);
+            p1FzBgRT.anchorMax = new Vector2(0.80f, 0.42f);
+            p1FzBgRT.offsetMin = Vector2.zero;
+            p1FzBgRT.offsetMax = Vector2.zero;
+            var p1FzBgImg = p1FieldZoneBg.AddComponent<Image>();
+            p1FzBgImg.color = new Color(0.12f, 0.04f, 0.04f, 0.40f); // crimson tint
+            var p1FzOutline = p1FieldZoneBg.AddComponent<Outline>();
+            p1FzOutline.effectColor = new Color(0.85f, 0.20f, 0.20f, 0.30f);
+            p1FzOutline.effectDistance = new Vector2(2f, 2f);
+
+            var p1Field = CreateHorizontalContainer(canvasGO, "P1FieldContainer", Vector2.zero, Vector2.zero);
+            var p1FieldRT = p1Field.GetComponent<RectTransform>();
+            p1FieldRT.anchorMin = new Vector2(0.05f, 0.25f);
+            p1FieldRT.anchorMax = new Vector2(0.80f, 0.42f);
+            p1FieldRT.offsetMin = new Vector2(8, 2);
+            p1FieldRT.offsetMax = new Vector2(-8, -2);
+            p1Field.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
 
             // P1 Conjuror zone (info bar above pillars)
             var p1ConjZone = CreateUIChild(canvasGO, "P1ConjurorZone", Vector2.zero, Vector2.zero);
@@ -1094,16 +1108,18 @@ namespace DualCraft.Editor
                 lrt.offsetMax = Vector2.zero;
                 var tmp = lbl.AddComponent<TextMeshProUGUI>();
                 tmp.text = text;
-                tmp.fontSize = 9;
-                tmp.fontStyle = FontStyles.Italic;
+                tmp.fontSize = 12;
+                tmp.fontStyle = FontStyles.Bold;
                 tmp.alignment = TextAlignmentOptions.Left;
-                tmp.color = new Color(0.4f, 0.4f, 0.45f, 0.6f);
+                tmp.color = text == "DAEMONS"
+                    ? new Color(0.85f, 0.30f, 0.30f, 0.55f)
+                    : new Color(0.78f, 0.66f, 0.42f, 0.55f);
             }
 
             AddZoneLabel("P2PillarLabel", "PILLARS", new Vector2(0.02f, 0.85f), new Vector2(0.09f, 0.88f));
             AddZoneLabel("P2FieldLabel", "DAEMONS", new Vector2(0.02f, 0.72f), new Vector2(0.09f, 0.75f));
-            AddZoneLabel("P1FieldLabel", "DAEMONS", new Vector2(0.02f, 0.26f), new Vector2(0.09f, 0.29f));
-            AddZoneLabel("P1PillarLabel", "PILLARS", new Vector2(0.02f, 0.38f), new Vector2(0.09f, 0.41f));
+            AddZoneLabel("P1PillarLabel", "PILLARS", new Vector2(0.02f, 0.19f), new Vector2(0.09f, 0.22f));
+            AddZoneLabel("P1FieldLabel", "DAEMONS", new Vector2(0.02f, 0.37f), new Vector2(0.09f, 0.40f));
 
             // ═══ GAME OVER OVERLAY ═══════════════════════
             var goPanel = CreatePanel(canvasGO, "GameOverPanel", new Color(0, 0, 0, 0.88f), true);

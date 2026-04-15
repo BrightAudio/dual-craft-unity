@@ -146,11 +146,19 @@ namespace DualCraft.UI
             if (artworkImage)
             {
                 Sprite art = _cardData.artwork;
+                string src = "ScriptableObject";
                 if (art == null)
+                {
                     art = LoadCardArt(_cardData.cardId);
+                    src = "Resources";
+                }
                 if (art == null)
+                {
                     art = CardTextureGenerator.GenerateCardArt(
                         elem, _cardData.category, _cardData.rarity, _cardData.cardId);
+                    src = "Procedural";
+                }
+                Debug.Log($"[CardVisual] {_cardData.cardId} art from {src} | sprite={art != null}");
                 artworkImage.sprite = art;
                 artworkImage.color = Color.white;
             }
