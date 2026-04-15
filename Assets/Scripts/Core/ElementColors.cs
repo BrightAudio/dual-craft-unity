@@ -23,6 +23,17 @@ namespace DualCraft.Core
             _ => Color.white,
         };
 
+        /// <summary>Returns a colour for the given creature type, used in UI.</summary>
+        public static Color GetCreatureTypeColor(CreatureType ct) => ct switch
+        {
+            CreatureType.Elemental  => new Color(0.976f, 0.451f, 0.086f),  // fiery orange
+            CreatureType.Spirit     => new Color(0.529f, 0.808f, 0.980f),  // spectral blue
+            CreatureType.Undead     => new Color(0.545f, 0.271f, 0.675f),  // necrotic purple
+            CreatureType.Machine    => new Color(0.600f, 0.600f, 0.600f),  // gunmetal
+            CreatureType.Artificial => new Color(0.255f, 0.878f, 0.816f),  // cyan-teal
+            _ => Color.white,
+        };
+
         /// <summary>Returns a colour for the given rarity, used in UI.</summary>
         public static Color GetRarityColor(Rarity rarity) => rarity switch
         {

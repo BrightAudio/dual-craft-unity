@@ -36,24 +36,33 @@ namespace DualCraft.Core
             { Element.Nature, new[] { Element.Flame, Element.Ice } },
         };
 
-        // Creature type matchups (attacker → defenders it is strong against)
+        // ── Creature type matchups ──────────────────────
+        // Elemental  → strong vs Spirit (raw power overwhelms ethereal)
+        // Spirit     → strong vs Undead (purifies the corrupted)
+        // Undead     → strong vs Machine (corrosion/decay rusts gears)
+        //             + strong vs Artificial (entropy unravels constructs)
+        // Machine    → strong vs Elemental (steel contains chaos)
+        // Artificial → strong vs Spirit (synthetic wards disrupt ethereal)
+        //
+        // Undead is the wildcard: hits two types hard but also takes
+        // extra from two, making it high-risk/high-reward.
         private static readonly Dictionary<CreatureType, CreatureType[]> CreatureAdvantages = new()
         {
-            { CreatureType.Spirit, new[] { CreatureType.Artificial } },
-            { CreatureType.Artificial, new[] { CreatureType.Machine } },
-            { CreatureType.Machine, new[] { CreatureType.Elemental } },
             { CreatureType.Elemental, new[] { CreatureType.Spirit } },
-            { CreatureType.Undead, new CreatureType[0] },
+            { CreatureType.Spirit, new[] { CreatureType.Undead } },
+            { CreatureType.Undead, new[] { CreatureType.Machine, CreatureType.Artificial } },
+            { CreatureType.Machine, new[] { CreatureType.Elemental } },
+            { CreatureType.Artificial, new[] { CreatureType.Spirit } },
         };
 
         // Creature type weaknesses (attacker → defenders it is weak against)
         private static readonly Dictionary<CreatureType, CreatureType[]> CreatureWeaknesses = new()
         {
-            { CreatureType.Spirit, new[] { CreatureType.Elemental } },
-            { CreatureType.Artificial, new[] { CreatureType.Spirit } },
-            { CreatureType.Machine, new[] { CreatureType.Artificial } },
             { CreatureType.Elemental, new[] { CreatureType.Machine } },
-            { CreatureType.Undead, new CreatureType[0] },
+            { CreatureType.Spirit, new[] { CreatureType.Elemental, CreatureType.Artificial } },
+            { CreatureType.Undead, new[] { CreatureType.Spirit } },
+            { CreatureType.Machine, new[] { CreatureType.Undead } },
+            { CreatureType.Artificial, new[] { CreatureType.Undead } },
         };
 
         /// <summary>

@@ -354,7 +354,7 @@ namespace DualCraft.UI
         private string GetTypeLine()
         {
             if (_cardData is DaemonCardData d)
-                return $"{d.element} Daemon";
+                return $"{d.element} {d.creatureType} Daemon";
             if (_cardData is PillarCardData p)
                 return $"{p.element} Pillar";
             if (_cardData is ConjurorCardData c)
@@ -362,11 +362,39 @@ namespace DualCraft.UI
             return _cardData.category.ToString();
         }
 
-        // ─── Animations ───────────────────────────────────
-        public void PlaySummonAnimation() { if (cardAnimator) cardAnimator.SetTrigger("Summon"); }
-        public void PlayAttackAnimation() { if (cardAnimator) cardAnimator.SetTrigger("Attack"); }
-        public void PlayDestroyAnimation() { if (cardAnimator) cardAnimator.SetTrigger("Destroy"); }
-        public void PlayFlipAnimation() { if (cardAnimator) cardAnimator.SetTrigger("Flip"); }
+        // ─── Animations (coroutine-based, no Animator needed) ──
+        public void PlaySummonAnimation()
+        {
+            if (cardAnimator) { cardAnimator.SetTrigger("Summon"); return; }
+            StartCoroutine(Visual.UIAnimUtils.PopScale(transform, 0.3f, 1.15f));
+        }
+        public void PlayAttackAnimation()
+        {
+            if (cardAnimator) { cardAnimator.SetTrigger("Attack"); return; }
+            StartCoroutine(AttackPunchCo());
+        }
+        public void PlayDestroyAnimation()
+        {
+            if (cardAnimator) { cardAnimator.SetTrigger("Destroy"); return; }
+            var cg = GetComponent<CanvasGroup>();
+            if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
+            StartCoroutine(Visual.UIAnimUtils.FadeOut(cg, 0.35f));
+        }
+        public void PlayFlipAnimation()
+        {
+            if (cardAnimator) { cardAnimator.SetTrigger("Flip"); return; }
+            StartCoroutine(Visual.UIAnimUtils.CardFlip(transform as RectTransform ?? GetComponent<RectTransform>(), null, 0.4f));
+        }
+        private System.Collections.IEnumerator AttackPunchCo()
+        {
+            var orig = transform.localPosition;
+            var target = orig + Vector3.up * 20f;
+            float t = 0f;
+            while (t < 0.12f) { t += Time.deltaTime; transform.localPosition = Vector3.Lerp(orig, target, t / 0.12f); yield return null; }
+            t = 0f;
+            while (t < 0.12f) { t += Time.deltaTime; transform.localPosition = Vector3.Lerp(target, orig, t / 0.12f); yield return null; }
+            transform.localPosition = orig;
+        }
 
         public void SetHighlight(bool active, Color? color = null)
         {

@@ -16,6 +16,7 @@ namespace DualCraft.UI
     using Battle;
     using Cards;
     using Core;
+    using Visual;
 
     public class BattleSceneController : MonoBehaviour
     {
@@ -258,6 +259,8 @@ namespace DualCraft.UI
         private void OnOpponentDaemonClicked(int fieldIndex)
         {
             if (!_waitingForTarget || _selectedAttackerIndex < 0) return;
+            // Play attack animation on the attacker card
+            PlayAttackAnimOnField(p1FieldContainer, _selectedAttackerIndex);
             _battle.ProcessAction(LocalPlayer, new AttackAction
             {
                 AttackerIndex = _selectedAttackerIndex,
@@ -270,6 +273,7 @@ namespace DualCraft.UI
         private void OnOpponentPillarClicked(int pillarIndex)
         {
             if (!_waitingForTarget || _selectedAttackerIndex < 0) return;
+            PlayAttackAnimOnField(p1FieldContainer, _selectedAttackerIndex);
             _battle.ProcessAction(LocalPlayer, new AttackAction
             {
                 AttackerIndex = _selectedAttackerIndex,
@@ -282,6 +286,7 @@ namespace DualCraft.UI
         private void OnOpponentConjurorClicked()
         {
             if (!_waitingForTarget || _selectedAttackerIndex < 0) return;
+            PlayAttackAnimOnField(p1FieldContainer, _selectedAttackerIndex);
             _battle.ProcessAction(LocalPlayer, new AttackAction
             {
                 AttackerIndex = _selectedAttackerIndex,
@@ -295,6 +300,17 @@ namespace DualCraft.UI
         {
             _selectedAttackerIndex = -1;
             _waitingForTarget = false;
+        }
+
+        private void PlayAttackAnimOnField(Transform fieldContainer, int index)
+        {
+            if (fieldContainer == null || index < 0 || index >= fieldContainer.childCount) return;
+            var go = fieldContainer.GetChild(index).gameObject;
+            var visual = go.GetComponent<CardVisual>();
+            if (visual != null)
+                visual.PlayAttackAnimation();
+            else
+                StartCoroutine(UIAnimUtils.PopScale(go.transform, 0.15f, 1.1f));
         }
 
         // ─── UI Refresh ──────────────────────────────────
@@ -311,7 +327,12 @@ namespace DualCraft.UI
                 p2HandContainer, p2FieldContainer, p2PillarContainer, 1,
                 false, false);
 
-            if (phaseText) phaseText.text = state.Phase.ToString().ToUpper();
+            if (phaseText)
+            {
+                phaseText.text = state.Phase.ToString().ToUpper();
+                // Quick pulse animation on phase change
+                StartCoroutine(UIAnimUtils.PopScale(phaseText.transform, 0.18f, 1.15f));
+            }
             if (turnText) turnText.text = $"Turn {state.TurnNumber}";
 
             // Button visibility
@@ -352,6 +373,10 @@ namespace DualCraft.UI
                         else
                             visual.SetFaceDown();
                     }
+                    // Card deal animation — staggered slide-in from bottom
+                    var rt = go.GetComponent<RectTransform>();
+                    if (rt != null)
+                        StartCoroutine(UIAnimUtils.SlideIn(rt, new Vector2(0, -80), 0.2f + i * 0.05f));
 
                     // Make local hand cards clickable during main phases
                     if (isLocal && handPlayable)
@@ -381,6 +406,9 @@ namespace DualCraft.UI
                     var visual = go.GetComponent<CardVisual>();
                     if (visual != null)
                         visual.SetCard(daemon.Card);
+
+                    // Summon pop animation for field daemons
+                    StartCoroutine(UIAnimUtils.PopScale(go.transform, 0.25f, 1.12f));
 
                     // Add ashe/attack overlay text
                     AddStatOverlay(go, daemon);
@@ -585,7 +613,15 @@ namespace DualCraft.UI
         {
             _aiTurnRunning = false;
             StopAllCoroutines();
-            if (gameOverPanel) gameOverPanel.SetActive(true);
+            if (gameOverPanel)
+            {
+                gameOverPanel.SetActive(true);
+                // Animate game over panel in
+                StartCoroutine(UIAnimUtils.PopScale(gameOverPanel.transform, 0.4f, 1.1f));
+                var cg = gameOverPanel.GetComponent<CanvasGroup>();
+                if (cg == null) cg = gameOverPanel.AddComponent<CanvasGroup>();
+                StartCoroutine(UIAnimUtils.FadeIn(cg, 0.4f));
+            }
             if (gameOverText) gameOverText.text = $"{_battle.State.Players[winner].Name} Wins!\n{reason}";
         }
 
