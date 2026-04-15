@@ -11,6 +11,7 @@ namespace DualCraft.Battle
 {
     using Core;
     using Cards;
+    using Effects;
 
     /// <summary>
     /// Core engine for the Duel Craft TCG.  Manages the game state, enforces
@@ -36,6 +37,8 @@ namespace DualCraft.Battle
         public event Action<string, int, Action<int, bool>> OnDiceRollRequested;
 
         private readonly CardDatabase _cardDb;
+        private EffectResolver _effects;
+        public EffectResolver Effects => _effects;
 
         public BattleManager(CardDatabase cardDb)
         {
@@ -69,6 +72,10 @@ namespace DualCraft.Battle
                 DrawCard(State.Players[0]);
                 DrawCard(State.Players[1]);
             }
+            // Initialize the effect resolver
+            _effects = new EffectResolver(State);
+            _effects.OnEffectLog += msg => AddLog(msg, LogEntryType.Effect);
+
             AddLog("Game started!", LogEntryType.System);
             OnStateChanged?.Invoke(State);
         }
@@ -193,6 +200,13 @@ namespace DualCraft.Battle
             if (cardInstance.Card is not DaemonCardData daemon)
                 return false;
             int cost = daemon.GetWillCost();
+            // Apply cost reduction from effects
+            if (player.CostReduction > 0)
+            {
+                int reduction = Mathf.Min(cost, player.CostReduction);
+                cost -= reduction;
+                player.CostReduction -= reduction;
+            }
             if (player.Will < cost)
                 return false;
             player.Will -= cost;
@@ -211,6 +225,23 @@ namespace DualCraft.Battle
             };
             player.Field.Add(instance);
             AddLog($"{player.Name} summoned {daemon.cardName}!", LogEntryType.Action);
+
+            // Fire OnSummon effects
+            _effects.OnDaemonSummoned(State.CurrentPlayer, instance);
+
+            // Apply mask effects for Haste
+            foreach (var m in instance.Masks)
+            {
+                if (m.Card.effectType == MaskEffectType.Haste)
+                    instance.CanAttack = true;
+                _effects.ApplyMaskEffect(State.CurrentPlayer, instance, m.Card);
+            }
+
+            // Clean up any daemons killed by OnSummon effects
+            var deadOpponent = _effects.CleanupDead(1 - State.CurrentPlayer);
+            foreach (var dead in deadOpponent)
+                _effects.OnDaemonDestroyed(1 - State.CurrentPlayer, dead);
+
             OnStateChanged?.Invoke(State);
             return true;
         }
@@ -259,6 +290,13 @@ namespace DualCraft.Battle
                 TurnsRemaining = mask.duration,
             });
             AddLog($"{player.Name} equipped {mask.cardName} to {player.Field[targetIndex].Card.cardName}!", LogEntryType.Action);
+
+            // Apply mask effect immediately
+            var targetDaemon = player.Field[targetIndex];
+            if (mask.effectType == MaskEffectType.Haste)
+                targetDaemon.CanAttack = true;
+            _effects.ApplyMaskEffect(State.CurrentPlayer, targetDaemon, mask);
+
             OnStateChanged?.Invoke(State);
             return true;
         }
@@ -306,8 +344,77 @@ namespace DualCraft.Battle
             player.Will -= cost;
             player.Hand.RemoveAt(action.HandIndex);
             AddLog($"{player.Name} cast {dispel.cardName}!", LogEntryType.Action);
+
+            // Resolve dispel: remove matching domain/mask/seal
+            switch (dispel.target)
+            {
+                case DispelTarget.Domain:
+                    if (State.ActiveDomain != null)
+                    {
+                        AddLog($"Dispelled {State.ActiveDomain.Card.cardName}!", LogEntryType.Effect);
+                        State.ActiveDomain = null;
+                    }
+                    break;
+                case DispelTarget.Seal:
+                    if (opponent.SealZone.Count > 0 && action.TargetIndex >= 0
+                        && action.TargetIndex < opponent.SealZone.Count)
+                    {
+                        var seal = opponent.SealZone[action.TargetIndex];
+                        AddLog($"Dispelled {seal.Card.cardName}!", LogEntryType.Effect);
+                        opponent.SealZone.RemoveAt(action.TargetIndex);
+                    }
+                    break;
+                case DispelTarget.Mask:
+                    if (action.TargetIndex >= 0 && action.TargetIndex < opponent.Field.Count)
+                    {
+                        var target = opponent.Field[action.TargetIndex];
+                        if (target.Masks.Count > 0)
+                        {
+                            var mask = target.Masks[0];
+                            AddLog($"Dispelled {mask.Card.cardName}!", LogEntryType.Effect);
+                            target.Masks.RemoveAt(0);
+                        }
+                    }
+                    break;
+                case DispelTarget.Any:
+                    // Remove the first thing found: domain > seal > mask
+                    if (State.ActiveDomain != null)
+                    {
+                        AddLog($"Dispelled {State.ActiveDomain.Card.cardName}!", LogEntryType.Effect);
+                        State.ActiveDomain = null;
+                    }
+                    else if (opponent.SealZone.Count > 0)
+                    {
+                        var seal = opponent.SealZone[0];
+                        AddLog($"Dispelled {seal.Card.cardName}!", LogEntryType.Effect);
+                        opponent.SealZone.RemoveAt(0);
+                    }
+                    break;
+            }
+
+            // Apply counter effect if dispel has one
+            if (dispel.counterEffect != null && !string.IsNullOrEmpty(dispel.counterEffect.effectType))
+            {
+                switch (dispel.counterEffect.effectType.ToLowerInvariant())
+                {
+                    case "damage-owner":
+                        opponent.Conjuror.Hp -= dispel.counterEffect.value;
+                        AddLog($"Counter effect: {dispel.counterEffect.value} damage!", LogEntryType.Effect);
+                        break;
+                    case "draw-cards":
+                        for (int i = 0; i < dispel.counterEffect.value; i++)
+                            DrawCard(player);
+                        AddLog($"Counter effect: draw {dispel.counterEffect.value}!", LogEntryType.Effect);
+                        break;
+                    case "heal-conjuror":
+                        player.Conjuror.Hp = Mathf.Min(
+                            player.Conjuror.Hp + dispel.counterEffect.value, player.Conjuror.MaxHp);
+                        AddLog($"Counter effect: heal {dispel.counterEffect.value}!", LogEntryType.Effect);
+                        break;
+                }
+            }
+
             OnStateChanged?.Invoke(State);
-            // TODO: implement dispel effect resolution here
             return true;
         }
 
@@ -319,8 +426,18 @@ namespace DualCraft.Battle
             if (action.AttackerIndex < 0 || action.AttackerIndex >= player.Field.Count)
                 return false;
             var attacker = player.Field[action.AttackerIndex];
-            if (!attacker.CanAttack || attacker.HasAttacked || attacker.Frozen)
+            if (!attacker.CanAttack || attacker.HasAttacked || attacker.Frozen || attacker.Entangled)
                 return false;
+
+            // Fire OnAttack effects and check seals
+            _effects.OnDaemonAttacking(playerIndex, attacker);
+            if (_effects.ActionNegated)
+            {
+                AddLog("Attack was negated by a Seal!", LogEntryType.Effect);
+                attacker.HasAttacked = true;
+                OnStateChanged?.Invoke(State);
+                return true;
+            }
             // ─── Enforce attack order: Daemons → Pillars → Conjuror ───
             bool opponentHasDaemons = opponent.Field.Count > 0;
             bool opponentHasPillars = opponent.Pillars.Exists(p => !p.Destroyed);
@@ -368,14 +485,48 @@ namespace DualCraft.Battle
                     float elemMult = ElementSystem.GetElementMatchup(attacker.Card.element, targetDaemon.Card.element);
                     float creatMult = ElementSystem.GetCreatureMatchup(attacker.Card.creatureType, targetDaemon.Card.creatureType);
                     int finalDamage = Mathf.RoundToInt(baseDamage * elemMult * creatMult * diceMod);
+                    // Apply shield absorption
+                    if (targetDaemon.ShieldAmount > 0)
+                    {
+                        int absorbed = Mathf.Min(finalDamage, targetDaemon.ShieldAmount);
+                        targetDaemon.ShieldAmount -= absorbed;
+                        finalDamage -= absorbed;
+                        if (absorbed > 0)
+                            AddLog($"Shield absorbs {absorbed} damage!", LogEntryType.Effect);
+                    }
                     targetDaemon.CurrentAshe -= finalDamage;
                     string diceTag = diceRoll >= 5 ? " ★" : diceRoll <= 2 ? " ↓" : "";
                     AddLog($"{attacker.Card.cardName} attacks {targetDaemon.Card.cardName} for {finalDamage} [{diceRoll}]{diceTag}!", LogEntryType.Combat);
+
+                    // Thorns: reflect damage back to attacker
+                    if (targetDaemon.ThornsDamage > 0)
+                    {
+                        attacker.CurrentAshe -= targetDaemon.ThornsDamage;
+                        AddLog($"Thorns reflect {targetDaemon.ThornsDamage} damage!", LogEntryType.Effect);
+                    }
+
+                    // Fire OnDamaged effects
+                    if (finalDamage > 0)
+                        _effects.OnDaemonDamaged(1 - playerIndex, targetDaemon, finalDamage);
+
                     if (targetDaemon.CurrentAshe <= 0)
                     {
                         opponent.Field.RemoveAt(action.TargetIndex);
                         opponent.AshePile.Add(new CardInstance { InstanceId = targetDaemon.InstanceId, Card = targetDaemon.Card });
                         AddLog($"{targetDaemon.Card.cardName} was destroyed!", LogEntryType.Combat);
+                        _effects.OnDaemonDestroyed(1 - playerIndex, targetDaemon);
+                    }
+                    // Check if attacker died from thorns
+                    if (attacker.CurrentAshe <= 0)
+                    {
+                        int atkIdx = player.Field.IndexOf(attacker);
+                        if (atkIdx >= 0)
+                        {
+                            player.Field.RemoveAt(atkIdx);
+                            player.AshePile.Add(new CardInstance { InstanceId = attacker.InstanceId, Card = attacker.Card });
+                            AddLog($"{attacker.Card.cardName} was destroyed by thorns!", LogEntryType.Combat);
+                            _effects.OnDaemonDestroyed(playerIndex, attacker);
+                        }
                     }
                     break;
                 case TargetType.Pillar:
@@ -397,6 +548,7 @@ namespace DualCraft.Battle
                     {
                         pillar.Destroyed = true;
                         AddLog($"Pillar {pillar.Card.cardName} was destroyed!", LogEntryType.Combat);
+                        _effects.OnPillarDestroyed(1 - playerIndex, pillar);
                     }
                     break;
                 case TargetType.Conjuror:
@@ -434,7 +586,18 @@ namespace DualCraft.Battle
             pillar.Loyalty -= ability.loyaltyCost;
             pillar.AbilityUsedThisTurn = true;
             AddLog($"{player.Name} activated {pillar.Card.cardName}'s {ability.abilityName}!", LogEntryType.Action);
-            // TODO: execute ability effect
+
+            // Execute the ability via the effect resolver
+            _effects.ActivatePillarAbility(State.CurrentPlayer, pillar, ability);
+
+            // Clean up dead daemons from effects
+            for (int pi = 0; pi < 2; pi++)
+            {
+                var dead = _effects.CleanupDead(pi);
+                foreach (var d in dead)
+                    _effects.OnDaemonDestroyed(pi, d);
+            }
+
             OnStateChanged?.Invoke(State);
             return true;
         }
@@ -494,7 +657,23 @@ namespace DualCraft.Battle
             if (nextPlayer.MaxWill < GameConstants.MaxWill)
                 nextPlayer.MaxWill++;
             nextPlayer.Will = nextPlayer.MaxWill;
+
+            // Fire turn-end effects for the player who just ended
+            _effects.OnTurnEnd(1 - State.CurrentPlayer);
+
             State.Phase = GamePhase.Draw;
+
+            // Fire turn-start effects for the new player
+            _effects.OnTurnStart(State.CurrentPlayer);
+
+            // Clean up any daemons killed by turn effects
+            for (int pi = 0; pi < 2; pi++)
+            {
+                var dead = _effects.CleanupDead(pi);
+                foreach (var d in dead)
+                    _effects.OnDaemonDestroyed(pi, d);
+            }
+
             AddLog($"Turn {State.TurnNumber} — {nextPlayer.Name}'s turn.", LogEntryType.System);
             OnStateChanged?.Invoke(State);
             return true;

@@ -53,6 +53,8 @@ namespace DualCraft.Battle
         public List<CardInstance> AshePile = new();
         public int Will;
         public int MaxWill;
+        public int CostReduction;
+        public int ExtraDraws;
     }
 
     public class ConjurorState
@@ -72,9 +74,19 @@ namespace DualCraft.Battle
         public List<MaskInstance> Masks = new();
         public bool CanAttack;
         public bool HasAttacked;
+
+        // Status effects with duration tracking
         public bool Frozen;
+        public int FrozenTurns;
         public bool Stealthed;
+        public int StealthTurns;
         public bool Entangled;
+        public int EntangledTurns;
+        public bool HasTaunt;
+        public int TauntTurns;
+        public int ShieldAmount;
+        public int ThornsDamage;
+        public bool Silenced;
     }
 
     public class PillarInstance
