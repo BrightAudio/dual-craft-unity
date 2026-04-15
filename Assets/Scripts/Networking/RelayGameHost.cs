@@ -155,12 +155,55 @@ namespace DualCraft.Networking
                 DeckId = req.DeckId,
             });
 
-            // For now, use a default deck for the guest.
-            // In production, the guest would send their deck data.
-            _guestDeck = _hostDeck; // TODO: receive guest's actual deck
+            // Reconstruct the guest's deck from the card IDs they sent
+            _guestDeck = ReconstructDeck(req);
+            if (_guestDeck == null)
+            {
+                Debug.LogWarning("[RelayGameHost] Could not reconstruct guest deck, using host's deck.");
+                _guestDeck = _hostDeck;
+            }
 
             // Both players seated — start the game
             StartGame();
+        }
+
+        /// <summary>
+        /// Reconstructs a DeckData ScriptableObject from the serialized card IDs sent by the guest.
+        /// </summary>
+        private DeckData ReconstructDeck(JoinRoomRequest req)
+        {
+            if (req.MainDeck == null || req.MainDeck.Length == 0)
+                return null;
+
+            var deck = ScriptableObject.CreateInstance<DeckData>();
+            deck.deckName = $"{req.PlayerName}'s Deck";
+
+            // Reconstruct main deck entries
+            var mainEntries = new System.Collections.Generic.List<DeckEntry>();
+            foreach (var entry in req.MainDeck)
+            {
+                var cardData = _cardDb.GetCard(entry.CardId);
+                if (cardData != null)
+                    mainEntries.Add(new DeckEntry { card = cardData, count = entry.Count });
+                else
+                    Debug.LogWarning($"[RelayGameHost] Unknown card ID: {entry.CardId}");
+            }
+            deck.cards = mainEntries.ToArray();
+
+            // Reconstruct pillar entries
+            if (req.PillarDeck != null)
+            {
+                var pillarEntries = new System.Collections.Generic.List<DeckEntry>();
+                foreach (var entry in req.PillarDeck)
+                {
+                    var cardData = _cardDb.GetCard(entry.CardId);
+                    if (cardData != null)
+                        pillarEntries.Add(new DeckEntry { card = cardData, count = entry.Count });
+                }
+                deck.pillars = pillarEntries.ToArray();
+            }
+
+            return deck;
         }
 
         private void HandleActionRequest(NetEnvelope envelope)

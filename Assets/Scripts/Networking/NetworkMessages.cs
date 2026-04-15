@@ -81,6 +81,16 @@ namespace DualCraft.Networking
         public string RoomId;       // empty = matchmaking
         public string DeckId;       // which deck to use
         public string AuthToken;    // JWT or session token
+        public SerializableDeckEntry[] MainDeck;   // card IDs + counts
+        public SerializableDeckEntry[] PillarDeck; // pillar IDs + counts
+    }
+
+    /// <summary>One entry in a serialized deck: cardId + count.</summary>
+    [Serializable]
+    public class SerializableDeckEntry
+    {
+        public string CardId;
+        public int Count;
     }
 
     /// <summary>Player wants to create a private room.</summary>

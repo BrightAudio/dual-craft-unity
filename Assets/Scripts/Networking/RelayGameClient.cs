@@ -26,6 +26,7 @@ namespace DualCraft.Networking
         private string _playerName;
         private string _playerId;
         private string _deckId;
+        private Cards.DeckData _deckData;
         private int _actionSequence;
         private bool _gameActive;
 
@@ -44,12 +45,13 @@ namespace DualCraft.Networking
         /// <summary>
         /// Initialize and connect to a host via join code.
         /// </summary>
-        public async void Connect(string joinCode, string playerName, string deckId)
+        public async void Connect(string joinCode, string playerName, string deckId, Cards.DeckData deckData = null)
         {
             _relay = RelayManager.Instance;
             _playerName = playerName;
             _playerId = AuthenticationService.Instance.PlayerId;
             _deckId = deckId;
+            _deckData = deckData;
             _actionSequence = 0;
 
             _relay.OnClientConnected += HandleConnected;
@@ -81,15 +83,36 @@ namespace DualCraft.Networking
         {
             Debug.Log("[RelayGameClient] Connected to host. Sending join request...");
 
-            // Tell the host who we are and what deck we're using
-            _relay.SendMessage(new JoinRoomRequest
+            // Tell the host who we are and send our full deck
+            var joinReq = new JoinRoomRequest
             {
                 PlayerId = _playerId,
                 PlayerName = _playerName,
                 RoomId = _relay.JoinCode,
                 DeckId = _deckId,
                 AuthToken = "",
-            }, _playerId);
+            };
+
+            // Serialize our deck so the host can reconstruct it
+            if (_deckData != null)
+            {
+                if (_deckData.cards != null)
+                {
+                    joinReq.MainDeck = new SerializableDeckEntry[_deckData.cards.Length];
+                    for (int i = 0; i < _deckData.cards.Length; i++)
+                        joinReq.MainDeck[i] = new SerializableDeckEntry
+                            { CardId = _deckData.cards[i].card.cardId, Count = _deckData.cards[i].count };
+                }
+                if (_deckData.pillars != null)
+                {
+                    joinReq.PillarDeck = new SerializableDeckEntry[_deckData.pillars.Length];
+                    for (int i = 0; i < _deckData.pillars.Length; i++)
+                        joinReq.PillarDeck[i] = new SerializableDeckEntry
+                            { CardId = _deckData.pillars[i].card.cardId, Count = _deckData.pillars[i].count };
+                }
+            }
+
+            _relay.SendMessage(joinReq, _playerId);
 
             _gameActive = true;
             OnConnectedToHost?.Invoke();

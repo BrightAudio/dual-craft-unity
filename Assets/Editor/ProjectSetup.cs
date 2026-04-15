@@ -562,7 +562,18 @@ namespace DualCraft.Editor
 
         static void CreateBattleScene()
         {
-            if (AssetExists("Assets/Scenes/Battle.unity")) return;
+            CreateBattleScene(false);
+        }
+
+        [MenuItem("Dual Craft/Regenerate Battle Scene", false, 12)]
+        static void RegenerateBattleScene()
+        {
+            CreateBattleScene(true);
+        }
+
+        static void CreateBattleScene(bool force)
+        {
+            if (!force && AssetExists("Assets/Scenes/Battle.unity")) return;
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -592,6 +603,143 @@ namespace DualCraft.Editor
 
             // ─── Full-screen background ───
             var bgPanel = CreatePanel(canvasGO, "Background", new Color(0.025f, 0.025f, 0.05f), true);
+
+            // ═══ LEFT SIDEBAR — Void/Discard Zones ══════
+            // Matches HTML: left 160px column with discard per player
+            var leftSidebar = CreateUIChild(canvasGO, "LeftSidebar", Vector2.zero, Vector2.zero);
+            var lsRT = leftSidebar.GetComponent<RectTransform>();
+            lsRT.anchorMin = new Vector2(0f, 0f);
+            lsRT.anchorMax = new Vector2(0.10f, 1f);
+            lsRT.offsetMin = Vector2.zero;
+            lsRT.offsetMax = Vector2.zero;
+            var lsBg = leftSidebar.AddComponent<Image>();
+            lsBg.color = new Color(0.03f, 0.03f, 0.05f, 0.6f);
+
+            // P2 Void/Discard (top of left sidebar)
+            var p2Void = CreateUIChild(leftSidebar, "P2VoidZone", Vector2.zero, Vector2.zero);
+            var p2VoidRT = p2Void.GetComponent<RectTransform>();
+            p2VoidRT.anchorMin = new Vector2(0.08f, 0.72f);
+            p2VoidRT.anchorMax = new Vector2(0.92f, 0.95f);
+            p2VoidRT.offsetMin = Vector2.zero;
+            p2VoidRT.offsetMax = Vector2.zero;
+            var p2VoidBg = p2Void.AddComponent<Image>();
+            p2VoidBg.color = new Color(0.08f, 0.04f, 0.08f, 0.4f);
+            var p2VoidLabel = CreateUIChild(p2Void, "Label", Vector2.zero, Vector2.zero);
+            var p2VoidLRT = p2VoidLabel.GetComponent<RectTransform>();
+            p2VoidLRT.anchorMin = Vector2.zero; p2VoidLRT.anchorMax = Vector2.one;
+            p2VoidLRT.offsetMin = Vector2.zero; p2VoidLRT.offsetMax = Vector2.zero;
+            var p2VoidTMP = p2VoidLabel.AddComponent<TextMeshProUGUI>();
+            p2VoidTMP.text = "VOID";
+            p2VoidTMP.fontSize = 10;
+            p2VoidTMP.alignment = TextAlignmentOptions.Center;
+            p2VoidTMP.color = new Color(0.5f, 0.4f, 0.55f, 0.7f);
+
+            // P1 Void/Discard (bottom of left sidebar)
+            var p1Void = CreateUIChild(leftSidebar, "P1VoidZone", Vector2.zero, Vector2.zero);
+            var p1VoidRT = p1Void.GetComponent<RectTransform>();
+            p1VoidRT.anchorMin = new Vector2(0.08f, 0.05f);
+            p1VoidRT.anchorMax = new Vector2(0.92f, 0.28f);
+            p1VoidRT.offsetMin = Vector2.zero;
+            p1VoidRT.offsetMax = Vector2.zero;
+            var p1VoidBg = p1Void.AddComponent<Image>();
+            p1VoidBg.color = new Color(0.04f, 0.04f, 0.08f, 0.4f);
+            var p1VoidLabel = CreateUIChild(p1Void, "Label", Vector2.zero, Vector2.zero);
+            var p1VoidLRT = p1VoidLabel.GetComponent<RectTransform>();
+            p1VoidLRT.anchorMin = Vector2.zero; p1VoidLRT.anchorMax = Vector2.one;
+            p1VoidLRT.offsetMin = Vector2.zero; p1VoidLRT.offsetMax = Vector2.zero;
+            var p1VoidTMP = p1VoidLabel.AddComponent<TextMeshProUGUI>();
+            p1VoidTMP.text = "VOID";
+            p1VoidTMP.fontSize = 10;
+            p1VoidTMP.alignment = TextAlignmentOptions.Center;
+            p1VoidTMP.color = new Color(0.4f, 0.4f, 0.55f, 0.7f);
+
+            // ═══ RIGHT SIDEBAR — SE Pool + Deck Zones ═══
+            // Matches HTML: right 160px column with SE Pool + Deck per player
+            // Game log moves to an overlay/toggle instead
+            var rightSidebar = CreateUIChild(canvasGO, "RightSidebar", Vector2.zero, Vector2.zero);
+            var rsRT = rightSidebar.GetComponent<RectTransform>();
+            rsRT.anchorMin = new Vector2(0.90f, 0f);
+            rsRT.anchorMax = new Vector2(1f, 1f);
+            rsRT.offsetMin = Vector2.zero;
+            rsRT.offsetMax = Vector2.zero;
+            var rsBg = rightSidebar.AddComponent<Image>();
+            rsBg.color = new Color(0.03f, 0.03f, 0.05f, 0.6f);
+
+            // P2 SE Pool (top-right)
+            var p2SE = CreateUIChild(rightSidebar, "P2SEPool", Vector2.zero, Vector2.zero);
+            var p2SERT = p2SE.GetComponent<RectTransform>();
+            p2SERT.anchorMin = new Vector2(0.08f, 0.85f);
+            p2SERT.anchorMax = new Vector2(0.92f, 0.95f);
+            p2SERT.offsetMin = Vector2.zero;
+            p2SERT.offsetMax = Vector2.zero;
+            var p2SEBg = p2SE.AddComponent<Image>();
+            p2SEBg.color = new Color(0.04f, 0.06f, 0.10f, 0.5f);
+            var p2SELabel = CreateUIChild(p2SE, "Label", Vector2.zero, Vector2.zero);
+            var p2SELRT = p2SELabel.GetComponent<RectTransform>();
+            p2SELRT.anchorMin = Vector2.zero; p2SELRT.anchorMax = Vector2.one;
+            p2SELRT.offsetMin = Vector2.zero; p2SELRT.offsetMax = Vector2.zero;
+            var p2SETMP = p2SELabel.AddComponent<TextMeshProUGUI>();
+            p2SETMP.text = "SE";
+            p2SETMP.fontSize = 11;
+            p2SETMP.alignment = TextAlignmentOptions.Center;
+            p2SETMP.color = new Color(0.4f, 0.6f, 0.9f, 0.8f);
+
+            // P2 Deck pile (top-right, below SE)
+            var p2DeckPile = CreateUIChild(rightSidebar, "P2DeckPile", Vector2.zero, Vector2.zero);
+            var p2DeckRT = p2DeckPile.GetComponent<RectTransform>();
+            p2DeckRT.anchorMin = new Vector2(0.08f, 0.68f);
+            p2DeckRT.anchorMax = new Vector2(0.92f, 0.84f);
+            p2DeckRT.offsetMin = Vector2.zero;
+            p2DeckRT.offsetMax = Vector2.zero;
+            var p2DeckBg = p2DeckPile.AddComponent<Image>();
+            p2DeckBg.color = new Color(0.06f, 0.04f, 0.08f, 0.5f);
+            var p2DeckLabel = CreateUIChild(p2DeckPile, "Label", Vector2.zero, Vector2.zero);
+            var p2DeckLabelRT = p2DeckLabel.GetComponent<RectTransform>();
+            p2DeckLabelRT.anchorMin = Vector2.zero; p2DeckLabelRT.anchorMax = Vector2.one;
+            p2DeckLabelRT.offsetMin = Vector2.zero; p2DeckLabelRT.offsetMax = Vector2.zero;
+            var p2DeckLabelTMP = p2DeckLabel.AddComponent<TextMeshProUGUI>();
+            p2DeckLabelTMP.text = "DECK";
+            p2DeckLabelTMP.fontSize = 10;
+            p2DeckLabelTMP.alignment = TextAlignmentOptions.Center;
+            p2DeckLabelTMP.color = new Color(0.5f, 0.5f, 0.55f, 0.7f);
+
+            // P1 SE Pool (bottom-right)
+            var p1SE = CreateUIChild(rightSidebar, "P1SEPool", Vector2.zero, Vector2.zero);
+            var p1SERT = p1SE.GetComponent<RectTransform>();
+            p1SERT.anchorMin = new Vector2(0.08f, 0.16f);
+            p1SERT.anchorMax = new Vector2(0.92f, 0.26f);
+            p1SERT.offsetMin = Vector2.zero;
+            p1SERT.offsetMax = Vector2.zero;
+            var p1SEBg = p1SE.AddComponent<Image>();
+            p1SEBg.color = new Color(0.04f, 0.06f, 0.10f, 0.5f);
+            var p1SELabel = CreateUIChild(p1SE, "Label", Vector2.zero, Vector2.zero);
+            var p1SELRT = p1SELabel.GetComponent<RectTransform>();
+            p1SELRT.anchorMin = Vector2.zero; p1SELRT.anchorMax = Vector2.one;
+            p1SELRT.offsetMin = Vector2.zero; p1SELRT.offsetMax = Vector2.zero;
+            var p1SETMP = p1SELabel.AddComponent<TextMeshProUGUI>();
+            p1SETMP.text = "SE";
+            p1SETMP.fontSize = 11;
+            p1SETMP.alignment = TextAlignmentOptions.Center;
+            p1SETMP.color = new Color(0.4f, 0.6f, 0.9f, 0.8f);
+
+            // P1 Deck pile (bottom-right, above SE)
+            var p1DeckPile = CreateUIChild(rightSidebar, "P1DeckPile", Vector2.zero, Vector2.zero);
+            var p1DeckPileRT = p1DeckPile.GetComponent<RectTransform>();
+            p1DeckPileRT.anchorMin = new Vector2(0.08f, 0.27f);
+            p1DeckPileRT.anchorMax = new Vector2(0.92f, 0.43f);
+            p1DeckPileRT.offsetMin = Vector2.zero;
+            p1DeckPileRT.offsetMax = Vector2.zero;
+            var p1DeckBg = p1DeckPile.AddComponent<Image>();
+            p1DeckBg.color = new Color(0.04f, 0.04f, 0.08f, 0.5f);
+            var p1DeckPileLabel = CreateUIChild(p1DeckPile, "Label", Vector2.zero, Vector2.zero);
+            var p1DeckPileLRT = p1DeckPileLabel.GetComponent<RectTransform>();
+            p1DeckPileLRT.anchorMin = Vector2.zero; p1DeckPileLRT.anchorMax = Vector2.one;
+            p1DeckPileLRT.offsetMin = Vector2.zero; p1DeckPileLRT.offsetMax = Vector2.zero;
+            var p1DeckPileTMP = p1DeckPileLabel.AddComponent<TextMeshProUGUI>();
+            p1DeckPileTMP.text = "DECK";
+            p1DeckPileTMP.fontSize = 10;
+            p1DeckPileTMP.alignment = TextAlignmentOptions.Center;
+            p1DeckPileTMP.color = new Color(0.5f, 0.5f, 0.55f, 0.7f);
 
             // ═══ OPPONENT SIDE (TOP 45%) ═════════════════
             // Layout from top: ConjurorZone → PillarRow → DaemonField → Hand
