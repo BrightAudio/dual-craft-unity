@@ -5,9 +5,9 @@
 //  Resolver finds matching EffectEntries → executes them.
 // ═══════════════════════════════════════════════════════
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using DualCraft.Battle;
 using DualCraft.Cards;
 using DualCraft.Core;
@@ -344,7 +344,7 @@ namespace DualCraft.Effects
 
             if (funcId == EffectFunctionId.None)
             {
-                Debug.LogWarning($"[EffectResolver] Unknown effectKey: {effectKey}");
+                System.Diagnostics.Debug.WriteLine($"[EffectResolver] Unknown effectKey: {effectKey}");
                 return null;
             }
 
@@ -519,7 +519,7 @@ namespace DualCraft.Effects
                     break;
                 default:
                     if (!string.IsNullOrEmpty(passive.passiveType))
-                        Debug.LogWarning($"[EffectResolver] Unknown passive: {passive.passiveType}");
+                        System.Diagnostics.Debug.WriteLine($"[EffectResolver] Unknown passive: {passive.passiveType}");
                     break;
             }
         }
@@ -558,7 +558,7 @@ namespace DualCraft.Effects
                     break;
                 default:
                     if (!string.IsNullOrEmpty(destroy.destroyType))
-                        Debug.LogWarning($"[EffectResolver] Unknown destroy: {destroy.destroyType}");
+                        System.Diagnostics.Debug.WriteLine($"[EffectResolver] Unknown destroy: {destroy.destroyType}");
                     break;
             }
         }

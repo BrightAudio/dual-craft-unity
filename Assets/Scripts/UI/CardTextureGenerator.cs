@@ -25,7 +25,7 @@ namespace DualCraft.UI
             var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
             tex.filterMode = FilterMode.Bilinear;
 
-            Color primary = ElementSystem.GetElementColor(element);
+            Color primary = ElementColors.GetElementColor(element);
             Color secondary = GetSecondaryColor(element);
             Color accent = GetCategoryAccent(category);
 
@@ -62,7 +62,7 @@ namespace DualCraft.UI
                     {
                         float shimmer = Mathf.Sin((nx * 8f + ny * 6f + variation * 12f) * Mathf.PI) * 0.5f + 0.5f;
                         shimmer *= shimmer;
-                        Color rarityCol = ElementSystem.GetRarityColor(rarity);
+                        Color rarityCol = ElementColors.GetRarityColor(rarity);
                         pixel = Color.Lerp(pixel, rarityCol, shimmer * (rarity == Rarity.Legendary ? 0.25f : 0.15f));
                     }
 
@@ -84,7 +84,7 @@ namespace DualCraft.UI
         {
             int w = 8, h = 8;
             var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-            Color col = Color.Lerp(ElementSystem.GetElementColor(element), ElementSystem.GetRarityColor(rarity), 0.3f);
+            Color col = Color.Lerp(ElementColors.GetElementColor(element), ElementColors.GetRarityColor(rarity), 0.3f);
             col *= 0.8f;
             col.a = 1f;
             for (int y = 0; y < h; y++)

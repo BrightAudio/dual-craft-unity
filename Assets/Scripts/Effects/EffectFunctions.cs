@@ -5,9 +5,9 @@
 //  "Untap X Mana of Y Type" = one function, 10 cards.
 // ═══════════════════════════════════════════════════════
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using DualCraft.Battle;
 using DualCraft.Core;
 
@@ -93,7 +93,7 @@ namespace DualCraft.Effects
                 return null;
             if (_funcs.TryGetValue(id, out var func))
                 return func(ctx, parameters ?? System.Array.Empty<int>());
-            Debug.LogWarning($"[EffectFunctions] No handler for {id}");
+            System.Diagnostics.Debug.WriteLine($"[EffectFunctions] No handler for {id}");
             return null;
         }
 
@@ -120,7 +120,7 @@ namespace DualCraft.Effects
             int amount = P(p, 0, 2);
             foreach (var d in ResolveTargetDaemons(ctx))
             {
-                d.CurrentAshe = Mathf.Min(d.CurrentAshe + amount, d.MaxAshe);
+                d.CurrentAshe = Math.Min(d.CurrentAshe + amount, d.MaxAshe);
             }
             return $"Heals {amount} Ashe";
         }
@@ -129,7 +129,7 @@ namespace DualCraft.Effects
         {
             int amount = P(p, 0, 3);
             var conj = ctx.Owner.Conjuror;
-            conj.Hp = Mathf.Min(conj.Hp + amount, conj.MaxHp);
+            conj.Hp = Math.Min(conj.Hp + amount, conj.MaxHp);
             return $"Heals Conjuror for {amount}";
         }
 
@@ -146,10 +146,10 @@ namespace DualCraft.Effects
             int amount = P(p, 0, 2);
             foreach (var d in ResolveTargetDaemons(ctx))
             {
-                int actual = Mathf.Min(amount, d.CurrentAshe);
+                int actual = Math.Min(amount, d.CurrentAshe);
                 d.CurrentAshe -= actual;
                 if (ctx.SourceDaemon != null)
-                    ctx.SourceDaemon.CurrentAshe = Mathf.Min(
+                    ctx.SourceDaemon.CurrentAshe = Math.Min(
                         ctx.SourceDaemon.CurrentAshe + actual, ctx.SourceDaemon.MaxAshe);
             }
             return $"Drains {amount} Ashe";
@@ -182,7 +182,7 @@ namespace DualCraft.Effects
         {
             int amount = P(p, 0, 1);
             foreach (var d in ResolveTargetDaemons(ctx))
-                d.Attack = Mathf.Max(0, d.Attack - amount);
+                d.Attack = Math.Max(0, d.Attack - amount);
             return $"-{amount} ATK";
         }
 
@@ -208,7 +208,7 @@ namespace DualCraft.Effects
             foreach (var d in ResolveTargetDaemons(ctx))
             {
                 d.Frozen = true;
-                d.FrozenTurns = Mathf.Max(d.FrozenTurns, turns);
+                d.FrozenTurns = Math.Max(d.FrozenTurns, turns);
             }
             return $"Frozen for {turns} turn(s)";
         }
@@ -219,7 +219,7 @@ namespace DualCraft.Effects
             foreach (var d in ResolveTargetDaemons(ctx))
             {
                 d.Stealthed = true;
-                d.StealthTurns = Mathf.Max(d.StealthTurns, turns);
+                d.StealthTurns = Math.Max(d.StealthTurns, turns);
             }
             return $"Stealth for {turns} turn(s)";
         }
@@ -230,7 +230,7 @@ namespace DualCraft.Effects
             foreach (var d in ResolveTargetDaemons(ctx))
             {
                 d.Entangled = true;
-                d.EntangledTurns = Mathf.Max(d.EntangledTurns, turns);
+                d.EntangledTurns = Math.Max(d.EntangledTurns, turns);
             }
             return $"Entangled for {turns} turn(s)";
         }
@@ -247,7 +247,7 @@ namespace DualCraft.Effects
         {
             int damage = P(p, 0, 1);
             foreach (var d in ResolveTargetDaemons(ctx))
-                d.ThornsDamage = Mathf.Max(d.ThornsDamage, damage);
+                d.ThornsDamage = Math.Max(d.ThornsDamage, damage);
             return $"Thorns {damage}";
         }
 
@@ -257,7 +257,7 @@ namespace DualCraft.Effects
             foreach (var d in ResolveTargetDaemons(ctx))
             {
                 d.HasTaunt = true;
-                d.TauntTurns = Mathf.Max(d.TauntTurns, turns);
+                d.TauntTurns = Math.Max(d.TauntTurns, turns);
             }
             return $"Taunt for {turns} turn(s)";
         }
@@ -284,16 +284,16 @@ namespace DualCraft.Effects
         private static string GainWill(EffectContext ctx, int[] p)
         {
             int amount = P(p, 0, 1);
-            ctx.Owner.Will = Mathf.Min(ctx.Owner.Will + amount, GameConstants.MaxWill);
+            ctx.Owner.Will = Math.Min(ctx.Owner.Will + amount, GameConstants.MaxWill);
             return $"+{amount} Will";
         }
 
         private static string DrainWill(EffectContext ctx, int[] p)
         {
             int amount = P(p, 0, 1);
-            int actual = Mathf.Min(amount, ctx.Opponent.Will);
+            int actual = Math.Min(amount, ctx.Opponent.Will);
             ctx.Opponent.Will -= actual;
-            ctx.Owner.Will = Mathf.Min(ctx.Owner.Will + actual, GameConstants.MaxWill);
+            ctx.Owner.Will = Math.Min(ctx.Owner.Will + actual, GameConstants.MaxWill);
             return $"Drain {amount} Will";
         }
 
@@ -307,7 +307,7 @@ namespace DualCraft.Effects
         private static string RestoreWill(EffectContext ctx, int[] p)
         {
             int amount = P(p, 0, 1);
-            ctx.Owner.Will = Mathf.Min(ctx.Owner.Will + amount, ctx.Owner.MaxWill);
+            ctx.Owner.Will = Math.Min(ctx.Owner.Will + amount, ctx.Owner.MaxWill);
             return $"Restore {amount} Will";
         }
 
@@ -376,7 +376,7 @@ namespace DualCraft.Effects
         {
             int amount = P(p, 0, 3);
             foreach (var pil in ctx.Owner.Pillars.Where(x => !x.Destroyed))
-                pil.CurrentHp = Mathf.Min(pil.CurrentHp + amount, pil.MaxHp);
+                pil.CurrentHp = Math.Min(pil.CurrentHp + amount, pil.MaxHp);
             return $"Restore {amount} HP to all Pillars";
         }
 
@@ -443,7 +443,7 @@ namespace DualCraft.Effects
         {
             int amount = P(p, 0, 2);
             foreach (var pil in ctx.Owner.Pillars.Where(x => !x.Destroyed))
-                pil.CurrentHp = Mathf.Min(pil.CurrentHp + amount, pil.MaxHp);
+                pil.CurrentHp = Math.Min(pil.CurrentHp + amount, pil.MaxHp);
             return $"Heal all Pillars for {amount}";
         }
 
@@ -473,9 +473,9 @@ namespace DualCraft.Effects
             int amount = P(p, 0, 2);
             foreach (var d in ResolveTargetDaemons(ctx))
             {
-                int actual = Mathf.Min(amount, d.CurrentAshe);
+                int actual = Math.Min(amount, d.CurrentAshe);
                 d.CurrentAshe -= actual;
-                ctx.Owner.Conjuror.Hp = Mathf.Min(
+                ctx.Owner.Conjuror.Hp = Math.Min(
                     ctx.Owner.Conjuror.Hp + actual, ctx.Owner.Conjuror.MaxHp);
             }
             return $"Drain {amount} from attacker, heal Conjuror";
@@ -533,7 +533,7 @@ namespace DualCraft.Effects
             if (ctx.SourceDaemon != null)
             {
                 ctx.SourceDaemon.Attack += atkBuff;
-                ctx.SourceDaemon.CurrentAshe = Mathf.Min(
+                ctx.SourceDaemon.CurrentAshe = Math.Min(
                     ctx.SourceDaemon.CurrentAshe + heal, ctx.SourceDaemon.MaxAshe);
             }
             return $"+{atkBuff} ATK, heal {heal}";
@@ -549,7 +549,7 @@ namespace DualCraft.Effects
                 if (d.CurrentAshe < 0) d.CurrentAshe = 0;
             }
             if (ctx.SourceDaemon != null)
-                ctx.SourceDaemon.CurrentAshe = Mathf.Min(
+                ctx.SourceDaemon.CurrentAshe = Math.Min(
                     ctx.SourceDaemon.CurrentAshe + heal, ctx.SourceDaemon.MaxAshe);
             return $"{damage} to all enemies, heal self {heal}";
         }
@@ -606,10 +606,12 @@ namespace DualCraft.Effects
             };
         }
 
+        private static readonly Random _rng = new();
+
         private static List<DaemonInstance> PickRandom(List<DaemonInstance> pool)
         {
             if (pool.Count == 0) return new List<DaemonInstance>();
-            return new List<DaemonInstance> { pool[Random.Range(0, pool.Count)] };
+            return new List<DaemonInstance> { pool[_rng.Next(pool.Count)] };
         }
 
         private static List<DaemonInstance> PickStrongest(List<DaemonInstance> pool)

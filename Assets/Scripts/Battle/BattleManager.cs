@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace DualCraft.Battle
 {
@@ -39,6 +38,7 @@ namespace DualCraft.Battle
         private readonly CardDatabase _cardDb;
         private EffectResolver _effects;
         public EffectResolver Effects => _effects;
+        private static readonly Random _rng = new();
 
         public BattleManager(CardDatabase cardDb)
         {
@@ -203,7 +203,7 @@ namespace DualCraft.Battle
             // Apply cost reduction from effects
             if (player.CostReduction > 0)
             {
-                int reduction = Mathf.Min(cost, player.CostReduction);
+                int reduction = Math.Min(cost, player.CostReduction);
                 cost -= reduction;
                 player.CostReduction -= reduction;
             }
@@ -407,7 +407,7 @@ namespace DualCraft.Battle
                         AddLog($"Counter effect: draw {dispel.counterEffect.value}!", LogEntryType.Effect);
                         break;
                     case "heal-conjuror":
-                        player.Conjuror.Hp = Mathf.Min(
+                        player.Conjuror.Hp = Math.Min(
                             player.Conjuror.Hp + dispel.counterEffect.value, player.Conjuror.MaxHp);
                         AddLog($"Counter effect: heal {dispel.counterEffect.value}!", LogEntryType.Effect);
                         break;
@@ -459,7 +459,7 @@ namespace DualCraft.Battle
                     break;
             }
             // Roll a 6-sided die for damage modifier
-            int diceRoll = UnityEngine.Random.Range(1, 7);
+            int diceRoll = _rng.Next(1, 7);
             float diceMod = diceRoll switch
             {
                 6 => 1.5f, // Critical hit
@@ -484,11 +484,11 @@ namespace DualCraft.Battle
                     // Element and creature matchups
                     float elemMult = ElementSystem.GetElementMatchup(attacker.Card.element, targetDaemon.Card.element);
                     float creatMult = ElementSystem.GetCreatureMatchup(attacker.Card.creatureType, targetDaemon.Card.creatureType);
-                    int finalDamage = Mathf.RoundToInt(baseDamage * elemMult * creatMult * diceMod);
+                    int finalDamage = (int)Math.Round(baseDamage * elemMult * creatMult * diceMod);
                     // Apply shield absorption
                     if (targetDaemon.ShieldAmount > 0)
                     {
-                        int absorbed = Mathf.Min(finalDamage, targetDaemon.ShieldAmount);
+                        int absorbed = Math.Min(finalDamage, targetDaemon.ShieldAmount);
                         targetDaemon.ShieldAmount -= absorbed;
                         finalDamage -= absorbed;
                         if (absorbed > 0)
@@ -541,7 +541,7 @@ namespace DualCraft.Battle
                         pillar.Revealed = true;
                         AddLog($"Pillar revealed: {pillar.Card.cardName}!", LogEntryType.Effect);
                     }
-                    int pillarDmg = Mathf.RoundToInt(baseDamage * diceMod);
+                    int pillarDmg = (int)Math.Round(baseDamage * diceMod);
                     pillar.CurrentHp -= pillarDmg;
                     AddLog($"{attacker.Card.cardName} attacks Pillar {pillar.Card.cardName} for {pillarDmg} [{diceRoll}]!", LogEntryType.Combat);
                     if (pillar.CurrentHp <= 0)
@@ -552,7 +552,7 @@ namespace DualCraft.Battle
                     }
                     break;
                 case TargetType.Conjuror:
-                    int conjDmg = Mathf.RoundToInt(baseDamage * diceMod);
+                    int conjDmg = (int)Math.Round(baseDamage * diceMod);
                     opponent.Conjuror.Hp -= conjDmg;
                     AddLog($"{attacker.Card.cardName} strikes the Conjuror for {conjDmg} [{diceRoll}]!", LogEntryType.Combat);
                     if (opponent.Conjuror.Hp <= 0)
@@ -685,7 +685,7 @@ namespace DualCraft.Battle
             var deck = player.Deck;
             for (int i = deck.Count - 1; i > 0; i--)
             {
-                int j = UnityEngine.Random.Range(0, i + 1);
+                int j = _rng.Next(0, i + 1);
                 (deck[i], deck[j]) = (deck[j], deck[i]);
             }
         }
