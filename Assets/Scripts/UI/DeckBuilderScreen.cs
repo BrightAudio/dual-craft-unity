@@ -167,26 +167,47 @@ namespace DualCraft.UI
                 {
                     if (StoryCaptureHelper.IsCaptureCard(card))
                     {
-                        var badge = new GameObject("CaptureBadge", typeof(RectTransform), typeof(TextMeshProUGUI));
-                        badge.transform.SetParent(go.transform, false);
-                        var brt = badge.GetComponent<RectTransform>();
-                        brt.anchorMin = new Vector2(1f, 1f);
-                        brt.anchorMax = new Vector2(1f, 1f);
-                        brt.pivot = new Vector2(1f, 1f);
-                        brt.anchoredPosition = new Vector2(-6f, -6f);
-                        brt.sizeDelta = new Vector2(56f, 18f);
+                        // Prefer a sprite at Resources/UI/capture_badge, fallback to text
+                        var badgeSprite = Resources.Load<Sprite>("UI/capture_badge");
+                        if (badgeSprite != null)
+                        {
+                            var badge = new GameObject("CaptureBadge", typeof(RectTransform), typeof(Image));
+                            badge.transform.SetParent(go.transform, false);
+                            var brt = badge.GetComponent<RectTransform>();
+                            brt.anchorMin = new Vector2(1f, 1f);
+                            brt.anchorMax = new Vector2(1f, 1f);
+                            brt.pivot = new Vector2(1f, 1f);
+                            brt.anchoredPosition = new Vector2(-6f, -6f);
+                            brt.sizeDelta = new Vector2(48f, 18f);
 
-                        var btxt = badge.GetComponent<TextMeshProUGUI>();
-                        btxt.text = "CAPTURE";
-                        btxt.fontSize = 12;
-                        btxt.color = new Color(0.98f, 0.82f, 0.17f);
-                        btxt.alignment = TextAlignmentOptions.Center;
-                        btxt.enableWordWrapping = false;
+                            var img = badge.GetComponent<Image>();
+                            img.sprite = badgeSprite;
+                            img.color = Color.white;
+                            img.raycastTarget = false;
+                        }
+                        else
+                        {
+                            var badge = new GameObject("CaptureBadge", typeof(RectTransform), typeof(TextMeshProUGUI));
+                            badge.transform.SetParent(go.transform, false);
+                            var brt = badge.GetComponent<RectTransform>();
+                            brt.anchorMin = new Vector2(1f, 1f);
+                            brt.anchorMax = new Vector2(1f, 1f);
+                            brt.pivot = new Vector2(1f, 1f);
+                            brt.anchoredPosition = new Vector2(-6f, -6f);
+                            brt.sizeDelta = new Vector2(56f, 18f);
+
+                            var btxt = badge.GetComponent<TextMeshProUGUI>();
+                            btxt.text = "CAPTURE";
+                            btxt.fontSize = 12;
+                            btxt.color = new Color(0.98f, 0.82f, 0.17f);
+                            btxt.alignment = TextAlignmentOptions.Center;
+                            btxt.enableWordWrapping = false;
+                        }
                     }
                 }
                 catch
                 {
-                    // No-op if TMPro or other runtime setup isn't available in this context
+                    // No-op if Resources/TMPro isn't available in this context
                 }
             }
         }

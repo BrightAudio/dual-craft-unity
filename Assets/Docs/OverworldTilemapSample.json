@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "author": "auto-generated",
+    "description": "Sample tilemap for Meshy: small demo area with wild spawn metadata",
+    "tileSize": 1
+  },
+  "size": { "width": 16, "height": 10 },
+  "tiles": [
+    { "x": 0, "y": 0, "type": "water", "battleback": "water" },
+    { "x": 1, "y": 0, "type": "water", "battleback": "water" },
+    { "x": 2, "y": 0, "type": "grass", "battleback": "grass" },
+    { "x": 3, "y": 0, "type": "grass", "battleback": "grass" },
+
+    { "x": 4, "y": 1, "type": "path", "battleback": "city" },
+    { "x": 5, "y": 1, "type": "path", "battleback": "city" },
+    { "x": 6, "y": 1, "type": "town", "battleback": "city" },
+
+    { "x": 2, "y": 2, "type": "grass", "battleback": "grass" },
+    { "x": 3, "y": 2, "type": "grass", "battleback": "grass" },
+    { "x": 4, "y": 2, "type": "grass", "battleback": "grass", "wildSpawn": true },
+
+    { "x": 8, "y": 5, "type": "grass", "battleback": "grass", "wildSpawn": true },
+    { "x": 9, "y": 5, "type": "grass", "battleback": "grass" },
+
+    { "x": 12, "y": 7, "type": "academy", "battleback": "indoor1" }
+  ],
+  "regions": [
+    { "id": "open_field", "x": 0, "y": 0, "w": 8, "h": 6, "spawnDensity": 0.08 },
+    { "id": "town_center", "x": 4, "y": 0, "w": 4, "h": 3, "spawnDensity": 0.03 }
+  ],
+  "notes": "Tiles with \"wildSpawn\": true are explicit spawn points. Meshy should map tile types to visual assets and export a Unity Tilemap or scene. battleback values map to StorySceneController.ResolveWildEncounterBattlebackTheme()."
+}
