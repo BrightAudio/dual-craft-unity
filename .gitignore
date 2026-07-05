@@ -1,10 +1,16 @@
 # Unity generated
 [Ll]ibrary/
+[Ll]ibrary
 [Tt]emp/
 [Oo]bj/
 [Bb]uild/
 [Bb]uilds/
+/Builds
+/WindowsBuild/
+/DualMon-Windows-Test.zip
+/Artifacts/
 [Ll]ogs/
+/Logs
 [Uu]ser[Ss]ettings/
 [Mm]emoryCaptures/
 [Rr]ecordings/

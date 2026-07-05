@@ -807,7 +807,38 @@ namespace DualCraft.Story
 
         private Sprite[] LoadMainCharacterFrames()
         {
+            string selectedDesign = _profile?.activeInvokerDesign;
+            if (!string.IsNullOrWhiteSpace(selectedDesign) && !string.Equals(selectedDesign, "arcane", StringComparison.OrdinalIgnoreCase))
+            {
+                Sprite[] selectedFrames = LoadStoryCharacterFrames($"main-character-{selectedDesign}");
+                if (selectedFrames != null && selectedFrames.Length > 0)
+                    return selectedFrames;
+
+                selectedFrames = CreateProceduralMainCharacterFrames(selectedDesign);
+                if (selectedFrames != null && selectedFrames.Length > 0)
+                    return selectedFrames;
+            }
+
             return LoadStoryCharacterFrames("main-character");
+        }
+
+        private Sprite[] CreateProceduralMainCharacterFrames(string designId)
+        {
+            Sprite sprite = designId switch
+            {
+                "verdant" => CreateCharacterSprite("player-verdant", new Color(0.13f, 0.42f, 0.24f), new Color(0.46f, 0.80f, 0.48f), new Color(0.86f, 0.72f, 0.34f)),
+                "storm" => CreateCharacterSprite("player-storm", new Color(0.12f, 0.28f, 0.58f), new Color(0.58f, 0.84f, 1f), new Color(0.92f, 0.96f, 1f)),
+                "umbral" => CreateCharacterSprite("player-umbral", new Color(0.16f, 0.10f, 0.24f), new Color(0.52f, 0.28f, 0.82f), new Color(0.86f, 0.64f, 1f)),
+                _ => CreateCharacterSprite("player-arcane", new Color(0.23f, 0.21f, 0.58f), new Color(0.72f, 0.76f, 0.98f), Gold),
+            };
+
+            if (sprite == null)
+                return null;
+
+            var frames = new Sprite[MainCharacterColumns * MainCharacterRows];
+            for (int i = 0; i < frames.Length; i++)
+                frames[i] = sprite;
+            return frames;
         }
 
         private Sprite GetStoryCharacterFrame(string assetName, Vector2Int facing, bool moving)
@@ -1845,14 +1876,22 @@ namespace DualCraft.Story
 
         private Vector2Int ReadMoveIntent()
         {
-            if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
-                return Vector2Int.up;
-            if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
-                return Vector2Int.down;
-            if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
-                return Vector2Int.left;
-            if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
-                return Vector2Int.right;
+            int x = 0;
+            int y = 0;
+            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
+                x -= 1;
+            if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
+                x += 1;
+            if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow))
+                y -= 1;
+            if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
+                y += 1;
+
+            if (x != 0)
+                return x < 0 ? Vector2Int.left : Vector2Int.right;
+            if (y != 0)
+                return y < 0 ? Vector2Int.down : Vector2Int.up;
+
             return Vector2Int.zero;
         }
 
@@ -2850,7 +2889,7 @@ namespace DualCraft.Story
                 .ToList();
             var body = new StringBuilder();
             body.AppendLine("CRAFT DECK");
-            body.AppendLine("Utility cards for story battles: Seals bind, Domains build SE, Masks heal, Dispels weaken.");
+            body.AppendLine("Utility cards for story battles: Seals bind, Domains build SE, Relics heal, Dispels weaken.");
             body.AppendLine();
 
             if (craft.Count == 0)
@@ -2913,6 +2952,7 @@ namespace DualCraft.Story
             body.AppendLine(_profile?.playerName ?? "Invoker");
             body.AppendLine($"Rank {_profile?.rank ?? 1}  •  XP {_profile?.xp ?? 0}");
             body.AppendLine($"Glint {_profile?.glint ?? 0}  •  Embers {_profile?.embers ?? 0}");
+            body.AppendLine($"Invoker design: {ResolveInvokerDesignName(_profile?.activeInvokerDesign)}");
             body.AppendLine();
             body.AppendLine($"Chapter: {_profile?.storyChapter ?? 0}");
             body.AppendLine($"Trial cleared: {((_profile?.storyTrialComplete ?? false) ? "Yes" : "No")}");
@@ -2924,6 +2964,17 @@ namespace DualCraft.Story
             body.AppendLine("M / Tab / Esc: open or close this menu");
 
             SetStoryMenuPage("Character  •  Invoker", body.ToString());
+        }
+
+        private static string ResolveInvokerDesignName(string id)
+        {
+            return id switch
+            {
+                "verdant" => "Verdant Binder",
+                "storm" => "Storm Scribe",
+                "umbral" => "Umbral Caller",
+                _ => "Arcane Novice",
+            };
         }
 
         private void ShowSceneBanner(string title, string subtitle, Color accent, float duration)

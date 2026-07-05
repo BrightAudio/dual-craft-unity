@@ -9,14 +9,18 @@
 // ═══════════════════════════════════════════════════════
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 using TMPro;
 
 namespace DualCraft.Networking
 {
     using Cards;
+    using Core;
+    using Data;
 
     public class MultiplayerMenu : MonoBehaviour
     {
@@ -45,6 +49,17 @@ namespace DualCraft.Networking
         private GameObject _joinPanel;
         private GameObject _connectingPanel;
 
+        // Main panel refs
+        private TMP_InputField _playerNameInput;
+        private TMP_Text _deckChoiceText;
+        private TMP_Text _deckHelpText;
+        private TMP_Text _statusText;
+        private Button _hostButton;
+        private Button _joinButton;
+        private Button _backButton;
+        private Button _prevDeckButton;
+        private Button _nextDeckButton;
+
         // Host panel refs
         private TMP_Text _joinCodeText;
         private TMP_Text _hostStatusText;
@@ -53,6 +68,8 @@ namespace DualCraft.Networking
         // Join panel refs
         private TMP_InputField _codeInput;
         private TMP_Text _joinStatusText;
+        private Button _connectButton;
+        private Button _cancelJoinButton;
 
         // Connecting panel refs
         private TMP_Text _connectingText;
@@ -61,6 +78,9 @@ namespace DualCraft.Networking
         private RelayManager _relay;
         private RelayGameHost _host;
         private RelayGameClient _client;
+        private PlayerProfile _profile;
+        private readonly List<DeckChoice> _deckChoices = new();
+        private int _selectedDeckIndex;
 
         // ═════════════════════════════════════════════════
         //  LIFECYCLE
@@ -68,7 +88,17 @@ namespace DualCraft.Networking
 
         private async void Start()
         {
+            cardDatabase = RuntimeAssetLocator.LoadCardDatabase(cardDatabase, this);
+            defaultDeck = RuntimeAssetLocator.LoadDefaultDeck(defaultDeck, this);
+            if (cardDatabase == null || defaultDeck == null)
+                return;
+
+            cardDatabase.Initialize();
+            _profile = ProfileManager.Load();
+            BuildDeckChoices();
+            EnsureEventSystem();
             BuildUI();
+            RefreshDeckChoice();
             ShowPage(MenuPage.Main);
 
             // Ensure relay manager exists
@@ -78,6 +108,8 @@ namespace DualCraft.Networking
                 go.AddComponent<RelayManager>();
             }
             _relay = RelayManager.Instance;
+            if (_relay != null)
+                _relay.OnError += HandleRelayError;
 
             // Initialize Unity Gaming Services
             _connectingPanel.SetActive(true);
@@ -113,21 +145,55 @@ namespace DualCraft.Networking
             var title = CreateText(bg.transform, "Title", "MULTIPLAYER", 52, Gold);
             SetAnchored(title, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -60), new Vector2(600, 70));
 
-            var subtitle = CreateText(bg.transform, "Subtitle", "Challenge a friend to a duel", 22, GoldDim);
+            var subtitle = CreateText(bg.transform, "Subtitle", "Host gets a code. Friend joins. Duel starts.", 22, GoldDim);
             SetAnchored(subtitle, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -120), new Vector2(600, 40));
 
             // ── Main Page ───────────────────────────────
             _mainPanel = CreatePanel(bg.transform, "MainPanel", Color.clear);
-            SetAnchored(_mainPanel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(400, 300));
+            SetAnchored(_mainPanel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(560, 470));
 
-            var hostBtn = CreateButton(_mainPanel.transform, "HostButton", "HOST GAME", Gold, DarkBg, OnHostClicked);
-            SetAnchored(hostBtn, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 60), new Vector2(320, 60));
+            var nameLabel = CreateText(_mainPanel.transform, "NameLabel", "PLAYER NAME", 16, GoldDim);
+            SetAnchored(nameLabel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 175), new Vector2(420, 28));
 
-            var joinBtn = CreateButton(_mainPanel.transform, "JoinButton", "JOIN GAME", Gold, DarkBg, OnJoinClicked);
-            SetAnchored(joinBtn, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(320, 60));
+            _playerNameInput = CreateInputField(_mainPanel.transform, "PlayerNameInput", "Invoker", 28, 18);
+            _playerNameInput.text = string.IsNullOrWhiteSpace(_profile?.playerName) ? "Invoker" : _profile.playerName;
+            SetAnchored(_playerNameInput.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 132), new Vector2(380, 56));
+
+            var deckLabel = CreateText(_mainPanel.transform, "DeckLabel", "SELECT DECK", 16, GoldDim);
+            SetAnchored(deckLabel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 84), new Vector2(420, 28));
+
+            var prevDeckBtn = CreateButton(_mainPanel.transform, "PrevDeckButton", "<", GoldDim, DarkBg, SelectPreviousDeck);
+            _prevDeckButton = prevDeckBtn.GetComponent<Button>();
+            SetAnchored(prevDeckBtn, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-230, 40), new Vector2(52, 52));
+
+            var deckPanel = CreatePanel(_mainPanel.transform, "DeckChoicePanel", new Color(0.12f, 0.10f, 0.15f, 0.96f));
+            SetAnchored(deckPanel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(380, 56));
+            _deckChoiceText = CreateText(deckPanel.transform, "DeckChoiceText", "", 20, Cream).GetComponent<TMP_Text>();
+            _deckChoiceText.fontStyle = FontStyles.Bold;
+            SetAnchored(_deckChoiceText.gameObject, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+
+            var nextDeckBtn = CreateButton(_mainPanel.transform, "NextDeckButton", ">", GoldDim, DarkBg, SelectNextDeck);
+            _nextDeckButton = nextDeckBtn.GetComponent<Button>();
+            SetAnchored(nextDeckBtn, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(230, 40), new Vector2(52, 52));
+
+            _deckHelpText = CreateText(_mainPanel.transform, "DeckHelp", "", 15, GoldDim).GetComponent<TMP_Text>();
+            SetAnchored(_deckHelpText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -6), new Vector2(520, 34));
+
+            _statusText = CreateText(_mainPanel.transform, "StatusText", "Pick a deck, then Host or Join.", 16, GoldDim).GetComponent<TMP_Text>();
+            _statusText.enableWordWrapping = true;
+            SetAnchored(_statusText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -108), new Vector2(520, 42));
+
+            var hostBtn = CreateButton(_mainPanel.transform, "HostButton", "HOST FRIEND GAME", Gold, DarkBg, OnHostClicked);
+            _hostButton = hostBtn.GetComponent<Button>();
+            SetAnchored(hostBtn, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -72), new Vector2(340, 60));
+
+            var joinBtn = CreateButton(_mainPanel.transform, "JoinButton", "JOIN WITH CODE", Gold, DarkBg, OnJoinClicked);
+            _joinButton = joinBtn.GetComponent<Button>();
+            SetAnchored(joinBtn, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -148), new Vector2(340, 60));
 
             var backBtn = CreateButton(_mainPanel.transform, "BackButton", "BACK", GoldDim, DarkBg, OnBackClicked);
-            SetAnchored(backBtn, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -100), new Vector2(200, 50));
+            _backButton = backBtn.GetComponent<Button>();
+            SetAnchored(backBtn, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -224), new Vector2(200, 50));
 
             // ── Host Waiting Page ───────────────────────
             _hostPanel = CreatePanel(bg.transform, "HostPanel", Color.clear);
@@ -148,7 +214,7 @@ namespace DualCraft.Networking
             _copyCodeButton = CreateButton(_hostPanel.transform, "CopyButton", "COPY CODE", GoldDim, DarkBg, OnCopyCode).GetComponent<Button>();
             SetAnchored(_copyCodeButton.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -40), new Vector2(200, 44));
 
-            _hostStatusText = CreateText(_hostPanel.transform, "HostStatus", "Waiting for opponent...", 20, Cream).GetComponent<TMP_Text>();
+            _hostStatusText = CreateText(_hostPanel.transform, "HostStatus", "Waiting for friend to join...", 20, Cream).GetComponent<TMP_Text>();
             SetAnchored(_hostStatusText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -90), new Vector2(400, 30));
 
             var cancelHostBtn = CreateButton(_hostPanel.transform, "CancelHost", "CANCEL", ErrorRed, DarkBg, OnCancelHost);
@@ -209,12 +275,14 @@ namespace DualCraft.Networking
             _codeInput.contentType = TMP_InputField.ContentType.Alphanumeric;
 
             var connectBtn = CreateButton(_joinPanel.transform, "ConnectButton", "CONNECT", SuccessGreen, DarkBg, OnConnectClicked);
+            _connectButton = connectBtn.GetComponent<Button>();
             SetAnchored(connectBtn, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -50), new Vector2(200, 50));
 
             _joinStatusText = CreateText(_joinPanel.transform, "JoinStatus", "", 18, ErrorRed).GetComponent<TMP_Text>();
             SetAnchored(_joinStatusText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -90), new Vector2(400, 30));
 
             var cancelJoinBtn = CreateButton(_joinPanel.transform, "CancelJoin", "BACK", GoldDim, DarkBg, () => ShowPage(MenuPage.Main));
+            _cancelJoinButton = cancelJoinBtn.GetComponent<Button>();
             SetAnchored(cancelJoinBtn, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -130), new Vector2(160, 44));
 
             // ── Connecting Overlay ──────────────────────
@@ -236,6 +304,41 @@ namespace DualCraft.Networking
             _hostPanel.SetActive(page == MenuPage.HostWaiting);
             _joinPanel.SetActive(page == MenuPage.JoinInput);
             _connectingPanel.SetActive(page == MenuPage.Connecting);
+            SelectDefaultForPage(page);
+        }
+
+        private void Update()
+        {
+            if (WasCancelPressed())
+            {
+                if (_page == MenuPage.JoinInput)
+                {
+                    ShowPage(MenuPage.Main);
+                    return;
+                }
+
+                if (_page == MenuPage.HostWaiting)
+                {
+                    OnCancelHost();
+                    return;
+                }
+            }
+
+            if (_page == MenuPage.Main)
+            {
+                if (WasPreviousPressed())
+                    SelectPreviousDeck();
+                else if (WasNextPressed())
+                    SelectNextDeck();
+            }
+
+            if (_page == MenuPage.JoinInput
+                && WasSubmitPressed()
+                && _codeInput != null
+                && !string.IsNullOrWhiteSpace(_codeInput.text))
+            {
+                OnConnectClicked();
+            }
         }
 
         // ═════════════════════════════════════════════════
@@ -250,16 +353,21 @@ namespace DualCraft.Networking
             string code = await _relay.StartHost();
             if (string.IsNullOrEmpty(code))
             {
+                if (_statusText != null)
+                    _statusText.text = "Unable to create room. Check your network connection.";
                 ShowPage(MenuPage.Main);
                 return;
             }
 
+            SavePlayerName();
+            DeckConverter.SelectedDeckId = GetSelectedDeckSelectionId();
+
             // Set up the game host
             if (_host == null)
             {
-                _host = gameObject.AddComponent<RelayGameHost>();
+                _host = _relay.GetComponent<RelayGameHost>() ?? _relay.gameObject.AddComponent<RelayGameHost>();
             }
-            _host.Initialize(cardDatabase, defaultDeck, "Host", Unity.Services.Authentication.AuthenticationService.Instance.PlayerId);
+            _host.Initialize(cardDatabase, GetSelectedDeckData(), GetPlayerName(), GetNetworkPlayerId());
             _host.OnGuestJoined += () =>
             {
                 _hostStatusText.text = "<color=#40C96E>Opponent connected!</color>";
@@ -267,7 +375,7 @@ namespace DualCraft.Networking
             _host.OnGameStarted += () =>
             {
                 Debug.Log("[MultiplayerMenu] Game started! Loading battle...");
-                SceneManager.LoadScene("Battle");
+                RuntimeAssetLocator.TryLoadScene("Battle", this);
             };
 
             _joinCodeText.text = code.ToUpper();
@@ -280,6 +388,7 @@ namespace DualCraft.Networking
             _joinStatusText.text = "";
             _codeInput.text = "";
             ShowPage(MenuPage.JoinInput);
+            _codeInput.ActivateInputField();
         }
 
         private void OnConnectClicked()
@@ -296,7 +405,7 @@ namespace DualCraft.Networking
 
             if (_client == null)
             {
-                _client = gameObject.AddComponent<RelayGameClient>();
+                _client = _relay.GetComponent<RelayGameClient>() ?? _relay.gameObject.AddComponent<RelayGameClient>();
             }
             _client.OnConnectedToHost += () =>
             {
@@ -305,7 +414,7 @@ namespace DualCraft.Networking
             _client.OnGameStateReceived += _ =>
             {
                 Debug.Log("[MultiplayerMenu] Game state received, loading battle...");
-                SceneManager.LoadScene("Battle");
+                RuntimeAssetLocator.TryLoadScene("Battle", this);
             };
             _client.OnError += msg =>
             {
@@ -313,7 +422,9 @@ namespace DualCraft.Networking
                 ShowPage(MenuPage.JoinInput);
             };
 
-            _client.Connect(code, "Guest", "default_deck");
+            SavePlayerName();
+            DeckConverter.SelectedDeckId = GetSelectedDeckSelectionId();
+            _client.Connect(code, GetPlayerName(), GetSelectedDeckSelectionId(), GetSelectedDeckData());
         }
 
         private void OnCopyCode()
@@ -339,7 +450,200 @@ namespace DualCraft.Networking
         private void OnBackClicked()
         {
             _relay?.Shutdown();
-            SceneManager.LoadScene("MainMenu");
+            RuntimeAssetLocator.TryLoadScene("MainMenu", this);
+        }
+
+        private void HandleRelayError(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+                message = "An unknown network error occurred.";
+
+            if (_page == MenuPage.HostWaiting)
+            {
+                _hostStatusText.text = $"ERROR: {message}";
+                return;
+            }
+
+            if (_page == MenuPage.JoinInput || _page == MenuPage.Connecting)
+            {
+                _joinStatusText.text = message;
+                ShowPage(MenuPage.JoinInput);
+                return;
+            }
+
+            if (_statusText != null)
+                _statusText.text = message;
+
+            ShowPage(MenuPage.Main);
+        }
+
+        private void OnDestroy()
+        {
+            if (_relay != null)
+                _relay.OnError -= HandleRelayError;
+        }
+
+        // ═════════════════════════════════════════════════
+        //  PLAYER / DECK SELECTION
+        // ═════════════════════════════════════════════════
+
+        private void BuildDeckChoices()
+        {
+            _deckChoices.Clear();
+
+            var profile = ProfileManager.Load();
+            foreach (var saved in profile.customDecks ?? new List<SavedDeck>())
+            {
+                var runtime = DeckConverter.ToRuntimeDeck(saved, cardDatabase);
+                if (runtime != null && runtime.IsValid)
+                    _deckChoices.Add(new DeckChoice(saved.name, saved.id, runtime, true));
+            }
+
+            var prebuiltDecks = Resources.LoadAll<DeckData>("CardData/Decks")
+                .Where(deck => deck != null && deck.IsValid)
+                .OrderBy(deck => deck.primaryCreatureType)
+                .ThenBy(deck => deck.element)
+                .ThenBy(deck => deck.deckName);
+
+            foreach (var deck in prebuiltDecks)
+                _deckChoices.Add(new DeckChoice(deck.deckName, "prebuilt:" + deck.deckName, deck, false));
+
+            if (_deckChoices.Count == 0 && defaultDeck != null)
+                _deckChoices.Add(new DeckChoice(defaultDeck.deckName, "prebuilt:" + defaultDeck.deckName, defaultDeck, false));
+
+            _selectedDeckIndex = Mathf.Clamp(_selectedDeckIndex, 0, Mathf.Max(0, _deckChoices.Count - 1));
+        }
+
+        private void SelectPreviousDeck()
+        {
+            if (_deckChoices.Count == 0) return;
+            _selectedDeckIndex = (_selectedDeckIndex - 1 + _deckChoices.Count) % _deckChoices.Count;
+            RefreshDeckChoice();
+        }
+
+        private void SelectNextDeck()
+        {
+            if (_deckChoices.Count == 0) return;
+            _selectedDeckIndex = (_selectedDeckIndex + 1) % _deckChoices.Count;
+            RefreshDeckChoice();
+        }
+
+        private void RefreshDeckChoice()
+        {
+            if (_deckChoiceText == null) return;
+
+            if (_deckChoices.Count == 0)
+            {
+                _deckChoiceText.text = "No valid decks";
+                if (_deckHelpText != null)
+                    _deckHelpText.text = "Build a 40-card deck before playing online.";
+                return;
+            }
+
+            var choice = _deckChoices[_selectedDeckIndex];
+            _deckChoiceText.text = choice.Label;
+            if (_deckHelpText != null)
+            {
+                string source = choice.IsCustom ? "Custom" : "Prebuilt";
+                _deckHelpText.text = $"{source} · {choice.Deck.element} · {choice.Deck.primaryCreatureType} · {choice.Deck.TotalMainCards} cards";
+            }
+        }
+
+        private void SelectDefaultForPage(MenuPage page)
+        {
+            if (EventSystem.current == null)
+                return;
+
+            GameObject selected = page switch
+            {
+                MenuPage.Main => _hostButton != null ? _hostButton.gameObject : null,
+                MenuPage.HostWaiting => _copyCodeButton != null ? _copyCodeButton.gameObject : null,
+                MenuPage.JoinInput => _codeInput != null ? _codeInput.gameObject : _connectButton != null ? _connectButton.gameObject : null,
+                _ => null,
+            };
+
+            if (selected != null && selected.activeInHierarchy)
+                EventSystem.current.SetSelectedGameObject(selected);
+        }
+
+        private static void EnsureEventSystem()
+        {
+            if (EventSystem.current != null)
+                return;
+
+            var go = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+            DontDestroyOnLoad(go);
+        }
+
+        private static bool WasSubmitPressed()
+        {
+            return Input.GetKeyDown(KeyCode.Return)
+                || Input.GetKeyDown(KeyCode.KeypadEnter)
+                || Input.GetKeyDown(KeyCode.Space)
+                || Input.GetKeyDown(KeyCode.JoystickButton0);
+        }
+
+        private static bool WasCancelPressed()
+        {
+            return Input.GetKeyDown(KeyCode.Escape)
+                || Input.GetKeyDown(KeyCode.Backspace)
+                || Input.GetKeyDown(KeyCode.JoystickButton1);
+        }
+
+        private static bool WasPreviousPressed()
+        {
+            return Input.GetKeyDown(KeyCode.Q)
+                || Input.GetKeyDown(KeyCode.LeftBracket)
+                || Input.GetKeyDown(KeyCode.JoystickButton4);
+        }
+
+        private static bool WasNextPressed()
+        {
+            return Input.GetKeyDown(KeyCode.E)
+                || Input.GetKeyDown(KeyCode.RightBracket)
+                || Input.GetKeyDown(KeyCode.JoystickButton5);
+        }
+
+        private string GetPlayerName()
+        {
+            string value = _playerNameInput != null ? _playerNameInput.text : _profile?.playerName;
+            return string.IsNullOrWhiteSpace(value) ? "Invoker" : value.Trim();
+        }
+
+        private static string GetNetworkPlayerId()
+        {
+            try
+            {
+                var auth = Unity.Services.Authentication.AuthenticationService.Instance;
+                if (auth != null && auth.IsSignedIn && !string.IsNullOrWhiteSpace(auth.PlayerId))
+                    return auth.PlayerId;
+            }
+            catch
+            {
+                // Anonymous auth may be unavailable in local/offline testing.
+            }
+
+            return $"local-{SystemInfo.deviceUniqueIdentifier}";
+        }
+
+        private void SavePlayerName()
+        {
+            var profile = ProfileManager.Load();
+            profile.playerName = GetPlayerName();
+            ProfileManager.Save(profile);
+            _profile = profile;
+        }
+
+        private DeckData GetSelectedDeckData()
+        {
+            if (_deckChoices.Count == 0) return defaultDeck;
+            return _deckChoices[Mathf.Clamp(_selectedDeckIndex, 0, _deckChoices.Count - 1)].Deck;
+        }
+
+        private string GetSelectedDeckSelectionId()
+        {
+            if (_deckChoices.Count == 0) return string.Empty;
+            return _deckChoices[Mathf.Clamp(_selectedDeckIndex, 0, _deckChoices.Count - 1)].SelectionId;
         }
 
         // ═════════════════════════════════════════════════
@@ -417,6 +721,55 @@ namespace DualCraft.Networking
             return go;
         }
 
+        private static TMP_InputField CreateInputField(Transform parent, string name, string placeholder, int fontSize, int placeholderFontSize)
+        {
+            var inputGo = new GameObject(name);
+            inputGo.transform.SetParent(parent, false);
+            inputGo.AddComponent<RectTransform>();
+            var inputBg = inputGo.AddComponent<Image>();
+            inputBg.color = new Color(0.12f, 0.10f, 0.15f);
+
+            var textArea = new GameObject("Text Area");
+            textArea.transform.SetParent(inputGo.transform, false);
+            var textAreaRT = textArea.AddComponent<RectTransform>();
+            textAreaRT.anchorMin = Vector2.zero;
+            textAreaRT.anchorMax = Vector2.one;
+            textAreaRT.offsetMin = new Vector2(16, 0);
+            textAreaRT.offsetMax = new Vector2(-16, 0);
+
+            var inputTextField = new GameObject("Text");
+            inputTextField.transform.SetParent(textArea.transform, false);
+            var inputTextRT = inputTextField.AddComponent<RectTransform>();
+            inputTextRT.anchorMin = Vector2.zero;
+            inputTextRT.anchorMax = Vector2.one;
+            inputTextRT.sizeDelta = Vector2.zero;
+            var inputTMPText = inputTextField.AddComponent<TextMeshProUGUI>();
+            inputTMPText.fontSize = fontSize;
+            inputTMPText.color = Gold;
+            inputTMPText.alignment = TextAlignmentOptions.Center;
+
+            var placeholderGo = new GameObject("Placeholder");
+            placeholderGo.transform.SetParent(textArea.transform, false);
+            var placeholderRT = placeholderGo.AddComponent<RectTransform>();
+            placeholderRT.anchorMin = Vector2.zero;
+            placeholderRT.anchorMax = Vector2.one;
+            placeholderRT.sizeDelta = Vector2.zero;
+            var placeholderText = placeholderGo.AddComponent<TextMeshProUGUI>();
+            placeholderText.text = placeholder;
+            placeholderText.fontSize = placeholderFontSize;
+            placeholderText.color = new Color(0.48f, 0.42f, 0.34f);
+            placeholderText.alignment = TextAlignmentOptions.Center;
+            placeholderText.fontStyle = FontStyles.Italic;
+
+            var input = inputGo.AddComponent<TMP_InputField>();
+            input.textViewport = textAreaRT;
+            input.textComponent = inputTMPText;
+            input.placeholder = placeholderText;
+            input.characterLimit = 20;
+            input.contentType = TMP_InputField.ContentType.Standard;
+            return input;
+        }
+
         private static void SetAnchored(GameObject go, Vector2 anchorMin, Vector2 anchorMax,
                                          Vector2 anchoredPosition, Vector2 sizeDelta)
         {
@@ -426,6 +779,22 @@ namespace DualCraft.Networking
             rt.anchorMax = anchorMax;
             rt.anchoredPosition = anchoredPosition;
             rt.sizeDelta = sizeDelta;
+        }
+
+        private sealed class DeckChoice
+        {
+            public string Label { get; }
+            public string SelectionId { get; }
+            public DeckData Deck { get; }
+            public bool IsCustom { get; }
+
+            public DeckChoice(string label, string selectionId, DeckData deck, bool isCustom)
+            {
+                Label = string.IsNullOrWhiteSpace(label) ? "Unnamed Deck" : label;
+                SelectionId = selectionId;
+                Deck = deck;
+                IsCustom = isCustom;
+            }
         }
     }
 }

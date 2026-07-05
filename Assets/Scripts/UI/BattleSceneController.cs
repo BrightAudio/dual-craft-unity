@@ -91,8 +91,10 @@ namespace DualCraft.UI
         private const int MaxVisibleLogEntries = 8;
         private const bool ShowPersistentGameLog = false;
         private const bool UseDragDropHandPlay = false;
-        private const bool UseSeatSelectionForDaemonPlay = false;
+        private const bool UseSeatSelectionForDaemonPlay = true;
+        private const float AttackAnticipationSeconds = 1.18f;
         private Button _forfeitButton;
+        private float _forfeitConfirmUntil = -1f;
         private static readonly Color HandTint = new(0.05f, 0.04f, 0.065f, 0.42f);
         private static readonly Color FieldTint = new(0.06f, 0.05f, 0.08f, 0.36f);
         private static readonly Color PillarTint = new(0.07f, 0.055f, 0.04f, 0.30f);
@@ -162,6 +164,16 @@ namespace DualCraft.UI
         private TextMeshProUGUI _battleDialogueText;
         private TextMeshProUGUI _battleDialoguePromptText;
         private bool _battleDialogueAwaitingAdvance;
+        private GameObject _battleDecisionPanel;
+        private TextMeshProUGUI _battleDecisionTitleText;
+        private TextMeshProUGUI _battleDecisionBodyText;
+        private Image _battleDecisionAccentImage;
+        private GameObject _attackResponsePanel;
+        private TextMeshProUGUI _attackResponseTitleText;
+        private TextMeshProUGUI _attackResponseBodyText;
+        private Image _attackResponseFillImage;
+        private int _chosenAttackResponseHandIndex = -1;
+        private int _presentedAttackResponseHandIndex = -1;
         private Transform _diceAreaContainer; // named "DiceArea" child of canvas — cached to prevent blind parent deactivation
         private readonly Dictionary<string, int> _p1FieldSlotMap = new();
         private readonly Dictionary<string, int> _p2FieldSlotMap = new();
@@ -274,28 +286,13 @@ namespace DualCraft.UI
                 return null;
 
             List<CardData> flatMain = ExpandDeckEntries(source.cards);
+            if (flatMain.Count == 0)
+                return source;
+
+            flatMain = BuildBalancedBattleMainDeck(source, flatMain);
             if (flatMain.Count != GameConstants.DeckSize)
                 return source;
 
-            int existingAsheCount = flatMain.Count(card => card is AsheCardData);
-            int templateAsheCount = GetTemplateAsheIds(source).Count;
-            int baselineAsheCount = Mathf.Clamp(Mathf.RoundToInt(GameConstants.DeckSize * 0.225f), 8, 10);
-            int targetAsheCount = Mathf.Clamp(templateAsheCount > 0 ? templateAsheCount : baselineAsheCount, 8, 10);
-            if (existingAsheCount >= targetAsheCount)
-                return source;
-
-            List<AsheCardData> injectedAshe = BuildRuntimeAshePackage(source, targetAsheCount - existingAsheCount);
-            if (injectedAshe.Count == 0)
-                return source;
-
-            List<int> cutIndices = ChooseDeckCuts(flatMain, injectedAshe.Count);
-            if (cutIndices.Count < injectedAshe.Count)
-                return source;
-
-            foreach (int index in cutIndices.OrderByDescending(i => i))
-                flatMain.RemoveAt(index);
-
-            flatMain.AddRange(injectedAshe);
             DeckData clone = ScriptableObject.CreateInstance<DeckData>();
             clone.name = $"{source.name}_BattleVariant";
             clone.deckName = source.deckName;
@@ -310,12 +307,76 @@ namespace DualCraft.UI
             clone.cardBackOverride = source.cardBackOverride;
             clone.battleMusicOverride = source.battleMusicOverride;
             clone.cards = GroupDeckEntries(flatMain);
-            clone.pillars = source.pillars != null
-                ? source.pillars.Select(entry => new DeckEntry { card = entry.card, count = entry.count }).ToArray()
-                : Array.Empty<DeckEntry>();
+            clone.pillars = Array.Empty<DeckEntry>();
 
-            Debug.Log($"[Battle] Injected {injectedAshe.Count} Ashe support cards into {source.deckName} for stronger SE pacing and resource consistency.");
+            Debug.Log($"[Battle] Rebalanced {source.deckName}: {GameConstants.DeckDaemonCount} daemons, {GameConstants.DeckAsheCount} Sources, {GameConstants.DeckRelicCount} relics, {GameConstants.DeckDomainCount} domains, {GameConstants.DeckHexCount} hexes, {GameConstants.DeckDispelCount} dispels.");
             return clone;
+        }
+
+        private List<CardData> BuildBalancedBattleMainDeck(DeckData source, List<CardData> cards)
+        {
+            var balanced = new List<CardData>();
+            AddCategoryCards(balanced, cards, card => card is DaemonCardData, GameConstants.DeckDaemonCount,
+                () => BuildRuntimeDaemonPackage(source, GameConstants.DeckDaemonCount).Cast<CardData>());
+            AddCategoryCards(balanced, cards, card => card is AsheCardData, GameConstants.DeckAsheCount,
+                () => BuildRuntimeAshePackage(source, GameConstants.DeckAsheCount).Cast<CardData>());
+            AddCategoryCards(balanced, cards, card => card is MaskCardData, GameConstants.DeckRelicCount,
+                () => BuildRuntimeRelicPackage(source, GameConstants.DeckRelicCount).Cast<CardData>());
+            AddCategoryCards(balanced, cards, card => card is DomainCardData, GameConstants.DeckDomainCount,
+                () => BuildRuntimeDomainPackage(source, GameConstants.DeckDomainCount).Cast<CardData>());
+            AddCategoryCards(balanced, cards, card => card is HexCardData, GameConstants.DeckHexCount,
+                () => BuildRuntimeHexPackage(source, GameConstants.DeckHexCount).Cast<CardData>());
+            AddCategoryCards(balanced, cards, card => card is DispelCardData, GameConstants.DeckDispelCount,
+                () => BuildRuntimeAttackDispelPackage(source, GameConstants.DeckDispelCount).Cast<CardData>());
+            SeedSecondForms(balanced);
+            return balanced;
+        }
+
+        private static void AddCategoryCards(List<CardData> output, List<CardData> sourceCards, Func<CardData, bool> predicate,
+            int targetCount, Func<IEnumerable<CardData>> fallbackFactory)
+        {
+            foreach (CardData card in sourceCards.Where(predicate).Take(targetCount))
+                output.Add(card);
+
+            if (output.Count(card => predicate(card)) >= targetCount)
+                return;
+
+            foreach (CardData card in fallbackFactory())
+            {
+                if (card == null)
+                    continue;
+                output.Add(card);
+                if (output.Count(predicate) >= targetCount)
+                    break;
+            }
+        }
+
+        private static void SeedSecondForms(List<CardData> cards)
+        {
+            if (cards == null)
+                return;
+
+            var bases = cards
+                .OfType<DaemonCardData>()
+                .Where(card => card.evolvesTo != null)
+                .Take(3)
+                .ToList();
+
+            foreach (var baseCard in bases)
+            {
+                if (cards.Contains(baseCard.evolvesTo))
+                    continue;
+
+                int replaceIndex = cards.FindLastIndex(card =>
+                    card is DaemonCardData daemon
+                    && daemon != baseCard
+                    && daemon.evolvesTo == null
+                    && !bases.Contains(daemon));
+                if (replaceIndex < 0)
+                    replaceIndex = cards.FindLastIndex(card => card is DaemonCardData daemon && daemon != baseCard);
+                if (replaceIndex >= 0)
+                    cards[replaceIndex] = baseCard.evolvesTo;
+            }
         }
 
         private List<string> GetTemplateAsheIds(DeckData source)
@@ -330,7 +391,7 @@ namespace DualCraft.UI
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"[Battle] Could not load JSON card data for Ashe support lookup: {ex.Message}");
+                Debug.LogWarning($"[Battle] Could not load JSON card data for Source resource lookup: {ex.Message}");
                 return new List<string>();
             }
 
@@ -403,6 +464,169 @@ namespace DualCraft.UI
             return package;
         }
 
+        private List<DispelCardData> BuildRuntimeAttackDispelPackage(DeckData source, int requestedCount)
+        {
+            var package = new List<DispelCardData>();
+            if (source == null || requestedCount <= 0)
+                return package;
+
+            for (int i = 0; i < requestedCount; i++)
+                package.Add(CreateRuntimeAttackDispel(source, i));
+
+            return package.Where(card => card != null).ToList();
+        }
+
+        private List<MaskCardData> BuildRuntimeRelicPackage(DeckData source, int requestedCount)
+        {
+            var package = new List<MaskCardData>();
+            if (requestedCount <= 0)
+                return package;
+
+            MaskCardData[] relics = Resources.LoadAll<MaskCardData>("CardData/Cards");
+            List<MaskCardData> preferred = relics
+                .Where(card => card != null)
+                .OrderBy(card => card.GetWillCost())
+                .ThenByDescending(card => card.isAscensionRelic)
+                .ToList();
+
+            if (preferred.Count == 0)
+                return package;
+
+            for (int i = 0; i < requestedCount; i++)
+                package.Add(preferred[i % preferred.Count]);
+
+            return package;
+        }
+
+        private List<DomainCardData> BuildRuntimeDomainPackage(DeckData source, int requestedCount)
+        {
+            var package = new List<DomainCardData>();
+            if (source == null || requestedCount <= 0)
+                return package;
+
+            DomainCardData[] domains = Resources.LoadAll<DomainCardData>("CardData/Cards");
+            List<DomainCardData> preferred = domains
+                .Where(card => card != null && (card.effectElement == source.element || card.effectElement == Element.Light))
+                .OrderBy(card => card.GetWillCost())
+                .ToList();
+            if (preferred.Count == 0)
+                preferred = domains.Where(card => card != null).OrderBy(card => card.GetWillCost()).ToList();
+
+            for (int i = 0; i < requestedCount && preferred.Count > 0; i++)
+                package.Add(preferred[i % preferred.Count]);
+
+            return package;
+        }
+
+        private List<HexCardData> BuildRuntimeHexPackage(DeckData source, int requestedCount)
+        {
+            var package = new List<HexCardData>();
+            if (requestedCount <= 0)
+                return package;
+
+            HexCardData[] hexes = Resources.LoadAll<HexCardData>("CardData/Cards");
+            if (hexes == null || hexes.Length == 0)
+                hexes = Resources.LoadAll<HexCardData>("CardData/Cards/Hexes");
+
+            List<HexCardData> preferred = hexes
+                .Where(card => card != null && (source == null || card.effectElement == source.element || card.effectElement == Element.Dark))
+                .OrderBy(card => card.GetWillCost())
+                .ToList();
+            if (preferred.Count == 0)
+                preferred = hexes.Where(card => card != null).OrderBy(card => card.GetWillCost()).ToList();
+
+            for (int i = 0; i < requestedCount && preferred.Count > 0; i++)
+                package.Add(preferred[i % preferred.Count]);
+
+            return package;
+        }
+
+        private List<DaemonCardData> BuildRuntimeDaemonPackage(DeckData source, int requestedCount)
+        {
+            var package = new List<DaemonCardData>();
+            if (source == null || requestedCount <= 0)
+                return package;
+
+            DaemonCardData[] templates = Resources.LoadAll<DaemonCardData>("CardData/Cards");
+            if (templates == null || templates.Length == 0)
+                return package;
+
+            List<DaemonCardData> preferred = templates
+                .Where(card => card != null && card.creatureType == source.primaryCreatureType)
+                .OrderBy(card => card.GetWillCost())
+                .ThenBy(card => Mathf.Abs(card.asheCost - 1))
+                .ThenByDescending(card => card.attack)
+                .ToList();
+
+            if (preferred.Count == 0)
+            {
+                preferred = templates
+                    .Where(card => card != null && card.element == source.element)
+                    .OrderBy(card => card.GetWillCost())
+                    .ThenByDescending(card => card.attack)
+                    .ToList();
+            }
+
+            if (preferred.Count == 0)
+                return package;
+
+            for (int i = 0; i < requestedCount; i++)
+                package.Add(preferred[i % preferred.Count]);
+
+            return package;
+        }
+
+        private DispelCardData CreateRuntimeAttackDispel(DeckData source, int variant)
+        {
+            var card = ScriptableObject.CreateInstance<DispelCardData>();
+            card.hideFlags = HideFlags.DontSave;
+            card.category = CardCategory.Dispel;
+            card.rarity = variant == 0 ? Rarity.Common : Rarity.Rare;
+            card.willCost = variant == 0 ? 1 : 2;
+            card.target = DispelTarget.Any;
+            card.canCounterAttack = true;
+            card.preventDamage = source.primaryCreatureType == CreatureType.Artificial ? 4 : 3;
+
+            if (source.primaryCreatureType == CreatureType.Elemental)
+            {
+                card.cardId = $"rt-dispel-{source.element.ToString().ToLowerInvariant()}-{variant}";
+                card.cardName = $"{source.element} Reversal";
+                card.description = $"Attack response: counter an incoming {source.element} move and prevent {card.preventDamage} damage.";
+                card.matchAttackElement = true;
+                card.responseElement = source.element;
+            }
+            else
+            {
+                card.cardId = $"rt-dispel-{source.primaryCreatureType.ToString().ToLowerInvariant()}-{variant}";
+                card.cardName = source.primaryCreatureType switch
+                {
+                    CreatureType.Machine => variant == 0 ? "Gear Jam" : "Overload Break",
+                    CreatureType.Artificial => variant == 0 ? "Aegis Interrupt" : "Prism Denial",
+                    CreatureType.Spirit => variant == 0 ? "Echo Slip" : "Veil Refusal",
+                    CreatureType.Undead => variant == 0 ? "Grave Denial" : "Last Breath Ward",
+                    _ => "Attack Reversal",
+                };
+                card.description = $"Attack response: counter a {source.primaryCreatureType} move and prevent {card.preventDamage} damage.";
+                card.matchAttackerCreatureType = true;
+                card.responseCreatureType = source.primaryCreatureType;
+            }
+
+            Element artElement = source.primaryCreatureType == CreatureType.Elemental
+                ? source.element
+                : source.primaryCreatureType switch
+                {
+                    CreatureType.Machine => Element.Air,
+                    CreatureType.Artificial => Element.Light,
+                    CreatureType.Spirit => Element.Nature,
+                    CreatureType.Undead => Element.Dark,
+                    _ => source.element,
+                };
+            card.artwork = Resources.Load<Sprite>($"CardArt/{card.cardId}")
+                ?? CardTextureGenerator.GenerateCardArt(artElement, CardCategory.Dispel, card.rarity, card.cardId);
+            card.fullArt = card.artwork;
+            return card;
+        }
+
         private List<AsheCardData> LoadPreferredAsheTemplates(DeckData source)
         {
             if (source == null)
@@ -454,6 +678,7 @@ namespace DualCraft.UI
             AsheCardData clone = Instantiate(template);
             clone.name = $"{template.name}_{source.deckName}_Battle";
             clone.hideFlags = HideFlags.DontSave;
+            clone.willCost = 0;
             clone.matchType = source.primaryCreatureType == CreatureType.Elemental
                 ? AsheMatchType.Element
                 : AsheMatchType.CreatureType;
@@ -466,18 +691,25 @@ namespace DualCraft.UI
             }
             else if (source.primaryCreatureType == CreatureType.Machine)
             {
+                clone.sePerTurn = Mathf.Max(clone.sePerTurn, 2);
                 clone.description = $"Flux Siphon steals {clone.sePerTurn} SE for each enemy daemon in play and adds it to your reserve each turn.";
             }
             else if (source.primaryCreatureType == CreatureType.Artificial)
             {
+                clone.shieldAmount = Mathf.Max(clone.shieldAmount, 8);
+                clone.sePerTurn = 1;
                 clone.description = $"Force Field absorbs {Mathf.Max(1, clone.shieldAmount)} damage for the bound Artificial daemon.";
             }
             else if (source.primaryCreatureType == CreatureType.Spirit)
             {
+                clone.buffAttack = Mathf.Max(clone.buffAttack, 2);
+                clone.buffAshe = Mathf.Max(clone.buffAshe, 2);
+                clone.buffTurns = Mathf.Max(clone.buffTurns, 3);
                 clone.description = $"Ascendant Bond grants +{clone.buffAttack} ATK and +{clone.buffAshe} Life for {Mathf.Max(1, clone.buffTurns)} turns.";
             }
             else if (source.primaryCreatureType == CreatureType.Undead)
             {
+                clone.resurrectHp = Mathf.Max(clone.resurrectHp, 4);
                 clone.description = $"Last Rite revives the bound Undead once with {Mathf.Max(1, clone.resurrectHp)} Life, then falls into the Void.";
             }
 
@@ -513,13 +745,14 @@ namespace DualCraft.UI
             card.rarity = runtime.Rarity;
             card.description = runtime.Description;
             card.flavorText = runtime.FlavorText;
-            card.willCost = runtime.WillCost;
+            card.willCost = 0;
             card.artwork = Resources.Load<Sprite>(runtime.ArtPath);
             card.fullArt = card.artwork;
             card.sePerTurn = Mathf.Clamp(runtime.AshePerTurn, 1, 3);
-            card.matchType = AsheMatchType.CreatureType;
+            card.matchType = runtime.AsheMatchType;
             card.targetElement = runtime.RequiredElement;
             card.targetCreatureType = runtime.RequiredCreatureType;
+            ApplyArchetypeAsheDefaults(card);
             if (card.artwork == null)
             {
                 Element artElement = card.targetCreatureType switch
@@ -535,6 +768,30 @@ namespace DualCraft.UI
             }
             card.hideFlags = HideFlags.DontSave;
             return card;
+        }
+
+        private static void ApplyArchetypeAsheDefaults(AsheCardData card)
+        {
+            if (card == null || card.matchType != AsheMatchType.CreatureType)
+                return;
+
+            switch (card.targetCreatureType)
+            {
+                case CreatureType.Machine:
+                    card.sePerTurn = Mathf.Max(card.sePerTurn, 2);
+                    break;
+                case CreatureType.Artificial:
+                    card.shieldAmount = Mathf.Max(card.shieldAmount, 8);
+                    break;
+                case CreatureType.Spirit:
+                    card.buffAttack = Mathf.Max(card.buffAttack, 2);
+                    card.buffAshe = Mathf.Max(card.buffAshe, 2);
+                    card.buffTurns = Mathf.Max(card.buffTurns, 3);
+                    break;
+                case CreatureType.Undead:
+                    card.resurrectHp = Mathf.Max(card.resurrectHp, 4);
+                    break;
+            }
         }
 
         private static List<CardData> ExpandDeckEntries(DeckEntry[] entries)
@@ -580,11 +837,9 @@ namespace DualCraft.UI
             return cards
                 .Select((card, index) => new { card, index })
                 .Where(x => x.card != null
-                    && x.card.category != CardCategory.Domain
-                    && x.card.category != CardCategory.Seal
                     && x.card.category != CardCategory.AsheCard)
                 .OrderByDescending(x => duplicateCounts.GetValueOrDefault(x.card.cardId, 1))
-                .ThenBy(x => x.card.category == CardCategory.Daemon ? 0 : 1)
+                .ThenBy(x => x.card.category == CardCategory.Daemon ? 1 : 0)
                 .ThenByDescending(x => x.index)
                 .Select(x => x.index)
                 .Distinct()
@@ -596,6 +851,7 @@ namespace DualCraft.UI
         private void Start()
         {
             Debug.Log("[Battle] Start begin");
+            EnsureEventSystem();
             cardDatabase = RuntimeAssetLocator.LoadCardDatabase(cardDatabase, this);
             if (cardDatabase == null)
                 return;
@@ -711,16 +967,20 @@ namespace DualCraft.UI
 
         private void Update()
         {
-            if (!_battleDialogueAwaitingAdvance)
-                return;
-
-            if (Input.GetKeyDown(KeyCode.Return)
-                || Input.GetKeyDown(KeyCode.KeypadEnter)
-                || Input.GetKeyDown(KeyCode.Space)
-                || Input.GetKeyDown(KeyCode.JoystickButton0))
+            if (WasSubmitPressedThisFrame())
             {
-                AdvanceBattleDialogue();
+                if (_battleDialogueAwaitingAdvance)
+                {
+                    AdvanceBattleDialogue();
+                    return;
+                }
+
+                PressPrimaryBattleAction();
+                return;
             }
+
+            if (WasCancelPressedThisFrame())
+                CancelBattleSelection();
         }
 
         private void EnsureHybridDiagnosticsOverlay()
@@ -755,6 +1015,62 @@ namespace DualCraft.UI
             }
 
             return false;
+        }
+
+        private static void EnsureEventSystem()
+        {
+            if (EventSystem.current != null)
+                return;
+
+            var go = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+            DontDestroyOnLoad(go);
+        }
+
+        private static bool WasSubmitPressedThisFrame()
+        {
+            return Input.GetKeyDown(KeyCode.Return)
+                || Input.GetKeyDown(KeyCode.KeypadEnter)
+                || Input.GetKeyDown(KeyCode.Space)
+                || Input.GetKeyDown(KeyCode.JoystickButton0)
+                || Input.GetKeyDown(KeyCode.JoystickButton7);
+        }
+
+        private static bool WasCancelPressedThisFrame()
+        {
+            return Input.GetKeyDown(KeyCode.Escape)
+                || Input.GetKeyDown(KeyCode.Backspace)
+                || Input.GetKeyDown(KeyCode.JoystickButton1);
+        }
+
+        private void PressPrimaryBattleAction()
+        {
+            if (_battle == null || _battle.State == null || _battle.State.GameOver)
+                return;
+
+            if (endTurnButton != null
+                && endTurnButton.gameObject.activeInHierarchy
+                && endTurnButton.interactable)
+            {
+                endTurnButton.onClick.Invoke();
+            }
+        }
+
+        private void CancelBattleSelection()
+        {
+            bool hadSelection = _cardPreviewOverlay != null
+                || _waitingForTarget
+                || _selectedCardForPlay >= 0
+                || _selectedAttackerIndex >= 0
+                || _selectedFusionPrimaryIndex >= 0;
+
+            if (!hadSelection)
+                return;
+
+            ClearSelection();
+            DismissCardPreview(refreshUi: false);
+
+            if (_battle != null && _battle.State != null && isActiveAndEnabled)
+                RefreshUI(_battle.State);
         }
 
         public void ForceHybridUiRefresh()
@@ -818,6 +1134,7 @@ namespace DualCraft.UI
             _battle.OnGameOver += HandleGameOver;
             _battle.OnCombatResolved += HandleCombatResolved;
             _battle.OnSERolled += HandleSERolled;
+            DeactivateDiceArea();
         }
 
         private void HandleRelayHostMessage(Net.NetEnvelope envelope)
@@ -1087,14 +1404,13 @@ namespace DualCraft.UI
             SuppressLegacyBattlefieldChrome(canvasRoot);
             NeutralizeFullscreenBlackOverlays(canvasRoot);
             EnsureBattlefieldRuntimeRoots(canvasRoot);
+            EnsureBattleDecisionPrompt(canvasRoot);
             ApplyResponsiveBattlefieldLayout(metrics);
 
             int handPad = Mathf.RoundToInt(Mathf.Lerp(8f, 14f, metrics.WideT));
             int fieldPad = Mathf.RoundToInt(Mathf.Lerp(8f, 12f, metrics.WideT));
-            int pillarPad = Mathf.RoundToInt(Mathf.Lerp(8f, 12f, metrics.WideT));
             float handSpacing = Mathf.Lerp(-64f, -74f, metrics.WideT);
             float fieldSpacing = Mathf.Lerp(14f, 18f, metrics.WideT);
-            float pillarSpacing = Mathf.Lerp(12f, 15f, metrics.WideT);
 
             ConfigureBoardLane(p1HandContainer, "Player Hand", string.Empty, HandTint, new RectOffset(handPad, handPad, 0, 0), handSpacing);
             ConfigureBoardLane(p2HandContainer, "Opponent Hand", string.Empty, HandTint, new RectOffset(handPad, handPad, 0, 0), handSpacing);
@@ -1103,12 +1419,10 @@ namespace DualCraft.UI
             DisableHLG(p2HandContainer);
             ConfigureBoardLane(p1FieldContainer, "Player Field", string.Empty, FieldTint, new RectOffset(fieldPad, fieldPad, 6, 6), fieldSpacing);
             ConfigureBoardLane(p2FieldContainer, "Opponent Field", string.Empty, FieldTint, new RectOffset(fieldPad, fieldPad, 6, 6), fieldSpacing);
-            ConfigureBoardLane(p1PillarContainer, "Player Pillars", string.Empty, PillarTint, new RectOffset(pillarPad, pillarPad, 2, 2), pillarSpacing);
-            ConfigureBoardLane(p2PillarContainer, "Opponent Pillars", string.Empty, PillarTint, new RectOffset(pillarPad, pillarPad, 2, 2), pillarSpacing);
             DisableHLG(p1FieldContainer);
             DisableHLG(p2FieldContainer);
-            DisableHLG(p1PillarContainer);
-            DisableHLG(p2PillarContainer);
+            HideLegacyPillarLane(p1PillarContainer);
+            HideLegacyPillarLane(p2PillarContainer);
 
 #pragma warning disable CS0162
             if (UseDragDropHandPlay)
@@ -1208,8 +1522,8 @@ namespace DualCraft.UI
             EnsureContainerActive(p2HandContainer);
             EnsureContainerActive(p1FieldContainer);
             EnsureContainerActive(p2FieldContainer);
-            EnsureContainerActive(p1PillarContainer);
-            EnsureContainerActive(p2PillarContainer);
+            HideLegacyPillarLane(p1PillarContainer);
+            HideLegacyPillarLane(p2PillarContainer);
 
             EnsureRuntimeZone(canvasRoot, "P1DeckPile", "P1SEDeck");
             EnsureRuntimeZone(canvasRoot, "P2DeckPile", "P2SEDeck");
@@ -1217,6 +1531,8 @@ namespace DualCraft.UI
             EnsureRuntimeZone(canvasRoot, "P2VoidZone");
             EnsureRuntimeZone(canvasRoot, "P1SealZone");
             EnsureRuntimeZone(canvasRoot, "P2SealZone");
+            EnsureRuntimeZone(canvasRoot, "P1SourceZone");
+            EnsureRuntimeZone(canvasRoot, "P2SourceZone");
             EnsureRuntimeZone(canvasRoot, "LeftDomainZone");
             EnsureRuntimeZone(canvasRoot, "ActiveDomainZone", "DomainZone");
         }
@@ -1225,6 +1541,17 @@ namespace DualCraft.UI
         {
             if (container != null && !container.gameObject.activeSelf)
                 container.gameObject.SetActive(true);
+        }
+
+        private void HideLegacyPillarLane(Transform container)
+        {
+            if (container == null)
+                return;
+
+            ClearChildren(container);
+            DisableHLG(container);
+            if (container.gameObject.activeSelf)
+                container.gameObject.SetActive(false);
         }
 
         private RectTransform EnsureRuntimeZone(RectTransform canvasRoot, string name, params string[] aliases)
@@ -1736,8 +2063,7 @@ namespace DualCraft.UI
                 diceRT.offsetMin = Vector2.zero;
                 diceRT.offsetMax = Vector2.zero;
 
-                // Don't hide DiceArea if dice is rolling or opening sequence is active
-                if (diceRoller != null && !diceRoller.IsRolling && !_suppressSERolledVisual)
+                if (diceRoller != null && !diceRoller.IsRolling)
                     diceAreaT.gameObject.SetActive(false);
             }
 
@@ -1818,11 +2144,13 @@ namespace DualCraft.UI
 
             ApplyRect(p2HandContainer as RectTransform, new Vector2(0.372f, 0.875f), new Vector2(0.628f, 0.998f), Vector2.zero, Vector2.zero);
             ApplyRect(p2FieldContainer as RectTransform, new Vector2(combatMin, 0.640f), new Vector2(combatMax, 0.865f), Vector2.zero, Vector2.zero);
-            ApplyRect(p2PillarContainer as RectTransform, new Vector2(0.155f, 0.810f), new Vector2(0.242f, 0.948f), Vector2.zero, Vector2.zero);
+            ApplyRect(FindRootRect("P2SourceZone"), new Vector2(0.155f, 0.810f), new Vector2(0.242f, 0.948f), Vector2.zero, Vector2.zero);
+            ApplyRect(p2PillarContainer as RectTransform, new Vector2(-0.18f, 1.08f), new Vector2(-0.10f, 1.20f), Vector2.zero, Vector2.zero);
             ApplyRect(FindRootRect("P2InvokerZone"), new Vector2(0.854f, 0.914f), new Vector2(0.978f, 0.982f), Vector2.zero, Vector2.zero);
 
             ApplyRect(p1FieldContainer as RectTransform, new Vector2(combatMin, 0.270f), new Vector2(combatMax, 0.460f), Vector2.zero, Vector2.zero);
-            ApplyRect(p1PillarContainer as RectTransform, new Vector2(0.155f, 0.025f), new Vector2(0.242f, 0.209f), Vector2.zero, Vector2.zero);
+            ApplyRect(FindRootRect("P1SourceZone"), new Vector2(0.155f, 0.025f), new Vector2(0.242f, 0.209f), Vector2.zero, Vector2.zero);
+            ApplyRect(p1PillarContainer as RectTransform, new Vector2(-0.18f, -0.20f), new Vector2(-0.10f, -0.08f), Vector2.zero, Vector2.zero);
             ApplyRect(FindRootRect("P1InvokerZone"), new Vector2(0.854f, 0.018f), new Vector2(0.978f, 0.086f), Vector2.zero, Vector2.zero);
             ApplyRect(p1HandContainer as RectTransform, new Vector2(handMin, 0.000f), new Vector2(handMax, 0.148f), Vector2.zero, Vector2.zero);
 
@@ -1837,8 +2165,6 @@ namespace DualCraft.UI
             ApplyRect(FindRootRect("P1DeckPile"), new Vector2(0.744f, 0.006f), new Vector2(0.852f, 0.233f), Vector2.zero, Vector2.zero);
 
             StyleStaticZonePanel(FindRootRect("LeftDomainZone"), "DOMAIN", new Color(0.10f, 0.16f, 0.24f, 0.40f), new Color(0.55f, 0.78f, 1f, 0.32f));
-            EnsureZoneHeader(p1PillarContainer as RectTransform, "PILLARS");
-            EnsureZoneHeader(p2PillarContainer as RectTransform, "PILLARS");
             EnsureZoneHeader(FindRootRect("P1DeckPile"), "DECK");
 
             // Kill any HorizontalLayoutGroups that could override our anchors
@@ -1882,8 +2208,8 @@ namespace DualCraft.UI
 
         private void LayoutActionRail(BattlefieldLayoutMetrics metrics)
         {
-            PositionActionButton(endTurnButton, new Vector2(metrics.LeftLaneLeft, 0.028f), new Vector2(metrics.LeftLaneRight + 0.028f, 0.082f));
-            PositionActionButton(_forfeitButton, new Vector2(metrics.LeftLaneLeft, 0.088f), new Vector2(metrics.LeftLaneLeft + 0.072f, 0.124f));
+            PositionActionButton(endTurnButton, new Vector2(0.426f, 0.006f), new Vector2(0.574f, 0.052f));
+            PositionActionButton(_forfeitButton, new Vector2(0.020f, 0.928f), new Vector2(0.092f, 0.970f));
         }
 
         private static void PositionActionButton(Button button, Vector2 anchorMin, Vector2 anchorMax)
@@ -2443,13 +2769,7 @@ namespace DualCraft.UI
             if (resolution == null)
                 return;
 
-            string headline = resolution.WasCritical
-                ? "SUPER EFFECTIVE!"
-                : resolution.WasWeak
-                    ? "Not very effective..."
-                    : resolution.TargetDestroyed
-                        ? "Direct hit!"
-                        : "Hit!";
+            string headline = resolution.TargetDestroyed ? "Direct hit!" : "Hit!";
 
             string target = string.IsNullOrWhiteSpace(resolution.TargetName)
                 ? "the target"
@@ -2462,6 +2782,10 @@ namespace DualCraft.UI
 
             if (resolution.TargetDestroyed)
                 detail += $" {target} falls.";
+            if (resolution.TargetOwnerInvokerLifeLoss > 0)
+                detail += $" Invoker loses {resolution.TargetOwnerInvokerLifeLoss} Life.";
+            if (resolution.AttackerDestroyed && resolution.AttackerOwnerInvokerLifeLoss > 0)
+                detail += $" Attacker falls too; its Invoker loses {resolution.AttackerOwnerInvokerLifeLoss} Life.";
 
             QueueBattleDialogueText($"{headline}\n{detail}", LogEntryType.Combat);
         }
@@ -2524,6 +2848,7 @@ namespace DualCraft.UI
             Vector3 toWorld = GetTargetWorldPoint(resolution);
             Color impactColor = ResolveAttackEffectColor(resolution);
             Audio.SfxManager.EnsureInstance().Play(Audio.SfxCue.Attack, 0.72f, 0.92f);
+            Audio.SfxManager.EnsureInstance().PlayCreatureAttack(resolution.AttackerCreatureType, resolution.AttackerElement, 0.64f);
 
             // When the AI is attacking the local player, show a dramatic incoming-attack banner
             bool isIncomingAttack = resolution.AttackerPlayer != LocalPlayer;
@@ -2558,7 +2883,12 @@ namespace DualCraft.UI
                 var sfxOnImpact = Audio.SfxManager.EnsureInstance();
                 sfxOnImpact.Play(Audio.SfxCue.Hit, 0.80f, resolution.HitInvoker ? 0.82f : 0.95f);
                 if (resolution.TargetDestroyed)
+                {
                     sfxOnImpact.Play(Audio.SfxCue.Destroy, 0.92f, 0.88f);
+                    sfxOnImpact.Play(Audio.SfxCue.Shatter, 0.80f, 0.82f);
+                    if (!resolution.HitPillar)
+                        sfxOnImpact.PlayCreatureDeath(resolution.TargetCreatureType, resolution.TargetElement, 0.58f);
+                }
 
                 SpawnImpactBurst(fromWorld, new Color(impactColor.r, impactColor.g, impactColor.b, 0.82f), resolution.WasCritical ? 0.92f : 0.72f);
                 SpawnCombatBeam(fromWorld, toWorld, impactColor);
@@ -2574,26 +2904,26 @@ namespace DualCraft.UI
                     resolution.HitPillar ? 102f : 78f,
                     resolution.TargetDestroyed ? 1.16f : resolution.WasCritical ? 1.06f : 0.94f);
 
-                if (resolution.HitPillar && resolution.TargetDestroyed)
-                {
-                    SpawnFloatingCombatText(toWorld + Vector3.up * 38f, "SHATTER!", CombatPillarTint, 0.9f);
-                    SpawnImpactBurst(toWorld, CombatPillarTint, 2.05f);
-                    SpawnAetherSheetImpactFX(toWorld, BattleEffectAssetKind.Stone, CombatPillarTint, 1.55f);
-                    SpawnImpactShards(toWorld, CombatPillarTint, 24, 148f, 1.32f);
-                    if (_combatFlashOverlay != null)
-                        StartCoroutine(UIAnimUtils.ScreenFlash(_combatFlashOverlay, new Color(1f, 0.82f, 0.32f, 0.34f), 0.14f));
-                }
+	                if (resolution.HitPillar && resolution.TargetDestroyed)
+	                {
+	                    SpawnFloatingCombatText(toWorld + Vector3.up * 38f, "SHATTER!", CombatPillarTint, 0.9f);
+	                    SpawnImpactBurst(toWorld, CombatPillarTint, 2.05f);
+	                    SpawnAetherSheetImpactFX(toWorld, BattleEffectAssetKind.Stone, CombatPillarTint, 1.55f);
+	                    SpawnImpactShards(toWorld, CombatPillarTint, 24, 148f, 1.32f);
+	                    SpawnCardShatterFx(toWorld, CombatPillarTint, true);
+	                    if (_combatFlashOverlay != null)
+	                        StartCoroutine(UIAnimUtils.ScreenFlash(_combatFlashOverlay, new Color(1f, 0.82f, 0.32f, 0.34f), 0.14f));
+	                }
 
                 if (resolution.WasCritical)
                 {
-                    SpawnFloatingCombatText(toWorld + Vector3.up * 34f, "CRITICAL!", CombatCritTint, 0.78f);
                     SpawnImpactShards(toWorld, CombatCritTint, 8, 118f, 1.22f);
                     if (_combatFlashOverlay != null)
-                        StartCoroutine(UIAnimUtils.ScreenFlash(_combatFlashOverlay, new Color(1f, 0.82f, 0.22f, 0.52f), 0.16f));
+                        StartCoroutine(UIAnimUtils.ScreenFlash(_combatFlashOverlay, new Color(0.20f, 1f, 0.38f, 0.42f), 0.16f));
                 }
-                else if (resolution.WasWeak)
+                else if (resolution.WasWeak && _combatFlashOverlay != null)
                 {
-                    SpawnFloatingCombatText(toWorld + Vector3.up * 28f, "GLANCING", CombatWeakTint, 0.68f);
+                    StartCoroutine(UIAnimUtils.ScreenFlash(_combatFlashOverlay, new Color(1f, 0.16f, 0.14f, 0.30f), 0.12f));
                 }
 
                 if (resolution.HitInvoker)
@@ -2611,7 +2941,7 @@ namespace DualCraft.UI
                     SpawnFloatingCombatText(toWorld, pillarOutcome, CombatPillarTint, resolution.TargetDestroyed ? 1.25f : 1.05f);
                     StartCoroutine(UIAnimUtils.ScreenShake(transform, resolution.TargetDestroyed ? 10f : 6f, 0.16f));
                     if (resolution.PillarIntercepted)
-                        SpawnFloatingCombatText(toWorld + Vector3.up * 28f, "PILLAR INTERCEPTS!", new Color(1f, 0.85f, 0.35f), 0.9f);
+                        SpawnFloatingCombatText(toWorld + Vector3.up * 28f, "BLOCKED!", new Color(1f, 0.85f, 0.35f), 0.9f);
                 }
                 else
                 {
@@ -2624,6 +2954,9 @@ namespace DualCraft.UI
                         if (_combatFlashOverlay != null)
                             StartCoroutine(UIAnimUtils.ScreenFlash(_combatFlashOverlay, new Color(impactColor.r, impactColor.g, impactColor.b, 0.65f), 0.18f));
                         StartCoroutine(UIAnimUtils.ScreenShake(transform, 6f, 0.14f));
+                        SpawnCardShatterFx(toWorld, impactColor, resolution.TargetRarity >= Rarity.Epic);
+                        if (resolution.TargetOwnerInvokerLifeLoss > 0)
+                            SpawnFloatingCombatText(toWorld + Vector3.down * 30f, $"-{resolution.TargetOwnerInvokerLifeLoss} INVOKER", CombatHitTint, 0.86f);
                     }
                 }
 
@@ -2631,7 +2964,11 @@ namespace DualCraft.UI
                 {
                     SpawnImpactBurst(fromWorld, new Color(0.76f, 0.46f, 0.88f, 0.92f), 1.1f);
                     SpawnImpactShards(fromWorld, new Color(0.82f, 0.6f, 1f, 0.92f), 7, 64f, 0.86f);
+                    SpawnCardShatterFx(fromWorld, new Color(0.82f, 0.6f, 1f, 0.92f), resolution.AttackerRarity >= Rarity.Epic);
+                    Audio.SfxManager.EnsureInstance().PlayCreatureDeath(resolution.AttackerCreatureType, resolution.AttackerElement, 0.54f);
                     SpawnFloatingCombatText(fromWorld + Vector3.up * 18f, $"{resolution.AttackerName} FALLS!", new Color(0.82f, 0.6f, 1f), 0.9f);
+                    if (resolution.AttackerOwnerInvokerLifeLoss > 0)
+                        SpawnFloatingCombatText(fromWorld + Vector3.down * 28f, $"-{resolution.AttackerOwnerInvokerLifeLoss} INVOKER", CombatHitTint, 0.82f);
                 }
 
                 QueueCombatResultDialogue(resolution);
@@ -3391,6 +3728,40 @@ namespace DualCraft.UI
             }
         }
 
+        private void SpawnCardShatterFx(Vector3 worldPos, Color color, bool highRarity)
+        {
+            if (_combatFxLayer == null || !WorldToFxPoint(worldPos, out Vector2 localPos))
+                return;
+
+            SpawnImpactBurst(worldPos, color, highRarity ? 2.25f : 1.85f);
+            SpawnImpactShards(worldPos, color, highRarity ? 28 : 20, highRarity ? 168f : 128f, highRarity ? 1.42f : 1.16f);
+
+            int count = highRarity ? 16 : 11;
+            for (int i = 0; i < count; i++)
+            {
+                float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
+                Vector2 dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                var shard = new GameObject("CardShatterShard", typeof(RectTransform), typeof(Image));
+                shard.transform.SetParent(_combatFxLayer, false);
+
+                var rect = shard.GetComponent<RectTransform>();
+                rect.anchorMin = new Vector2(0.5f, 0.5f);
+                rect.anchorMax = new Vector2(0.5f, 0.5f);
+                rect.anchoredPosition = localPos + dir * UnityEngine.Random.Range(3f, 18f);
+                rect.sizeDelta = new Vector2(UnityEngine.Random.Range(18f, 46f), UnityEngine.Random.Range(10f, 30f));
+                rect.localRotation = Quaternion.Euler(0f, 0f, UnityEngine.Random.Range(-38f, 38f));
+
+                var img = shard.GetComponent<Image>();
+                img.sprite = Resources.Load<Sprite>("UI/card-back-premium") ?? Resources.Load<Sprite>("UI/panel-dark");
+                img.type = img.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+                img.color = Color.Lerp(new Color(1f, 1f, 1f, 0.82f), new Color(color.r, color.g, color.b, 0.9f), 0.46f);
+                img.raycastTarget = false;
+
+                Vector2 travel = dir * UnityEngine.Random.Range(highRarity ? 72f : 48f, highRarity ? 178f : 132f);
+                StartCoroutine(ScatterAndFade(rect, img, travel, UnityEngine.Random.Range(0.26f, 0.42f), UnityEngine.Random.Range(0.16f, 0.36f), UnityEngine.Random.Range(-180f, 180f)));
+            }
+        }
+
         private IEnumerator ScatterAndFade(RectTransform rect, Image image, Vector2 travel, float duration, float endScaleFactor, float spinDegrees)
         {
             if (rect == null || image == null)
@@ -3518,12 +3889,10 @@ namespace DualCraft.UI
             }
         }
 
-        /// <summary>Opening sequence: roll for first player, shuffle, deal, roll SE.</summary>
+        /// <summary>Opening sequence: shuffle, deal, and start with Ashe-based SE.</summary>
         private IEnumerator OpeningSequence()
         {
             Debug.Log("[Battle] OpeningSequence begin");
-            // Suppress the HandleSERolled dice animation during the opening —
-            // we handle the dice visuals manually in this coroutine.
             _suppressSERolledVisual = true;
 
             // Hide action buttons during setup
@@ -3533,12 +3902,11 @@ namespace DualCraft.UI
             // Keep startup deterministic. The animated dice intro can stall the first rendered
             // frame in standalone builds, which leaves the player trapped behind the Unity splash.
             var (quickR1, quickR2) = _battle.CompleteSetup();
-            Debug.Log($"[Battle] CompleteSetup rolls p1={quickR1} p2={quickR2}");
-            AddLogEntry(new LogEntry { Message = $"Player 1 rolls {quickR1}, Player 2 rolls {quickR2}!", Type = LogEntryType.System });
+            Debug.Log($"[Battle] CompleteSetup legacy values p1={quickR1} p2={quickR2}");
             string quickFirstName = _battle.State.Players[_battle.State.CurrentPlayer].Name;
-            AddLogEntry(new LogEntry { Message = $"{quickFirstName} goes first!", Type = LogEntryType.System });
+            AddLogEntry(new LogEntry { Message = $"{quickFirstName} takes the first turn.", Type = LogEntryType.System });
             int quickSeTotal = _battle.State.Players[_battle.State.CurrentPlayer].Will;
-            AddLogEntry(new LogEntry { Message = $"{quickFirstName} stores {quickSeTotal} SE after the opening roll.", Type = LogEntryType.System });
+            AddLogEntry(new LogEntry { Message = quickSeTotal > 0 ? $"{quickFirstName}'s Sources open with {quickSeTotal} SE." : "Play Source cards to generate SE each turn.", Type = LogEntryType.System });
             _suppressSERolledVisual = false;
             if (endTurnButton) endTurnButton.interactable = true;
             RefreshUI(_battle.State);
@@ -3579,21 +3947,7 @@ namespace DualCraft.UI
                 yield return new WaitForSecondsRealtime(0.35f);
                 DeactivateDiceArea();
 
-                // Now show the SE roll that just happened
-                int se = _battle.LastSERoll;
-                if (se > 0)
-                {
-                    yield return new WaitForSecondsRealtime(0.18f);
-                    ActivateDiceArea();
-                    diceFinished = false;
-                    diceRoller.RollToValue(Mathf.Clamp(se, 1, GameConstants.SEDiceSides), () => diceFinished = true);
-                    diceDeadline = Time.realtimeSinceStartup + 3.0f;
-                    while (!diceFinished && Time.realtimeSinceStartup < diceDeadline) yield return null;
-                    if (!diceFinished)
-                        Debug.LogWarning("[Battle] OpeningSequence: SE dice roll timed out; continuing setup.");
-                    yield return new WaitForSecondsRealtime(0.55f);
-                    DeactivateDiceArea();
-                }
+                // Source income is deterministic now; no SE dice animation here.
             }
             else
             {
@@ -3604,9 +3958,9 @@ namespace DualCraft.UI
             AddLogEntry(new LogEntry { Message = $"{firstName} goes first!", Type = LogEntryType.System });
             yield return new WaitForSecondsRealtime(0.25f);
 
-            // Show stored SE for the first player after the opening roll
+            // Show stored SE for the first player after setup.
             int seTotal = _battle.State.Players[_battle.State.CurrentPlayer].Will;
-            AddLogEntry(new LogEntry { Message = $"{firstName} stores {seTotal} SE after the opening roll.", Type = LogEntryType.System });
+            AddLogEntry(new LogEntry { Message = $"{firstName} starts with {seTotal} stored SE.", Type = LogEntryType.System });
 
             _suppressSERolledVisual = false;
 
@@ -3695,6 +4049,11 @@ namespace DualCraft.UI
                         _ => AIActionDelay,
                     });
                     yield return new WaitForSeconds(pacingDelay);
+                    if (action is AttackAction incomingAttack)
+                    {
+                        yield return WaitForLocalAttackResponse(AIPlayerIndex, incomingAttack.AttackerIndex);
+                        incomingAttack.ResponseDispelHandIndex = _chosenAttackResponseHandIndex;
+                    }
                     _battle.ProcessAction(AIPlayerIndex, action);
 
                     // If attack triggered auto-end-turn, do it
@@ -3732,16 +4091,36 @@ namespace DualCraft.UI
             }
 
             if (_battle.State.CurrentPlayer != LocalPlayer || _battle.State.GameOver) return;
-            ClearSelection();
 
             // In Main phase, this button acts as "BATTLE" (transition to Combat)
             if (_battle.State.Phase == GamePhase.Main)
             {
+                var player = _battle.State.Players[LocalPlayer];
+                if (TryGetSelectedSummonHandIndex(player, out int summonHandIndex))
+                {
+                    ConfirmDaemonPlay(summonHandIndex);
+                    return;
+                }
+                if (!HasCommittedMainActionThisTurn(_battle.State, LocalPlayer) && HasPlayableSourceInHand(player))
+                {
+                    ShowTargetingHint("Set a Source first to build Spirit Energy");
+                    return;
+                }
+                if (player.Field.Count == 0 && HasPlayableDaemonInHand(player))
+                {
+                    ShowTargetingHint("Summon a Daemon before Battle");
+                    return;
+                }
+
+                ClearSelection();
+                DismissCardPreview(refreshUi: false);
                 SubmitPlayerAction(new NextPhaseAction());
                 RefreshUI(_battle.State);
                 return;
             }
 
+            ClearSelection();
+            DismissCardPreview(refreshUi: false);
             SubmitPlayerAction(new EndTurnAction());
 
             if (!_battle.State.GameOver)
@@ -3792,10 +4171,25 @@ namespace DualCraft.UI
             var card = player.Hand[handIndex].Card;
             int cost = card.GetWillCost();
             bool canAfford = player.Will >= cost;
+            bool canPlay = canAfford && CanPlayCard(player, card);
             bool isDaemon = card is DaemonCardData;
             bool isAsheCard = card is AsheCardData;
+            int ascendFieldIndex = -1;
+            int ascendCost = 0;
+            bool canAscend = card is DaemonCardData secondForm
+                && TryFindSecondFormTarget(player, secondForm, out ascendFieldIndex, out ascendCost)
+                && player.Will >= ascendCost;
 
             _selectedCardForPlay = handIndex;
+
+            if (UseSeatSelectionForDaemonPlay && isDaemon && canPlay && !canAscend)
+            {
+                _pendingMaskHandIndex = -1;
+                _pendingAsheHandIndex = -1;
+                RefreshUI(_battle.State);
+                ShowTargetingHint("Choose a glowing summon seat");
+                return;
+            }
 
             // Full-screen dim backdrop
             var canvasTransform = (transform as RectTransform) ?? transform;
@@ -3855,24 +4249,66 @@ namespace DualCraft.UI
             }
             else if (isDaemon)
             {
-                infoTMP.text = "Tap backdrop to cancel";
-                infoTMP.color = new Color(0.78f, 0.66f, 0.42f);
-                CreateCenteredActionButton(_cardPreviewOverlay.transform, "SUMMON", () => ConfirmDaemonPlay(handIndex));
-            }
-            else if (isAsheCard)
-            {
-                bool hasTarget = player.Field.Any(d => ((AsheCardData)card).Matches(d.Card));
-                if (!hasTarget)
+                if (canAscend)
                 {
-                    infoTMP.text = "No compatible daemon on field";
+                    var baseDaemon = player.Field[ascendFieldIndex];
+                    infoTMP.text = $"Ascend {baseDaemon.Card.cardName} into Second Form ({ascendCost} SE)";
+                    infoTMP.color = new Color(0.92f, 0.80f, 1f);
+                    int idx = handIndex;
+                    int targetIdx = ascendFieldIndex;
+                    CreateCenteredActionButton(_cardPreviewOverlay.transform, "ASCEND", () =>
+                    {
+                        DismissCardPreview();
+                        bool played = SubmitPlayerAction(new EvolveAction
+                        {
+                            FieldIndex = targetIdx,
+                            ConsumeIndex = idx,
+                        });
+                        if (played && _battle?.State != null)
+                            RefreshUI(_battle.State);
+                    });
+                }
+                else if (!canPlay)
+                {
+                    infoTMP.text = TryFindSecondFormTarget(player, (DaemonCardData)card, out _, out int neededSe)
+                        ? $"Need {neededSe} SE to ascend"
+                        : "No open daemon seat";
                     infoTMP.color = new Color(1f, 0.55f, 0.40f);
                 }
                 else
                 {
-                    infoTMP.text = "Tap backdrop to cancel";
-                    infoTMP.color = new Color(0.62f, 0.96f, 0.72f);
-                    int idx = handIndex;
-                    CreateCenteredActionButton(_cardPreviewOverlay.transform, "ASSIGN TO DAEMON", () =>
+                    infoTMP.text = UseSeatSelectionForDaemonPlay
+                        ? "Choose a glowing field seat"
+                        : "Click backdrop to cancel";
+                    infoTMP.color = new Color(0.78f, 0.66f, 0.42f);
+                    CreateCenteredActionButton(_cardPreviewOverlay.transform, "SUMMON", () => ConfirmDaemonPlay(handIndex));
+                }
+            }
+            else if (isAsheCard)
+            {
+                bool hasTarget = player.Field.Any(d => ((AsheCardData)card).Matches(d.Card));
+                var ashe = (AsheCardData)card;
+                string affinity = BuildSourceAffinityLabel(ashe);
+                infoTMP.text = hasTarget
+                    ? $"{affinity}: +{Mathf.Max(1, ashe.sePerTurn)} SE each turn, or bond to a matching daemon"
+                    : $"{affinity}: +{Mathf.Max(1, ashe.sePerTurn)} SE each turn";
+                infoTMP.color = Color.Lerp(CardVisual.GetSourceAffinityColor(ashe), Color.white, 0.18f);
+                int idx = handIndex;
+                CreateCenteredActionButton(_cardPreviewOverlay.transform, "SET SOURCE", () =>
+                {
+                    DismissCardPreview();
+                    bool played = SubmitPlayerAction(new PlayAsheCardAction
+                    {
+                        HandIndex = idx,
+                        TargetDaemonFieldIndex = -1,
+                    });
+                    if (played && _battle?.State != null)
+                        RefreshUI(_battle.State);
+                });
+
+                if (hasTarget)
+                {
+                    CreatePreviewActionButton(_cardPreviewOverlay.transform, "BOND TO DAEMON", () =>
                     {
                         DismissCardPreview();
                         _pendingAsheHandIndex = idx;
@@ -3883,7 +4319,7 @@ namespace DualCraft.UI
             }
             else
             {
-                infoTMP.text = "Tap backdrop to cancel";
+                infoTMP.text = "Click backdrop to cancel";
                 infoTMP.color = new Color(0.78f, 0.66f, 0.42f);
                 int idx = handIndex;
                 CreateCenteredActionButton(_cardPreviewOverlay.transform, "PLAY", () => ConfirmNonDaemonPlay(idx));
@@ -3963,6 +4399,27 @@ namespace DualCraft.UI
             var button = actionGo.GetComponent<Button>();
             if (onClick != null)
                 button.onClick.AddListener(() => onClick());
+        }
+
+        private static bool TryFindSecondFormTarget(PlayerState player, DaemonCardData secondForm, out int fieldIndex, out int seCost)
+        {
+            fieldIndex = -1;
+            seCost = 0;
+            if (player?.Field == null || secondForm == null)
+                return false;
+
+            for (int i = 0; i < player.Field.Count; i++)
+            {
+                var daemon = player.Field[i];
+                if (daemon?.Card?.evolvesTo != secondForm)
+                    continue;
+
+                fieldIndex = i;
+                seCost = Mathf.Max(0, daemon.Card.evolutionCost);
+                return true;
+            }
+
+            return false;
         }
 
         private void CreateCenteredActionButton(Transform parent, string label, Action onClick)
@@ -4060,16 +4517,21 @@ namespace DualCraft.UI
                 case SealCardData:
                     played = SubmitPlayerAction(new SetSealAction { HandIndex = handIndex });
                     break;
+                case HexCardData:
+                    played = SubmitPlayerAction(new PlayHexAction { HandIndex = handIndex });
+                    break;
                 case MaskCardData when player.Field.Count > 0:
                     _pendingMaskHandIndex = handIndex;
                     if (_battle?.State != null)
                         OnStateChanged(_battle.State);
                     return;
-                case AsheCardData ashe when player.Field.Any(d => ashe.Matches(d.Card)):
-                    _pendingAsheHandIndex = handIndex;
-                    if (_battle?.State != null)
-                        OnStateChanged(_battle.State);
-                    return;
+                case AsheCardData:
+                    played = SubmitPlayerAction(new PlayAsheCardAction
+                    {
+                        HandIndex = handIndex,
+                        TargetDaemonFieldIndex = -1,
+                    });
+                    break;
                 case DispelCardData:
                     played = SubmitPlayerAction(new PlayDispelAction
                     {
@@ -4329,7 +4791,7 @@ namespace DualCraft.UI
             infoTMP.alignment = TextAlignmentOptions.Center;
             infoTMP.raycastTarget = false;
 
-            // "tap to close" hint
+            // "click to close" hint
             var hintGO = new GameObject("Hint");
             hintGO.transform.SetParent(_cardPreviewOverlay.transform, false);
             var hintRT = hintGO.AddComponent<RectTransform>();
@@ -4338,7 +4800,7 @@ namespace DualCraft.UI
             hintRT.offsetMin = Vector2.zero;
             hintRT.offsetMax = Vector2.zero;
             var hintTMP = hintGO.AddComponent<TextMeshProUGUI>();
-            hintTMP.text = "Tap anywhere to close";
+            hintTMP.text = "Click anywhere to close";
             hintTMP.fontSize = 11;
             hintTMP.color = new Color(0.55f, 0.52f, 0.48f);
             hintTMP.alignment = TextAlignmentOptions.Center;
@@ -4387,9 +4849,10 @@ namespace DualCraft.UI
 
             // Build a stat / status line
             var daemonCard = daemon.Card as DaemonCardData;
-            string statLine = $"{daemon.CurrentAshe}/{daemon.MaxAshe} Ashe";
+            string statLine = $"{daemon.CurrentAshe}/{daemon.MaxAshe} Life";
             if (daemonCard != null)
                 statLine += $"  •  ATK {daemon.Attack}";
+            statLine += $"  •  Falls: Invoker -{GameConstants.GetInvokerLifeLossForRarity(daemon.Card.rarity)}";
 
             string status = "";
             if (daemon.Frozen)  status += " [Frozen]";
@@ -4441,7 +4904,7 @@ namespace DualCraft.UI
             hintRT.offsetMin = Vector2.zero;
             hintRT.offsetMax = Vector2.zero;
             var hintTMP = hintGO.AddComponent<TextMeshProUGUI>();
-            hintTMP.text = "Tap anywhere to close";
+            hintTMP.text = "Click anywhere to close";
             hintTMP.fontSize = 11;
             hintTMP.color = new Color(0.55f, 0.52f, 0.48f);
             hintTMP.alignment = TextAlignmentOptions.Center;
@@ -4481,7 +4944,7 @@ namespace DualCraft.UI
             var overlayImg = _cardPreviewOverlay.AddComponent<Image>();
             overlayImg.color = new Color(0.03f, 0.03f, 0.08f, 0.78f);
             overlayImg.raycastTarget = true;
-            // Tapping the bare background cancels
+            // Clicking the bare background cancels
             var cancelTap = _cardPreviewOverlay.AddComponent<Button>();
             cancelTap.onClick.AddListener(DismissCardPreview);
 
@@ -4517,38 +4980,11 @@ namespace DualCraft.UI
             headerTMP.alignment = TextAlignmentOptions.Center;
             headerTMP.raycastTarget = false;
 
-            // ── Pre-compute matchup text for each visible opponent daemon ──
-            var matchupLines = new System.Text.StringBuilder();
-            foreach (var oppDaemon in opp.Field)
-            {
-                if (oppDaemon?.Card is not DaemonCardData oppCard) continue;
-                float mult = Core.ElementSystem.GetElementMatchup(daemonCard.element, oppCard.element);
-                string matchLabel = mult >= Core.GameConstants.SuperEffectiveMult ? "<color=#FFB347>SUPER EFFECTIVE</color>"
-                                  : mult <= Core.GameConstants.WeakMult ? "<color=#8899AA>NOT VERY EFFECTIVE</color>"
-                                  : "<color=#AABBCC>Neutral</color>";
-                matchupLines.Append($"vs {oppCard.cardName}: {matchLabel}  ");
-            }
-            if (matchupLines.Length == 0) matchupLines.Append("Select a target daemon or Invoker");
-
-            var matchupGO  = new GameObject("MatchupLine");
-            matchupGO.transform.SetParent(_cardPreviewOverlay.transform, false);
-            var matchupRT  = matchupGO.AddComponent<RectTransform>();
-            matchupRT.anchorMin = new Vector2(0.08f, 0.25f);
-            matchupRT.anchorMax = new Vector2(0.92f, 0.31f);
-            matchupRT.offsetMin = Vector2.zero;
-            matchupRT.offsetMax = Vector2.zero;
-            var matchupTMP = matchupGO.AddComponent<TextMeshProUGUI>();
-            matchupTMP.text = matchupLines.ToString();
-            matchupTMP.fontSize = 12;
-            matchupTMP.color = Color.white;
-            matchupTMP.alignment = TextAlignmentOptions.Center;
-            matchupTMP.richText = true;
-            matchupTMP.raycastTarget = false;
-
             // ── Main attack button (element-themed, Pokemon TCG style) ──
             Color elemColor = Core.ElementColors.GetElementColor(daemonCard.element);
             Color btnBg     = Color.Lerp(elemColor, new Color(0.06f, 0.06f, 0.10f), 0.58f);
 
+            int attackSpiritCost = ResolveDisplayedAttackCost(daemon, player.AsheCards);
             string attackLabel = daemonCard.ability != null && !string.IsNullOrEmpty(daemonCard.ability.abilityName)
                 ? daemonCard.ability.abilityName
                 : $"{daemonCard.element} Strike";
@@ -4583,8 +5019,8 @@ namespace DualCraft.UI
             badgeLblRT.offsetMin = Vector2.zero;
             badgeLblRT.offsetMax = Vector2.zero;
             var badgeTMP = badgeLblGO.AddComponent<TextMeshProUGUI>();
-            badgeTMP.text = $"<b>{daemonCard.element.ToString().ToUpper()[0]}</b>";
-            badgeTMP.fontSize = 20;
+            badgeTMP.text = $"<b>{GetElementShortLabel(daemonCard.element)}</b>";
+            badgeTMP.fontSize = 13;
             badgeTMP.color = Color.white;
             badgeTMP.alignment = TextAlignmentOptions.Center;
             badgeTMP.raycastTarget = false;
@@ -4598,7 +5034,8 @@ namespace DualCraft.UI
             nameLblRT.offsetMin = Vector2.zero;
             nameLblRT.offsetMax = Vector2.zero;
             var nameLblTMP = nameLblGO.AddComponent<TextMeshProUGUI>();
-            nameLblTMP.text = $"<b>{attackLabel}</b>";
+            string costLabel = attackSpiritCost > 0 ? $"{attackSpiritCost} SE" : "Free";
+            nameLblTMP.text = $"<b>{attackLabel}</b>\n<size=70%><color=#D9CFAE>Cost: {costLabel}</color></size>";
             nameLblTMP.fontSize = 18;
             nameLblTMP.color = Color.white;
             nameLblTMP.alignment = TextAlignmentOptions.MidlineLeft;
@@ -4613,13 +5050,13 @@ namespace DualCraft.UI
             dmgRT.offsetMin = Vector2.zero;
             dmgRT.offsetMax = Vector2.zero;
             var dmgTMP = dmgGO.AddComponent<TextMeshProUGUI>();
-            dmgTMP.text = $"<b>−{daemon.Attack}</b>";
-            dmgTMP.fontSize = 22;
+            dmgTMP.text = $"<size=62%>Damage</size>\n<b>−{daemon.Attack}</b>";
+            dmgTMP.fontSize = 17;
             dmgTMP.color = new Color(1f, 0.92f, 0.72f);
             dmgTMP.alignment = TextAlignmentOptions.MidlineRight;
             dmgTMP.raycastTarget = false;
 
-            // A tiny "Ashe" unit label under the damage number
+            // A tiny "Life" unit label under the damage number
             var unitGO  = new GameObject("AtkUnit");
             unitGO.transform.SetParent(atkBtnGO.transform, false);
             var unitRT  = unitGO.AddComponent<RectTransform>();
@@ -4628,7 +5065,7 @@ namespace DualCraft.UI
             unitRT.offsetMin = Vector2.zero;
             unitRT.offsetMax = Vector2.zero;
             var unitTMP = unitGO.AddComponent<TextMeshProUGUI>();
-            unitTMP.text = "Ashe";
+            unitTMP.text = "target Life";
             unitTMP.fontSize = 9;
             unitTMP.color = new Color(0.80f, 0.76f, 0.70f);
             unitTMP.alignment = TextAlignmentOptions.MidlineRight;
@@ -4742,22 +5179,7 @@ namespace DualCraft.UI
                     ShowFieldDaemonInspect(opp.Field[fieldIndex]);
                 return;
             }
-            bool attacked = SubmitPlayerAction(new AttackAction
-            {
-                AttackerIndex = _selectedAttackerIndex,
-                Target = TargetType.Daemon,
-                TargetIndex = fieldIndex,
-            });
-            if (attacked)
-            {
-                ClearSelection();
-                CheckAttackEndsTurn();
-            }
-            else
-            {
-                ShowTargetingHint("Invalid target");
-                RefreshUI(_battle.State);
-            }
+            StartCoroutine(SubmitAttackAfterResponseWindow(_selectedAttackerIndex, TargetType.Daemon, fieldIndex, false));
         }
 
         private void OnOpponentPillarClicked(int pillarIndex)
@@ -4765,18 +5187,75 @@ namespace DualCraft.UI
             // Pillars are not direct combat targets in story-card battles.
             // Keep the target selection active and tell the player what happened.
             if (_waitingForTarget && _selectedAttackerIndex >= 0)
-                ShowTargetingHint("Pillars protect automatically");
+                ShowTargetingHint("Target a daemon, Source, or Invoker");
             return;
         }
 
         private void OnOpponentInvokerClicked()
         {
             if (!_waitingForTarget || _selectedAttackerIndex < 0) return;
+            StartCoroutine(SubmitAttackAfterResponseWindow(_selectedAttackerIndex, TargetType.Invoker, 0, false));
+        }
+
+        private void OnOpponentSourceClicked(int sourceIndex)
+        {
+            if (!_waitingForTarget || _selectedAttackerIndex < 0 || _battle?.State == null)
+                return;
+
+            var opponent = _battle.State.Players[AIPlayerIndex];
+            if (opponent.Field.Any(d => d != null && !d.Stealthed))
+            {
+                ShowTargetingHint("Defeat enemy daemons before raiding Sources");
+                return;
+            }
+
+            bool raided = SubmitPlayerAction(new AttackAsheCardAction
+            {
+                AttackerFieldIndex = _selectedAttackerIndex,
+                AsheCardBoardIndex = sourceIndex,
+            });
+
+            if (raided)
+            {
+                ClearSelection();
+                CheckAttackEndsTurn();
+            }
+            else
+            {
+                ShowTargetingHint("Source raid failed");
+                RefreshUI(_battle.State);
+            }
+        }
+
+        private IEnumerator SubmitAttackAfterResponseWindow(int attackerIndex, TargetType targetType, int targetIndex, bool defenderIsLocal)
+        {
+            int responseHandIndex = -1;
+            var state = _battle?.State;
+            if (state != null)
+            {
+                int attackerPlayer = defenderIsLocal ? AIPlayerIndex : LocalPlayer;
+                int defenderPlayer = 1 - attackerPlayer;
+                ShowAttackAnticipation(attackerPlayer, defenderPlayer, attackerIndex, targetType, targetIndex);
+                yield return new WaitForSeconds(AttackAnticipationSeconds);
+                if (defenderIsLocal)
+                {
+                    yield return WaitForLocalAttackResponse(attackerPlayer, attackerIndex);
+                    responseHandIndex = _chosenAttackResponseHandIndex;
+                }
+                else
+                {
+                    responseHandIndex = ChooseBestAttackResponseHandIndex(state.Players[defenderPlayer], GetAttackerCard(state, attackerPlayer, attackerIndex));
+                    if (responseHandIndex >= 0)
+                        yield return ShowAutoAttackResponsePreview(state.Players[defenderPlayer], responseHandIndex, GetAttackerCard(state, attackerPlayer, attackerIndex));
+                }
+            }
+
             bool attacked = SubmitPlayerAction(new AttackAction
             {
-                AttackerIndex = _selectedAttackerIndex,
-                Target = TargetType.Invoker,
-                TargetIndex = 0,
+                AttackerIndex = attackerIndex,
+                Target = targetType,
+                TargetIndex = targetIndex,
+                ResponseDispelHandIndex = responseHandIndex,
             });
             if (attacked)
             {
@@ -4785,9 +5264,301 @@ namespace DualCraft.UI
             }
             else
             {
-                ShowTargetingHint("Defeat enemy daemons first");
+                ShowTargetingHint(BuildAttackFailureHint(targetType, targetIndex));
                 RefreshUI(_battle.State);
             }
+        }
+
+        private void ShowAttackAnticipation(int attackerPlayer, int defenderPlayer, int attackerIndex, TargetType targetType, int targetIndex)
+        {
+            Vector3 fromWorld = GetFieldWorldPoint(attackerPlayer, attackerIndex);
+            Vector3 toWorld = targetType switch
+            {
+                TargetType.Daemon => GetSocketWorldPoint(defenderPlayer == LocalPlayer ? p1FieldContainer : p2FieldContainer, targetIndex),
+                TargetType.Invoker => GetRectWorldPoint(FindInvokerCardRect(defenderPlayer)),
+                TargetType.Pillar => GetSocketWorldPoint(defenderPlayer == LocalPlayer ? p1PillarContainer : p2PillarContainer, 0),
+                _ => fromWorld,
+            };
+
+            Color cue = attackerPlayer == LocalPlayer
+                ? new Color(1f, 0.72f, 0.30f, 0.96f)
+                : new Color(1f, 0.32f, 0.24f, 0.96f);
+            string attackLabel = BuildAttackAnticipationLabel(attackerPlayer, defenderPlayer, attackerIndex, targetType, targetIndex);
+            Color labelColor = cue;
+            SpawnFloatingCombatText(fromWorld + Vector3.up * 44f, "WIND UP", cue, 0.68f);
+            SpawnFloatingCombatText(fromWorld + Vector3.up * 18f, "CHARGING", new Color(cue.r, cue.g, cue.b, 0.86f), 0.58f);
+            SpawnFloatingCombatText(toWorld + Vector3.up * 42f, attackLabel, labelColor, 0.78f);
+            SpawnCombatBeam(fromWorld, toWorld, new Color(cue.r, cue.g, cue.b, 0.42f));
+        }
+
+        private string BuildAttackAnticipationLabel(int attackerPlayer, int defenderPlayer, int attackerIndex, TargetType targetType, int targetIndex)
+        {
+            var state = _battle?.State;
+            var attacker = GetAttackerCard(state, attackerPlayer, attackerIndex);
+            if (attacker == null)
+                return "ATTACK";
+
+            int previewDamage = Mathf.Max(0, attacker.attack);
+            if (targetType == TargetType.Daemon
+                && state?.Players != null
+                && defenderPlayer >= 0
+                && defenderPlayer < state.Players.Length)
+            {
+                var defenders = state.Players[defenderPlayer].Field;
+                if (defenders != null && targetIndex >= 0 && targetIndex < defenders.Count && defenders[targetIndex]?.Card != null)
+                {
+                    float mult = ElementSystem.GetElementMatchup(attacker.element, defenders[targetIndex].Card.element);
+                    previewDamage = Mathf.Max(0, Mathf.RoundToInt(previewDamage * mult));
+                }
+            }
+
+            return targetType == TargetType.Invoker
+                ? $"INVOKER HIT  -{previewDamage}"
+                : $"ATTACK  -{previewDamage}";
+        }
+
+        private IEnumerator WaitForLocalAttackResponse(int attackerPlayer, int attackerIndex)
+        {
+            _chosenAttackResponseHandIndex = -1;
+            var state = _battle?.State;
+            var attackerCard = GetAttackerCard(state, attackerPlayer, attackerIndex);
+            int eligibleIndex = ChooseBestAttackResponseHandIndex(state?.Players[LocalPlayer], attackerCard);
+
+            ShowAttackResponsePanel(attackerCard, state?.Players[LocalPlayer], eligibleIndex, true);
+            float duration = eligibleIndex >= 0 ? 2.35f : 1.15f;
+            float t = 0f;
+            while (t < duration && _chosenAttackResponseHandIndex < 0)
+            {
+                t += Time.deltaTime;
+                if (_attackResponseFillImage != null)
+                    _attackResponseFillImage.fillAmount = Mathf.Clamp01(t / duration);
+                yield return null;
+            }
+            HideAttackResponsePanel();
+        }
+
+        private IEnumerator ShowAutoAttackResponsePreview(PlayerState defender, int responseHandIndex, DaemonCardData attackerCard)
+        {
+            ShowAttackResponsePanel(attackerCard, defender, responseHandIndex, false);
+            float duration = 0.82f;
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+                if (_attackResponseFillImage != null)
+                    _attackResponseFillImage.fillAmount = Mathf.Clamp01(t / duration);
+                yield return null;
+            }
+            HideAttackResponsePanel();
+        }
+
+        private DaemonCardData GetAttackerCard(GameState state, int attackerPlayer, int attackerIndex)
+        {
+            if (state?.Players == null || attackerPlayer < 0 || attackerPlayer >= state.Players.Length)
+                return null;
+            var field = state.Players[attackerPlayer].Field;
+            if (field == null || attackerIndex < 0 || attackerIndex >= field.Count)
+                return null;
+            return field[attackerIndex]?.Card;
+        }
+
+        private int ChooseBestAttackResponseHandIndex(PlayerState defender, DaemonCardData attackerCard)
+        {
+            if (defender?.Hand == null || attackerCard == null)
+                return -1;
+
+            int bestIndex = -1;
+            int bestPrevent = -1;
+            for (int i = 0; i < defender.Hand.Count; i++)
+            {
+                if (defender.Hand[i].Card is not DispelCardData dispel)
+                    continue;
+                if (!BattleManager.CanDispelCounterAttack(dispel, attackerCard))
+                    continue;
+                if (defender.Will < Mathf.Max(0, dispel.GetWillCost()))
+                    continue;
+
+                int prevent = Mathf.Max(1, dispel.preventDamage);
+                if (prevent > bestPrevent)
+                {
+                    bestPrevent = prevent;
+                    bestIndex = i;
+                }
+            }
+            return bestIndex;
+        }
+
+        private void ShowAttackResponsePanel(DaemonCardData attackerCard, PlayerState defender, int responseHandIndex, bool clickable)
+        {
+            EnsureAttackResponsePanel();
+            if (_attackResponsePanel == null)
+                return;
+
+            _presentedAttackResponseHandIndex = responseHandIndex;
+            string incoming = attackerCard != null
+                ? $"{attackerCard.element} {attackerCard.creatureType} attack"
+                : "incoming attack";
+            _attackResponseTitleText.text = $"INCOMING {incoming.ToUpperInvariant()}";
+
+            var responseCard = responseHandIndex >= 0 && defender?.Hand != null && responseHandIndex < defender.Hand.Count
+                ? defender.Hand[responseHandIndex].Card as DispelCardData
+                : null;
+            if (responseCard != null)
+            {
+                _attackResponseBodyText.text = clickable
+                    ? $"{responseCard.cardName}: prevent {Mathf.Max(1, responseCard.preventDamage)} damage"
+                    : $"{defender.Name} answers with {responseCard.cardName}";
+            }
+            else
+            {
+                _attackResponseBodyText.text = clickable ? "No matching dispel in hand" : "No response";
+            }
+
+            if (_attackResponseFillImage != null)
+                _attackResponseFillImage.fillAmount = 0f;
+            _attackResponsePanel.SetActive(true);
+            _attackResponsePanel.transform.SetAsLastSibling();
+        }
+
+        private void EnsureAttackResponsePanel()
+        {
+            if (_attackResponsePanel != null)
+                return;
+
+            var canvasRoot = transform as RectTransform;
+            if (canvasRoot == null)
+                return;
+
+            _attackResponsePanel = new GameObject("AttackResponsePanel", typeof(RectTransform), typeof(Image), typeof(Button));
+            _attackResponsePanel.transform.SetParent(canvasRoot, false);
+            var rect = _attackResponsePanel.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.32f, 0.18f);
+            rect.anchorMax = new Vector2(0.68f, 0.28f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var bg = _attackResponsePanel.GetComponent<Image>();
+            bg.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            bg.type = bg.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            bg.color = new Color(0.03f, 0.035f, 0.052f, 0.94f);
+
+            var button = _attackResponsePanel.GetComponent<Button>();
+            button.onClick.AddListener(() =>
+            {
+                if (_chosenAttackResponseHandIndex < 0 && _presentedAttackResponseHandIndex >= 0)
+                    _chosenAttackResponseHandIndex = _presentedAttackResponseHandIndex;
+            });
+
+            var fillGo = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fillGo.transform.SetParent(_attackResponsePanel.transform, false);
+            var fillRect = fillGo.GetComponent<RectTransform>();
+            fillRect.anchorMin = new Vector2(0f, 0f);
+            fillRect.anchorMax = new Vector2(1f, 0.08f);
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+            _attackResponseFillImage = fillGo.GetComponent<Image>();
+            _attackResponseFillImage.color = new Color(0.70f, 0.94f, 1f, 0.86f);
+            _attackResponseFillImage.type = Image.Type.Filled;
+            _attackResponseFillImage.fillMethod = Image.FillMethod.Horizontal;
+
+            _attackResponseTitleText = CreateAttackResponseText("Title", new Vector2(0.05f, 0.48f), new Vector2(0.95f, 0.92f), 15f, FontStyles.Bold);
+            _attackResponseBodyText = CreateAttackResponseText("Body", new Vector2(0.05f, 0.14f), new Vector2(0.95f, 0.50f), 11f, FontStyles.Normal);
+            _attackResponsePanel.SetActive(false);
+        }
+
+        private TextMeshProUGUI CreateAttackResponseText(string name, Vector2 anchorMin, Vector2 anchorMax, float fontSize, FontStyles style)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
+            go.transform.SetParent(_attackResponsePanel.transform, false);
+            var rect = go.GetComponent<RectTransform>();
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            var tmp = go.GetComponent<TextMeshProUGUI>();
+            tmp.fontSize = fontSize;
+            tmp.fontStyle = style;
+            tmp.enableAutoSizing = true;
+            tmp.fontSizeMin = 7f;
+            tmp.fontSizeMax = fontSize;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = new Color(0.96f, 0.94f, 0.86f, 0.98f);
+            tmp.raycastTarget = false;
+            return tmp;
+        }
+
+        private DaemonCardData GetCurrentIncomingAttackerCard()
+        {
+            var state = _battle?.State;
+            if (state == null || state.CurrentPlayer != AIPlayerIndex)
+                return null;
+            return state.Players[AIPlayerIndex].Field.FirstOrDefault(d => d != null && d.CanAttack && !d.HasAttacked)?.Card;
+        }
+
+        private void HideAttackResponsePanel()
+        {
+            if (_attackResponsePanel != null)
+                _attackResponsePanel.SetActive(false);
+            _presentedAttackResponseHandIndex = -1;
+        }
+
+        private string BuildAttackFailureHint(TargetType targetType, int targetIndex)
+        {
+            var state = _battle?.State;
+            if (state == null || _selectedAttackerIndex < 0)
+                return "Choose an attacker";
+
+            var player = state.Players[LocalPlayer];
+            var opponent = state.Players[AIPlayerIndex];
+            if (_selectedAttackerIndex >= player.Field.Count)
+                return "Choose an attacker";
+
+            var attacker = player.Field[_selectedAttackerIndex];
+            int attackCost = ResolveDisplayedAttackCost(attacker, player.AsheCards);
+            if (player.Will < attackCost)
+                return $"Need {attackCost} SE";
+
+            if (targetType == TargetType.Invoker && opponent.Field.Any(d => !d.Stealthed))
+            {
+                bool laneOpen = GameConstants.EnableTacticsBoardMode
+                    && (_selectedAttackerIndex >= opponent.Field.Count || opponent.Field[_selectedAttackerIndex].Stealthed);
+                if (!laneOpen)
+                    return GameConstants.EnableTacticsBoardMode
+                        ? "Open this lane first"
+                        : "Defeat enemy daemons first";
+            }
+
+            if (targetType == TargetType.Daemon)
+            {
+                if (targetIndex < 0 || targetIndex >= opponent.Field.Count)
+                    return "Choose a highlighted target";
+
+                var taunters = opponent.Field
+                    .Select((d, i) => (d, i))
+                    .Where(x => x.d.HasTaunt && !x.d.Stealthed)
+                    .ToList();
+                if (taunters.Count > 0 && !taunters.Any(t => t.i == targetIndex))
+                    return "Attack Taunt first";
+
+                if (opponent.Field[targetIndex].Stealthed)
+                    return "Cannot target Stealth";
+
+                bool sameLane = _selectedAttackerIndex == targetIndex;
+                bool ranged = IsTacticsRangedAttacker(attacker);
+                if (GameConstants.EnableTacticsBoardMode && !sameLane && !ranged)
+                    return "Melee attacks straight ahead";
+            }
+
+            return "Choose a highlighted target";
+        }
+
+        private static bool IsTacticsRangedAttacker(DaemonInstance attacker)
+        {
+            if (attacker?.Card == null)
+                return false;
+            if (attacker.Card.rangedAttack)
+                return true;
+            return attacker.Masks != null && attacker.Masks.Any(mask => mask?.Card != null && mask.Card.grantsRangedAttacks);
         }
 
         private void ShowTargetingHint(string message)
@@ -4833,6 +5604,8 @@ namespace DualCraft.UI
             _selectedAttackerIndex = -1;
             _waitingForTarget = false;
             _selectedFusionPrimaryIndex = -1;
+            _pendingMaskHandIndex = -1;
+            _pendingAsheHandIndex = -1;
         }
 
         private void PlayAttackAnimOnField(Transform fieldContainer, int index)
@@ -4893,9 +5666,10 @@ namespace DualCraft.UI
                 BringForegroundZonesToFront();
 
                 UpdateActionButtons(state, isPlayerTurn);
+                UpdateBattleDecisionPrompt(state, isPlayerTurn);
                 UpdateBattlefieldGuidance(state, isPlayerTurn, canPlayCards, canAttack, canFuse);
                 UpdateStoryTutorial(state, isPlayerTurn);
-                AnimateDaemonHealingFx(state);
+                AnimateDaemonAsheDeltaFx(state);
 
                 _lastPhase = state.Phase;
                 _lastTurnNumber = state.TurnNumber;
@@ -4926,7 +5700,7 @@ namespace DualCraft.UI
             AnimateStatReadout(playerIndex, player.Invoker.Hp, player.Will, hpText, willText);
 
             // Compute hashes to detect actual content changes and skip unnecessary rebuilds
-            int handHash = ComputeHandHash(player);
+            int handHash = ComputeHandHash(player, playerIndex == LocalPlayer ? _selectedCardForPlay : -1);
             int selectedSummonHandIndex = -1;
             bool summonSeatMode = playerIndex == LocalPlayer && fieldSelectable
                 && TryGetSelectedSummonHandIndex(player, out selectedSummonHandIndex);
@@ -4982,6 +5756,8 @@ namespace DualCraft.UI
                     }
                     AttachCardHover(go);
                     RemoveNamedChild(go.transform, "PlayableHighlight");
+                    RemoveNamedChild(go.transform, "SelectedCardHighlight");
+                    RemoveNamedChild(go.transform, "HandTacticalBadges");
 
                     // Make local hand cards clickable during main phases
                     if (isLocal)
@@ -4998,6 +5774,9 @@ namespace DualCraft.UI
                         // Highlight playable cards
                         if (canPlay)
                             AddPlayableCardHighlight(go);
+                        if (idx == _selectedCardForPlay)
+                            AddSelectedCardHighlight(go);
+                        AddHandTacticalBadges(go, cardInst.Card, player);
 
                         var drag = go.GetComponent<CardDrag>();
 #pragma warning disable CS0162
@@ -5105,12 +5884,15 @@ namespace DualCraft.UI
                         if (summonSeatMode)
                         {
                             int summonSlotIndex = i;
-                            var slotImage = slot.GetComponent<Image>();
-                            if (slotImage != null)
-                                slotImage.raycastTarget = true;
-                            var seatButton = slot.GetComponent<Button>() ?? slot.AddComponent<Button>();
-                            seatButton.onClick.RemoveAllListeners();
-                            seatButton.onClick.AddListener(() => ConfirmDaemonPlay(selectedSummonHandIndex, summonSlotIndex));
+                            WireSummonSeatClickTarget(slot, selectedSummonHandIndex, summonSlotIndex);
+                            if (content != null)
+                                WireSummonSeatClickTarget(content.gameObject, selectedSummonHandIndex, summonSlotIndex);
+                            var visibleSeat = slot.transform.Find("Seat")?.gameObject;
+                            if (visibleSeat != null)
+                                WireSummonSeatClickTarget(visibleSeat, selectedSummonHandIndex, summonSlotIndex);
+                            var innerSeat = slot.transform.Find("Seat/InnerSeat")?.gameObject;
+                            if (innerSeat != null)
+                                WireSummonSeatClickTarget(innerSeat, selectedSummonHandIndex, summonSlotIndex);
                             AddPulsingHighlightOverlay(slot, HighlightPlay, 0.14f, 0.38f, 2.8f);
                             SetSocketCaption(slot.transform as RectTransform, string.Empty, "summon here", new Color(0.98f, 0.90f, 0.74f, 0.92f));
                         }
@@ -5165,7 +5947,10 @@ namespace DualCraft.UI
                     if (!daemon.CanAttack && !daemon.Frozen && !daemon.Entangled)
                         AddSummoningSicknessOverlay(go);
 
-                    int idx = i;
+                    int idx = player.Field.FindIndex(d => d != null && d.InstanceId == daemon.InstanceId);
+                    if (idx < 0)
+                        continue;
+
                     if (playerIndex == LocalPlayer && maskTargetMode)
                     {
                         int targetDaemonIndex = player.Field.FindIndex(d => d != null && d.InstanceId == daemon.InstanceId);
@@ -5175,7 +5960,7 @@ namespace DualCraft.UI
                             btn.onClick.RemoveAllListeners();
                             btn.onClick.AddListener(() => ConfirmMaskPlayTarget(targetDaemonIndex));
                             AddPulsingHighlightOverlay(slot, new Color(0.75f, 0.40f, 0.92f, 1f), 0.10f, 0.45f, 3f);
-                            SetSocketCaption(slot.transform as RectTransform, string.Empty, "mask target", new Color(0.96f, 0.86f, 0.98f, 0.95f));
+                            SetSocketCaption(slot.transform as RectTransform, string.Empty, "relic target", new Color(0.96f, 0.86f, 0.98f, 0.95f));
                         }
                     }
                     else if (playerIndex == LocalPlayer && asheTargetMode)
@@ -5203,11 +5988,10 @@ namespace DualCraft.UI
                         {
                             var btn = go.GetComponent<Button>() ?? go.AddComponent<Button>();
                             btn.onClick.AddListener(() => OnOwnDaemonClicked(idx));
-                            if (_selectedAttackerIndex == idx)
-                            {
-                                AddPulsingHighlightOverlay(slot, HighlightAttacker, 0.15f, 0.55f, 4f);
-                                AddSelectTargetLabel(go);
-                            }
+	                            if (_selectedAttackerIndex == idx)
+	                            {
+	                                AddPulsingHighlightOverlay(slot, HighlightAttacker, 0.15f, 0.55f, 4f);
+	                            }
                             else if (_battle.State.Phase == GamePhase.Combat && !_waitingForTarget)
                             {
                                 // Subtle glow on all attackable daemons to indicate they can be clicked
@@ -5235,19 +6019,18 @@ namespace DualCraft.UI
                         // in target mode they resolve the attack; otherwise they open an inspect.
                         var btn = go.GetComponent<Button>() ?? go.AddComponent<Button>();
                         btn.onClick.AddListener(() => OnOpponentDaemonClicked(idx));
-                        if (_waitingForTarget)
-                        {
-                            AddPulsingHighlightOverlay(slot, HighlightTarget, 0.10f, 0.50f, 3f);
-                            // Show type-effectiveness badge so the player knows the matchup at a glance
-                            AddEffectivenessLabel(go.transform as RectTransform ?? slot.transform as RectTransform, daemon);
-                        }
+	                        if (_waitingForTarget)
+	                        {
+	                            AddPulsingHighlightOverlay(slot, HighlightTarget, 0.10f, 0.50f, 3f);
+	                            AddTargetMatchupHoverOutline(go, daemon);
+	                        }
                     }
                     else if (playerIndex == LocalPlayer)
                     {
                         // No special mode active — clicking inspects the daemon.
                         var btn = go.GetComponent<Button>() ?? go.AddComponent<Button>();
                         if (btn.onClick.GetPersistentEventCount() == 0)
-                            btn.onClick.AddListener(() => ShowFieldDaemonInspect(daemonsBySlot[idx]));
+                            btn.onClick.AddListener(() => ShowFieldDaemonInspect(daemon));
                     }
                 }
             }
@@ -5440,7 +6223,7 @@ namespace DualCraft.UI
             closeRT.offsetMin = Vector2.zero;
             closeRT.offsetMax = Vector2.zero;
             var closeTMP = closeGO.AddComponent<TextMeshProUGUI>();
-            closeTMP.text = "Tap anywhere to close";
+            closeTMP.text = "Click anywhere to close";
             closeTMP.fontSize = 11;
             closeTMP.color = new Color(0.45f, 0.42f, 0.40f);
             closeTMP.alignment = TextAlignmentOptions.Center;
@@ -5450,9 +6233,9 @@ namespace DualCraft.UI
         }
 
         // ─── Content Hashing (skip unnecessary UI rebuilds) ──
-        private static int ComputeHandHash(PlayerState player)
+        private static int ComputeHandHash(PlayerState player, int selectedCardIndex)
         {
-            int hash = player.Hand.Count * 397 + player.Will;
+            int hash = player.Hand.Count * 397 + player.Will + (selectedCardIndex + 11) * 17;
             for (int i = 0; i < player.Hand.Count; i++)
                 hash = hash * 31 + player.Hand[i].Card.cardName.GetHashCode();
             return hash;
@@ -5730,7 +6513,7 @@ namespace DualCraft.UI
 
             RectTransform portraitFrame = EnsureInvokerBadgeImage(cardRect, "PortraitFrame", "UI/frame-invoker",
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-62f, 1f), new Vector2(Mathf.Lerp(50f, 58f, layoutT), Mathf.Lerp(50f, 58f, layoutT)),
+                new Vector2(-66f, 1f), new Vector2(Mathf.Lerp(58f, 68f, layoutT), Mathf.Lerp(58f, 68f, layoutT)),
                 new Color(elemColor.r, elemColor.g, elemColor.b, activeTurn ? 0.92f : 0.60f), false);
             var portraitFrameOutline = portraitFrame.GetComponent<Outline>() ?? portraitFrame.gameObject.AddComponent<Outline>();
             portraitFrameOutline.effectColor = new Color(elemColor.r, elemColor.g, elemColor.b, 0.60f);
@@ -5738,7 +6521,7 @@ namespace DualCraft.UI
 
             EnsureInvokerBadgeSprite(portraitFrame, "Portrait", invokerPortrait,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(Mathf.Lerp(38f, 44f, layoutT), Mathf.Lerp(38f, 44f, layoutT)),
+                Vector2.zero, new Vector2(Mathf.Lerp(46f, 54f, layoutT), Mathf.Lerp(46f, 54f, layoutT)),
                 new Color(1f, 1f, 1f, invokerPortrait != null ? 1f : 0f));
 
             RectTransform core = EnsureInvokerBadgeImage(cardRect, "Core", "UI/frame-invoker",
@@ -5762,26 +6545,26 @@ namespace DualCraft.UI
 
             EnsureInvokerBadgeImage(cardRect, "StoredIcon", "UI/icon-mana",
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(66f, 10f), new Vector2(14f, 14f),
+                new Vector2(70f, 12f), new Vector2(21f, 21f),
                 new Color(0.58f, 0.84f, 1f, 0.95f), false);
             EnsureInvokerBadgeText(cardRect, "StoredValue", player.Will.ToString(),
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(66f, -8f), new Vector2(26f, 14f),
-                12f, new Color(0.88f, 0.96f, 1f));
+                new Vector2(70f, -9f), new Vector2(44f, 22f),
+                19f, new Color(0.88f, 0.96f, 1f));
             EnsureInvokerBadgeText(cardRect, "StoredLabel", "SE",
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(66f, -23f), new Vector2(32f, 11f),
-                7.5f, new Color(0.56f, 0.80f, 0.92f), FontStyles.Bold, TextAlignmentOptions.Center);
+                new Vector2(70f, -27f), new Vector2(44f, 13f),
+                10f, new Color(0.56f, 0.80f, 0.92f), FontStyles.Bold, TextAlignmentOptions.Center);
 
             EnsureInvokerBadgeImage(cardRect, "PillarIcon", "UI/icon-shield",
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(91f, 10f), new Vector2(14f, 14f),
-                new Color(0.96f, 0.84f, 0.56f, 0.95f), false);
-            EnsureInvokerBadgeText(cardRect, "PillarValue", intactPillars.ToString(),
+                Color.clear, false);
+            EnsureInvokerBadgeText(cardRect, "PillarValue", string.Empty,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(91f, -8f), new Vector2(26f, 14f),
                 12f, new Color(0.97f, 0.95f, 0.88f));
-            EnsureInvokerBadgeText(cardRect, "PillarLabel", "PILs",
+            EnsureInvokerBadgeText(cardRect, "PillarLabel", string.Empty,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(91f, -23f), new Vector2(36f, 11f),
                 7.5f, new Color(0.88f, 0.80f, 0.62f), FontStyles.Bold, TextAlignmentOptions.Center);
@@ -5853,7 +6636,163 @@ namespace DualCraft.UI
             RefreshVoidPile(FindRootRect("P2VoidZone"), "VOID", state.Players[AIPlayerIndex].AshePile);
             RefreshSealPool(FindRootRect("P1SealZone"), "SEAL WARD", state.Players[LocalPlayer].SealZone.Count);
             RefreshSealPool(FindRootRect("P2SealZone"), "SEAL WARD", state.Players[AIPlayerIndex].SealZone.Count);
+            RefreshSourceLine(FindRootRect("P1SourceZone"), state.Players[LocalPlayer], LocalPlayer);
+            RefreshSourceLine(FindRootRect("P2SourceZone"), state.Players[AIPlayerIndex], AIPlayerIndex);
             RefreshDomainZone(FindRootRect("ActiveDomainZone"), state.ActiveDomain);
+        }
+
+        private void RefreshSourceLine(RectTransform zone, PlayerState player, int playerIndex)
+        {
+            if (zone == null)
+                return;
+
+            var bg = zone.GetComponent<Image>() ?? zone.gameObject.AddComponent<Image>();
+            bool isOpponent = playerIndex == AIPlayerIndex;
+            bool exposedOpponentSources = isOpponent
+                && _waitingForTarget
+                && _selectedAttackerIndex >= 0
+                && player.Field.All(d => d == null || d.Stealthed);
+            bg.color = exposedOpponentSources
+                ? new Color(0.18f, 0.055f, 0.035f, 0.76f)
+                : new Color(0.055f, 0.048f, 0.060f, 0.62f);
+            bg.raycastTarget = false;
+
+            var outline = zone.GetComponent<Outline>() ?? zone.gameObject.AddComponent<Outline>();
+            outline.effectColor = exposedOpponentSources
+                ? new Color(1f, 0.42f, 0.24f, 0.78f)
+                : new Color(0.92f, 0.74f, 0.36f, 0.38f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            RectTransform content = PreparePileContent(zone);
+            ClearChildren(content);
+
+            var sources = player?.AsheCards?
+                .Where(a => a?.Card != null && string.IsNullOrEmpty(a.AssignedDaemonInstanceId))
+                .ToList() ?? new List<AsheCardInstance>();
+            int income = sources.Where(s => s.SuppressedTurnsRemaining <= 0).Sum(s => Mathf.Max(1, s.Card.sePerTurn));
+            int offline = sources.Count(s => s.SuppressedTurnsRemaining > 0);
+            string subtitle = sources.Count == 0
+                ? "0"
+                : $"+{income} SE{(offline > 0 ? $"  {offline} raided" : string.Empty)}";
+            ConfigurePileLabels(zone, playerIndex == LocalPlayer ? "SOURCES" : "ENEMY SRC", subtitle);
+            EnsureSocketLabel(zone, "SourceHint",
+                exposedOpponentSources ? "RAID" : string.Empty,
+                new Vector2(6f, 18f), new Vector2(-6f, 32f), 8.2f, FontStyles.Bold,
+                exposedOpponentSources ? new Color(1f, 0.72f, 0.48f, 0.95f) : Color.clear,
+                TextAlignmentOptions.Bottom);
+
+            if (sources.Count == 0)
+            {
+                CreatePilePlaceholder(content, "set Source cards here");
+                return;
+            }
+
+            bool compactStack = zone.rect.height > zone.rect.width * 1.1f;
+            int visible = Mathf.Min(sources.Count, compactStack ? 3 : 5);
+            float spacing = visible <= 1 ? 0f : Mathf.Min(78f, content.rect.width / Mathf.Max(1, visible - 1) * 0.82f);
+            float startX = -spacing * (visible - 1) * 0.5f;
+            for (int i = 0; i < visible; i++)
+            {
+                AsheCardInstance source = sources[i];
+                var go = Instantiate(cardPrefab, content);
+                go.name = $"SourceCard_{i}";
+                Vector2 cardPosition = compactStack
+                    ? new Vector2(-8f + i * 7f, 10f - i * 9f)
+                    : new Vector2(startX + i * spacing, 0f);
+                ApplySourceLineCard(go, cardPosition, source, compactStack);
+                var visual = go.GetComponent<CardVisual>();
+                if (visual != null)
+                    visual.SetCard(source.Card);
+
+                AddSourceStatusBadge(go.transform as RectTransform, source);
+                var btn = go.GetComponent<Button>() ?? go.AddComponent<Button>();
+                btn.onClick.RemoveAllListeners();
+                int captured = player.AsheCards.IndexOf(source);
+                if (exposedOpponentSources && captured >= 0)
+                    btn.onClick.AddListener(() => OnOpponentSourceClicked(captured));
+                else
+                    btn.onClick.AddListener(() => ShowCardInspectReadOnly(source.Card));
+            }
+
+            if (sources.Count > visible)
+                EnsureSocketLabel(zone, "SourceOverflow", $"+{sources.Count - visible} more",
+                    new Vector2(-86f, 2f), new Vector2(-6f, 18f), 8.4f, FontStyles.Bold,
+                    new Color(0.92f, 0.96f, 1f, 0.88f), TextAlignmentOptions.BottomRight);
+            else
+                EnsureSocketLabel(zone, "SourceOverflow", string.Empty,
+                    Vector2.zero, Vector2.zero, 8f, FontStyles.Bold, Color.clear, TextAlignmentOptions.Center);
+        }
+
+        private void ApplySourceLineCard(GameObject cardGO, Vector2 anchoredPosition, AsheCardInstance source, bool compactStack)
+        {
+            if (cardGO == null)
+                return;
+
+            var rt = cardGO.GetComponent<RectTransform>();
+            if (rt == null)
+                return;
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = anchoredPosition;
+            rt.sizeDelta = compactStack ? new Vector2(92f, 130f) : new Vector2(72f, 102f);
+            rt.localScale = compactStack ? Vector3.one * 0.78f : Vector3.one * 0.92f;
+            rt.localRotation = compactStack
+                ? Quaternion.Euler(0f, 0f, Mathf.Clamp(anchoredPosition.x * 0.7f, -8f, 8f))
+                : Quaternion.identity;
+
+            var group = cardGO.GetComponent<CanvasGroup>() ?? cardGO.AddComponent<CanvasGroup>();
+            group.alpha = source != null && source.SuppressedTurnsRemaining > 0 ? 0.55f : 1f;
+            group.blocksRaycasts = true;
+
+            var outline = cardGO.GetComponent<Outline>() ?? cardGO.AddComponent<Outline>();
+            outline.effectColor = source != null && source.SuppressedTurnsRemaining > 0
+                ? new Color(1f, 0.42f, 0.24f, 0.86f)
+                : new Color(0.96f, 0.78f, 0.36f, 0.68f);
+            outline.effectDistance = new Vector2(2f, -2f);
+            CardShadowUtility.EnsureShadow(cardGO);
+        }
+
+        private void AddSourceStatusBadge(RectTransform parent, AsheCardInstance source)
+        {
+            if (parent == null || source?.Card == null)
+                return;
+
+            string text = source.SuppressedTurnsRemaining > 0
+                ? "RAIDED"
+                : $"+{Mathf.Max(1, source.Card.sePerTurn)} SE";
+            Color color = source.SuppressedTurnsRemaining > 0
+                ? new Color(0.82f, 0.16f, 0.10f, 0.94f)
+                : new Color(0.12f, 0.42f, 0.62f, 0.94f);
+
+            var badge = new GameObject("SourceStatus", typeof(RectTransform), typeof(Image));
+            badge.transform.SetParent(parent, false);
+            var rt = badge.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.04f, 0.74f);
+            rt.anchorMax = new Vector2(0.96f, 0.98f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            var img = badge.GetComponent<Image>();
+            img.color = color;
+            img.raycastTarget = false;
+
+            var label = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+            label.transform.SetParent(badge.transform, false);
+            var lrt = label.GetComponent<RectTransform>();
+            lrt.anchorMin = Vector2.zero;
+            lrt.anchorMax = Vector2.one;
+            lrt.offsetMin = Vector2.zero;
+            lrt.offsetMax = Vector2.zero;
+            var tmp = label.GetComponent<TextMeshProUGUI>();
+            tmp.text = text;
+            tmp.fontSize = 8f;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.enableAutoSizing = true;
+            tmp.fontSizeMin = 5f;
+            tmp.fontSizeMax = 8f;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = Color.white;
+            tmp.raycastTarget = false;
         }
 
         private void RefreshDomainZone(RectTransform zone, ActiveDomain activeDomain)
@@ -6060,6 +6999,8 @@ namespace DualCraft.UI
             RectTransform playerInvoker = FindRootRect("P1InvokerZone");
             RectTransform p1SealZone = FindRootRect("P1SealZone");
             RectTransform p2SealZone = FindRootRect("P2SealZone");
+            RectTransform p1SourceZone = FindRootRect("P1SourceZone");
+            RectTransform p2SourceZone = FindRootRect("P2SourceZone");
             RectTransform activeDomainZone = FindRootRect("ActiveDomainZone");
 
             if (p2HandContainer != null)
@@ -6074,6 +7015,10 @@ namespace DualCraft.UI
                 p2SealZone.SetAsLastSibling();
             if (p1SealZone != null)
                 p1SealZone.SetAsLastSibling();
+            if (p2SourceZone != null)
+                p2SourceZone.SetAsLastSibling();
+            if (p1SourceZone != null)
+                p1SourceZone.SetAsLastSibling();
             if (activeDomainZone != null)
                 activeDomainZone.SetAsLastSibling();
             if (_cardPreviewOverlay != null)
@@ -6536,7 +7481,7 @@ namespace DualCraft.UI
                 if (visual != null)
                     visual.SetCard(ashePile[count - 1].Card);
 
-                // Tap pile to browse all discarded cards
+                // Click pile to browse all discarded cards
                 var btn = pile.GetComponent<Button>();
                 if (btn == null) btn = pile.gameObject.AddComponent<Button>();
                 btn.onClick.RemoveAllListeners();
@@ -6849,7 +7794,7 @@ namespace DualCraft.UI
             if (player.Field.Count <= 0) return false;
             var card = player.Hand[_pendingAsheHandIndex].Card;
             if (card is not AsheCardData ashe) return false;
-            return player.Will >= card.GetWillCost() && player.Field.Any(d => ashe.Matches(d.Card));
+            return player.Field.Any(d => ashe.Matches(d.Card));
         }
 
         private void ConfirmAshePlayTarget(int targetDaemonIndex)
@@ -7076,9 +8021,51 @@ namespace DualCraft.UI
                 SealCardData => player.SealZone.Count < GameConstants.MaxSeals,
                 DomainCardData => true,
                 DispelCardData => true,
-                AsheCardData ashe => player.Field.Any(d => ashe.Matches(d.Card)),
+                HexCardData => true,
+                AsheCardData => true,
                 _ => false,
             };
+        }
+
+        private void WireSummonSeatClickTarget(GameObject target, int handIndex, int slotIndex)
+        {
+            if (target == null)
+                return;
+
+            var graphic = target.GetComponent<Graphic>();
+            if (graphic == null)
+            {
+                var image = target.AddComponent<Image>();
+                image.color = new Color(1f, 1f, 1f, 0.001f);
+                image.raycastTarget = true;
+                graphic = image;
+            }
+            else
+            {
+                graphic.raycastTarget = true;
+            }
+
+            var button = target.GetComponent<Button>() ?? target.AddComponent<Button>();
+            button.transition = Selectable.Transition.None;
+            button.targetGraphic = graphic;
+            button.interactable = true;
+            button.navigation = new Navigation { mode = Navigation.Mode.None };
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() =>
+            {
+                Debug.Log($"[Battle] Summon seat clicked: hand={handIndex} slot={slotIndex} target={target.name}");
+                ConfirmDaemonPlay(handIndex, slotIndex);
+            });
+
+            var trigger = target.GetComponent<EventTrigger>() ?? target.AddComponent<EventTrigger>();
+            trigger.triggers.RemoveAll(entry => entry.eventID == EventTriggerType.PointerClick);
+            var pointerEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
+            pointerEntry.callback.AddListener(_ =>
+            {
+                Debug.Log($"[Battle] Summon seat pointer click: hand={handIndex} slot={slotIndex} target={target.name}");
+                ConfirmDaemonPlay(handIndex, slotIndex);
+            });
+            trigger.triggers.Add(pointerEntry);
         }
 
         private int FindStrongestDaemon(PlayerState player)
@@ -7139,6 +8126,32 @@ namespace DualCraft.UI
             outline.effectDistance = new Vector2(2f, -2f);
         }
 
+        private void AddSelectedCardHighlight(GameObject cardGO)
+        {
+            if (cardGO == null || cardGO.transform.Find("SelectedCardHighlight") != null)
+                return;
+
+            var overlay = new GameObject("SelectedCardHighlight", typeof(RectTransform), typeof(Image), typeof(Outline));
+            overlay.transform.SetParent(cardGO.transform, false);
+            overlay.transform.SetAsFirstSibling();
+
+            var rt = overlay.GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = new Vector2(-6f, -6f);
+            rt.offsetMax = new Vector2(6f, 6f);
+
+            var img = overlay.GetComponent<Image>();
+            img.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            img.type = img.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            img.color = new Color(0.42f, 0.78f, 1f, 0.14f);
+            img.raycastTarget = false;
+
+            var outline = overlay.GetComponent<Outline>();
+            outline.effectColor = new Color(0.50f, 0.90f, 1f, 0.82f);
+            outline.effectDistance = new Vector2(3f, -3f);
+        }
+
         private static void RemoveNamedChild(Transform parent, string childName)
         {
             if (parent == null || string.IsNullOrEmpty(childName))
@@ -7166,85 +8179,188 @@ namespace DualCraft.UI
             pulser.Init(img, color, minA, maxA, speed);
         }
 
-        /// <summary>
-        /// Adds a coloured type-effectiveness badge at the top of a target daemon card
-        /// during attack targeting. Green/orange = super effective, gray/blue = not effective,
-        /// no badge for neutral.
-        /// </summary>
-        private void AddEffectivenessLabel(RectTransform parentRT, DaemonInstance targetDaemon)
+        private void AddTargetMatchupHoverOutline(GameObject cardGO, DaemonInstance targetDaemon)
         {
-            if (parentRT == null || targetDaemon?.Card == null) return;
-            if (_selectedAttackerIndex < 0) return;
+            if (cardGO == null || targetDaemon?.Card == null)
+                return;
 
-            var localField = _battle?.State?.Players[LocalPlayer]?.Field;
-            if (localField == null || _selectedAttackerIndex >= localField.Count) return;
+            if (!TryResolveTargetMatchupOutlineColor(targetDaemon, out Color outlineColor))
+                return;
 
-            var attackerDaemon = localField[_selectedAttackerIndex];
-            if (attackerDaemon?.Card is not DaemonCardData attackerCard) return;
-            if (targetDaemon.Card is not DaemonCardData defenderCard) return;
+            var outlineGO = new GameObject("TargetMatchupHoverOutline", typeof(RectTransform), typeof(Image), typeof(Outline));
+            outlineGO.transform.SetParent(cardGO.transform, false);
+            var outlineRT = outlineGO.GetComponent<RectTransform>();
+            outlineRT.anchorMin = Vector2.zero;
+            outlineRT.anchorMax = Vector2.one;
+            outlineRT.offsetMin = new Vector2(-6f, -6f);
+            outlineRT.offsetMax = new Vector2(6f, 6f);
 
-            float mult = Core.ElementSystem.GetElementMatchup(attackerCard.element, defenderCard.element);
+            var image = outlineGO.GetComponent<Image>();
+            image.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            image.type = image.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            image.color = new Color(outlineColor.r, outlineColor.g, outlineColor.b, 0.02f);
+            image.raycastTarget = false;
 
-            // Only show badge when it is NOT neutral
-            if (Mathf.Approximately(mult, Core.GameConstants.NeutralMult)) return;
+            var outline = outlineGO.GetComponent<Outline>();
+            outline.effectColor = new Color(outlineColor.r, outlineColor.g, outlineColor.b, 0.96f);
+            outline.effectDistance = new Vector2(5f, -5f);
+            outline.useGraphicAlpha = false;
+            outlineGO.SetActive(false);
 
-            bool superEffective = mult >= Core.GameConstants.SuperEffectiveMult;
+            var trigger = cardGO.GetComponent<EventTrigger>() ?? cardGO.AddComponent<EventTrigger>();
+            trigger.triggers ??= new List<EventTrigger.Entry>();
 
-            var badgeGO  = new GameObject("EffectBadge");
-            badgeGO.transform.SetParent(parentRT, false);
-            var badgeRT  = badgeGO.AddComponent<RectTransform>();
-            badgeRT.anchorMin = new Vector2(0.04f, 0.78f);
-            badgeRT.anchorMax = new Vector2(0.96f, 0.96f);
-            badgeRT.offsetMin = Vector2.zero;
-            badgeRT.offsetMax = Vector2.zero;
+            var enter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            enter.callback.AddListener(_ => outlineGO.SetActive(true));
+            trigger.triggers.Add(enter);
 
-            var badgeBG  = badgeGO.AddComponent<Image>();
-            badgeBG.color = superEffective
-                ? new Color(0.90f, 0.52f, 0.08f, 0.88f)   // orange — super effective
-                : new Color(0.22f, 0.28f, 0.40f, 0.82f);  // steel blue — resisted
-            badgeBG.raycastTarget = false;
-
-            var lblGO = new GameObject("EffectLbl");
-            lblGO.transform.SetParent(badgeGO.transform, false);
-            var lblRT = lblGO.AddComponent<RectTransform>();
-            lblRT.anchorMin = Vector2.zero;
-            lblRT.anchorMax = Vector2.one;
-            lblRT.offsetMin = Vector2.zero;
-            lblRT.offsetMax = Vector2.zero;
-            var lbl = lblGO.AddComponent<TextMeshProUGUI>();
-            lbl.text = superEffective ? "SUPER EFFECTIVE" : "NOT EFFECTIVE";
-            lbl.fontSize = 8;
-            lbl.fontStyle = FontStyles.Bold;
-            lbl.color = Color.white;
-            lbl.alignment = TextAlignmentOptions.Center;
-            lbl.raycastTarget = false;
+            var exit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
+            exit.callback.AddListener(_ => outlineGO.SetActive(false));
+            trigger.triggers.Add(exit);
         }
 
-
-        private void AddSelectTargetLabel(GameObject cardGO)
+        private bool TryResolveTargetMatchupOutlineColor(DaemonInstance targetDaemon, out Color color)
         {
-            var label = new GameObject("SelectTargetLabel");
-            label.transform.SetParent(cardGO.transform, false);
-            var rt = label.AddComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0.05f, 0.40f);
-            rt.anchorMax = new Vector2(0.95f, 0.60f);
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            var bg = label.AddComponent<Image>();
-            bg.color = new Color(0f, 0f, 0f, 0.65f);
-            bg.raycastTarget = false;
-            var textGO = new GameObject("Text");
-            textGO.transform.SetParent(label.transform, false);
-            var trt = textGO.AddComponent<RectTransform>();
-            trt.anchorMin = Vector2.zero;
-            trt.anchorMax = Vector2.one;
-            trt.offsetMin = Vector2.zero;
-            trt.offsetMax = Vector2.zero;
-            var tmp = textGO.AddComponent<TextMeshProUGUI>();
-            tmp.text = "SELECT TARGET";
-            tmp.fontSize = 9;
+            color = Color.clear;
+            if (_selectedAttackerIndex < 0 || targetDaemon?.Card == null)
+                return false;
+
+            var localField = _battle?.State?.Players[LocalPlayer]?.Field;
+            if (localField == null || _selectedAttackerIndex >= localField.Count)
+                return false;
+
+            var attackerDaemon = localField[_selectedAttackerIndex];
+            if (attackerDaemon?.Card is not DaemonCardData attackerCard)
+                return false;
+            if (targetDaemon.Card is not DaemonCardData defenderCard)
+                return false;
+
+            float mult = Core.ElementSystem.GetElementMatchup(attackerCard.element, defenderCard.element);
+            if (mult > Core.GameConstants.NeutralMult + 0.05f)
+            {
+                color = new Color(0.18f, 1f, 0.38f, 1f);
+                return true;
+            }
+
+            if (mult < Core.GameConstants.NeutralMult - 0.05f)
+            {
+                color = new Color(1f, 0.16f, 0.14f, 1f);
+                return true;
+            }
+
+            return false;
+        }
+
+        private void AddHandTacticalBadges(GameObject cardGO, CardData card, PlayerState localPlayer)
+        {
+            if (cardGO == null || card == null || localPlayer == null)
+                return;
+
+            var root = new GameObject("HandTacticalBadges", typeof(RectTransform));
+            root.transform.SetParent(cardGO.transform, false);
+            var rootRT = root.GetComponent<RectTransform>();
+            rootRT.anchorMin = new Vector2(0.03f, 0.72f);
+            rootRT.anchorMax = new Vector2(0.97f, 0.98f);
+            rootRT.offsetMin = Vector2.zero;
+            rootRT.offsetMax = Vector2.zero;
+
+            if (card is AsheCardData ashe)
+            {
+                string affinity = BuildAsheAffinityLabel(ashe);
+                int compatibleCount = localPlayer.Field?.Count(d => d != null && ashe.Matches(d.Card)) ?? 0;
+                AddHandBadge(root.transform, affinity, new Color(0.12f, 0.28f, 0.34f, 0.90f), new Vector2(0f, 0.50f), new Vector2(1f, 1f));
+                AddHandBadge(root.transform,
+                    compatibleCount > 0 ? $"BOND x{compatibleCount}" : "SOURCE MODE",
+                    compatibleCount > 0 ? new Color(0.18f, 0.58f, 0.32f, 0.92f) : new Color(0.12f, 0.42f, 0.62f, 0.92f),
+                    new Vector2(0f, 0f),
+                    new Vector2(0.50f, 0.46f));
+                AddHandBadge(root.transform,
+                    $"+{Mathf.Max(1, ashe.sePerTurn)} SE",
+                    new Color(0.18f, 0.38f, 0.74f, 0.92f),
+                    new Vector2(0.53f, 0f),
+                    new Vector2(1f, 0.46f));
+                return;
+            }
+
+            if (card is DaemonCardData daemonCard)
+            {
+                return;
+            }
+
+            if (card is DispelCardData dispel && dispel.canCounterAttack)
+            {
+                string target = dispel.matchAttackElement
+                    ? dispel.responseElement.ToString().ToUpperInvariant()
+                    : dispel.matchAttackerCreatureType
+                        ? dispel.responseCreatureType.ToString().ToUpperInvariant()
+                        : "ANY";
+                AddHandBadge(root.transform, $"STOP {target}", new Color(0.18f, 0.42f, 0.58f, 0.92f), new Vector2(0f, 0.50f), new Vector2(1f, 1f));
+                AddHandBadge(root.transform, $"-{Mathf.Max(1, dispel.preventDamage)} DMG", new Color(0.18f, 0.30f, 0.52f, 0.90f), Vector2.zero, new Vector2(1f, 0.46f));
+            }
+        }
+
+        private static string BuildAsheAffinityLabel(AsheCardData ashe)
+        {
+            if (ashe == null)
+                return "SOURCE";
+            string affinity = ashe.matchType == AsheMatchType.Element
+                ? ashe.targetElement.ToString().ToUpperInvariant()
+                : ashe.targetCreatureType.ToString().ToUpperInvariant();
+            return $"{affinity} SOURCE";
+        }
+
+        private static string BuildSourceAffinityLabel(AsheCardData ashe)
+        {
+            if (ashe == null)
+                return "Source";
+            string affinity = ashe.matchType == AsheMatchType.Element
+                ? ashe.targetElement.ToString()
+                : ashe.targetCreatureType.ToString();
+            return $"{affinity} Source";
+        }
+
+        private static float GetTotalMatchupMultiplier(DaemonCardData attacker, DaemonCardData defender)
+        {
+            if (attacker == null || defender == null)
+                return GameConstants.NeutralMult;
+
+            float elemMult = ElementSystem.GetElementMatchup(attacker.element, defender.element);
+            float creatureMult = ElementSystem.GetCreatureMatchup(attacker.creatureType, defender.creatureType);
+            return elemMult * creatureMult;
+        }
+
+        private static void AddHandBadge(Transform parent, string text, Color color, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            var badge = new GameObject("Badge", typeof(RectTransform), typeof(Image));
+            badge.transform.SetParent(parent, false);
+            var badgeRT = badge.GetComponent<RectTransform>();
+            badgeRT.anchorMin = anchorMin;
+            badgeRT.anchorMax = anchorMax;
+            badgeRT.offsetMin = new Vector2(1f, 1f);
+            badgeRT.offsetMax = new Vector2(-1f, -1f);
+
+            var image = badge.GetComponent<Image>();
+            image.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            image.type = image.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            image.color = color;
+            image.raycastTarget = false;
+
+            var label = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            label.transform.SetParent(badge.transform, false);
+            var labelRT = label.GetComponent<RectTransform>();
+            labelRT.anchorMin = Vector2.zero;
+            labelRT.anchorMax = Vector2.one;
+            labelRT.offsetMin = new Vector2(3f, 0f);
+            labelRT.offsetMax = new Vector2(-3f, 0f);
+
+            var tmp = label.GetComponent<TextMeshProUGUI>();
+            tmp.text = text;
+            tmp.fontSize = 8f;
+            tmp.fontSizeMin = 5.5f;
+            tmp.fontSizeMax = 8f;
+            tmp.enableAutoSizing = true;
             tmp.fontStyle = FontStyles.Bold;
-            tmp.color = new Color(1f, 0.85f, 0.4f);
+            tmp.color = Color.white;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.raycastTarget = false;
         }
@@ -7275,10 +8391,17 @@ namespace DualCraft.UI
         {
             // Hide NEXT PHASE button — we repurpose endTurnButton for phase transitions
             if (nextPhaseButton) nextPhaseButton.gameObject.SetActive(false);
+            if (_forfeitConfirmUntil > 0f && Time.unscaledTime > _forfeitConfirmUntil)
+            {
+                _forfeitConfirmUntil = -1f;
+                SetForfeitButtonLabel("FORFEIT");
+            }
 
             bool canAct = isPlayerTurn && (state.Phase == GamePhase.Main || state.Phase == GamePhase.Combat);
             string label;
-            if (state.Phase == GamePhase.Main)
+            if (state.Phase == GamePhase.Main && isPlayerTurn && TryGetSelectedSummonHandIndex(state.Players[LocalPlayer], out _))
+                label = "SUMMON";
+            else if (state.Phase == GamePhase.Main)
                 label = isPlayerTurn
                     ? (HasCommittedMainActionThisTurn(state, LocalPlayer) ? "BATTLE" : "PREPARE")
                     : "WAIT";
@@ -7291,6 +8414,176 @@ namespace DualCraft.UI
             else
                 label = "WAIT";
             SetActionButtonState(endTurnButton, canAct, label);
+        }
+
+        private void EnsureBattleDecisionPrompt(RectTransform canvasRoot)
+        {
+            if (_battleDecisionPanel != null || canvasRoot == null)
+                return;
+
+            _battleDecisionPanel = new GameObject("BattleDecisionPrompt", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+            _battleDecisionPanel.transform.SetParent(canvasRoot, false);
+            var rect = _battleDecisionPanel.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.38f, 0.555f);
+            rect.anchorMax = new Vector2(0.62f, 0.605f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var bg = _battleDecisionPanel.GetComponent<Image>();
+            bg.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            bg.type = bg.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            bg.color = new Color(0.025f, 0.024f, 0.036f, 0.66f);
+            bg.raycastTarget = false;
+
+            var group = _battleDecisionPanel.GetComponent<CanvasGroup>();
+            group.blocksRaycasts = false;
+            group.interactable = false;
+
+            var accentGo = new GameObject("Accent", typeof(RectTransform), typeof(Image));
+            accentGo.transform.SetParent(_battleDecisionPanel.transform, false);
+            var accentRect = accentGo.GetComponent<RectTransform>();
+            accentRect.anchorMin = new Vector2(0f, 0f);
+            accentRect.anchorMax = new Vector2(0.018f, 1f);
+            accentRect.offsetMin = Vector2.zero;
+            accentRect.offsetMax = Vector2.zero;
+            _battleDecisionAccentImage = accentGo.GetComponent<Image>();
+            _battleDecisionAccentImage.color = HighlightPlay;
+            _battleDecisionAccentImage.raycastTarget = false;
+
+            var titleGo = new GameObject("Title", typeof(RectTransform), typeof(TextMeshProUGUI));
+            titleGo.transform.SetParent(_battleDecisionPanel.transform, false);
+            var titleRect = titleGo.GetComponent<RectTransform>();
+            titleRect.anchorMin = new Vector2(0.045f, 0.48f);
+            titleRect.anchorMax = new Vector2(0.97f, 0.94f);
+            titleRect.offsetMin = Vector2.zero;
+            titleRect.offsetMax = Vector2.zero;
+            _battleDecisionTitleText = titleGo.GetComponent<TextMeshProUGUI>();
+            _battleDecisionTitleText.fontSize = 13f;
+            _battleDecisionTitleText.fontStyle = FontStyles.Bold;
+            _battleDecisionTitleText.alignment = TextAlignmentOptions.Center;
+            _battleDecisionTitleText.enableAutoSizing = true;
+            _battleDecisionTitleText.fontSizeMin = 8f;
+            _battleDecisionTitleText.fontSizeMax = 13f;
+            _battleDecisionTitleText.raycastTarget = false;
+
+            var bodyGo = new GameObject("Body", typeof(RectTransform), typeof(TextMeshProUGUI));
+            bodyGo.transform.SetParent(_battleDecisionPanel.transform, false);
+            var bodyRect = bodyGo.GetComponent<RectTransform>();
+            bodyRect.anchorMin = new Vector2(0.045f, 0.08f);
+            bodyRect.anchorMax = new Vector2(0.97f, 0.48f);
+            bodyRect.offsetMin = Vector2.zero;
+            bodyRect.offsetMax = Vector2.zero;
+            _battleDecisionBodyText = bodyGo.GetComponent<TextMeshProUGUI>();
+            _battleDecisionBodyText.fontSize = 8.5f;
+            _battleDecisionBodyText.alignment = TextAlignmentOptions.Center;
+            _battleDecisionBodyText.enableAutoSizing = true;
+            _battleDecisionBodyText.fontSizeMin = 6.5f;
+            _battleDecisionBodyText.fontSizeMax = 8.5f;
+            _battleDecisionBodyText.raycastTarget = false;
+        }
+
+        private void UpdateBattleDecisionPrompt(GameState state, bool isPlayerTurn)
+        {
+            if (_battleDecisionPanel == null && transform is RectTransform root)
+                EnsureBattleDecisionPrompt(root);
+            if (_battleDecisionPanel == null || state == null)
+                return;
+
+            if (state.GameOver)
+            {
+                _battleDecisionPanel.SetActive(false);
+                return;
+            }
+
+            var localPlayer = state.Players[LocalPlayer];
+            string title;
+            string body;
+            Color accent;
+
+            if (!isPlayerTurn)
+            {
+                title = "OPPONENT TURN";
+                body = "Watch the board. Your hand stays readable.";
+                accent = new Color(0.62f, 0.66f, 0.78f, 0.90f);
+            }
+            else if (state.Phase == GamePhase.Draw)
+            {
+                title = "DRAWING";
+                body = "Your next card and Spirit Energy are being prepared.";
+                accent = new Color(0.58f, 0.76f, 1f, 0.95f);
+            }
+            else if (TryGetSelectedSummonHandIndex(localPlayer, out int summonHandIndex))
+            {
+                string cardName = localPlayer.Hand[summonHandIndex].Card.cardName;
+                title = $"SUMMON {cardName}";
+                body = "Choose a glowing field seat, press SUMMON, or click the card again to cancel.";
+                accent = new Color(0.96f, 0.82f, 0.34f, 0.96f);
+            }
+            else if (IsAsheTargetSelectionActive(localPlayer))
+            {
+                title = "ASSIGN SOURCE";
+                body = "Choose a compatible daemon glowing on your field.";
+                accent = new Color(0.42f, 1f, 0.58f, 0.96f);
+            }
+            else if (IsMaskTargetSelectionActive(localPlayer))
+            {
+                title = "CHOOSE RELIC TARGET";
+                body = "Bind the relic to one of your daemons.";
+                accent = new Color(0.78f, 0.52f, 1f, 0.96f);
+            }
+            else if (_waitingForTarget && _selectedAttackerIndex >= 0 && _selectedAttackerIndex < localPlayer.Field.Count)
+            {
+                var attacker = localPlayer.Field[_selectedAttackerIndex];
+                title = $"DAMAGE: {attacker.Attack}";
+                body = GameConstants.EnableTacticsBoardMode
+                    ? IsTacticsRangedAttacker(attacker)
+                        ? "Ranged: choose any daemon. Cross-lane shots need accuracy. If no daemon defends, raid one Source or strike the Invoker."
+                        : "Melee: attack the daemon straight ahead. If that lane is open, raid one Source or strike the Invoker."
+                    : "Choose an enemy daemon. If no daemons defend, raid one Source or strike the Invoker.";
+                accent = CombatHitTint;
+            }
+            else if (state.Phase == GamePhase.Main)
+            {
+                title = HasCommittedMainActionThisTurn(state, LocalPlayer) ? "READY FOR BATTLE" : "PREPARE";
+                bool hasSourceInPlay = localPlayer.AsheCards != null && localPlayer.AsheCards.Count > 0;
+                bool hasDaemonInPlay = localPlayer.Field != null && localPlayer.Field.Count > 0;
+                bool hasReadyAttacker = CountReadyAttackers(localPlayer) > 0;
+                body = !hasSourceInPlay && HasPlayableSourceInHand(localPlayer) && !HasCommittedMainActionThisTurn(state, LocalPlayer)
+                    ? "Set a Source first. Sources make Spirit Energy every turn."
+                    : !hasDaemonInPlay
+                        ? "Summon a Daemon to defend you and start attacking."
+                        : hasReadyAttacker
+                            ? "You have a ready Daemon. Press BATTLE."
+                            : "Play a glowing card, use your invoker, or press BATTLE.";
+                accent = HighlightPlay;
+            }
+            else if (state.Phase == GamePhase.Combat)
+            {
+                title = "COMBAT";
+                body = "Select a ready daemon to attack, or press END TURN.";
+                accent = HighlightAttacker;
+            }
+            else
+            {
+                title = "WAIT";
+                body = "The board is resolving.";
+                accent = new Color(0.70f, 0.72f, 0.80f, 0.90f);
+            }
+
+            _battleDecisionPanel.SetActive(true);
+            _battleDecisionPanel.transform.SetAsLastSibling();
+            if (_battleDecisionTitleText != null)
+            {
+                _battleDecisionTitleText.text = title;
+                _battleDecisionTitleText.color = new Color(0.98f, 0.94f, 0.84f, 0.98f);
+            }
+            if (_battleDecisionBodyText != null)
+            {
+                _battleDecisionBodyText.text = body;
+                _battleDecisionBodyText.color = new Color(0.76f, 0.78f, 0.86f, 0.92f);
+            }
+            if (_battleDecisionAccentImage != null)
+                _battleDecisionAccentImage.color = accent;
         }
 
         private void EnsureStoryBattleIntroBanner(RectTransform canvasRoot)
@@ -7506,6 +8799,8 @@ namespace DualCraft.UI
             PlayerState local = state.Players[LocalPlayer];
             bool hasFieldDaemon = local.Field.Count > 0;
             bool readyAttacker = CountReadyAttackers(local) > 0;
+            bool hasSourceInPlay = local.AsheCards != null && local.AsheCards.Count > 0;
+            bool hasSourceInHand = HasPlayableSourceInHand(local);
             if (!isPlayerTurn)
                 _storyTutorialEnemyTurnSeen = true;
 
@@ -7526,11 +8821,18 @@ namespace DualCraft.UI
                     : "Use REMATCH to retry the tutorial duel.";
                 accent = won ? new Color(0.42f, 0.94f, 0.58f, 1f) : new Color(1f, 0.54f, 0.42f, 1f);
             }
+            else if (!hasSourceInPlay && hasSourceInHand && state.Phase == GamePhase.Main)
+            {
+                title = "SET A SOURCE";
+                body = "Sources are free. They make Spirit Energy every turn, which pays for daemon summons, attacks, Hexes, Relics, and Dispels.";
+                footer = "Look for the glowing Source card in your hand.";
+                accent = new Color(0.42f, 1f, 0.58f, 1f);
+            }
             else if (!hasFieldDaemon)
             {
                 title = "SUMMON YOUR FIRST DAEMON";
-                body = "Click a daemon in your hand, then play it onto the field. Summoning costs stored SE, so keep an eye on the resource total.";
-                footer = $"Stored SE: {local.Will}  •  {_storyBattleConfig.battleTitle}";
+                body = "Click a daemon in your hand, then play it onto a glowing field slot. Daemons defend you and do the attacking.";
+                footer = $"Stored SE: {local.Will}  •  Sources in play: {local.AsheCards?.Count ?? 0}";
                 accent = new Color(0.95f, 0.82f, 0.38f, 1f);
             }
             else if (!isPlayerTurn)
@@ -7571,8 +8873,10 @@ namespace DualCraft.UI
                 if (_waitingForTarget && _selectedAttackerIndex >= 0)
                 {
                     title = "CHOOSE A TARGET";
-                    body = "Pick an enemy daemon. The Invoker opens only after enemy daemons are gone; pillars intercept automatically.";
-                    footer = "Highlighted enemy daemons are valid attack destinations.";
+                    body = GameConstants.EnableTacticsBoardMode
+                        ? "Melee daemons attack straight ahead. Ranged daemons can cross lanes. If no daemon defends, raid one Source or strike the Invoker."
+                        : "Pick an enemy daemon. If no daemon defends, raid one Source or strike the Invoker.";
+                    footer = "Super effective, resisted, damage, and shatter text appear at impact.";
                     accent = new Color(1f, 0.42f, 0.30f, 1f);
                 }
                 else if (readyAttacker)
@@ -7585,8 +8889,8 @@ namespace DualCraft.UI
                 else if (_storyTutorialAttackSeen)
                 {
                     title = "FIRST ATTACK LANDED";
-                    body = "Nice. You've seen the core duel rhythm in action. Finish any remaining combat choices, then press END TURN to pass back to the enemy.";
-                    footer = "From here on out, trust the board and manage your SE.";
+                    body = "You have seen the duel loop: Source makes SE, Daemon attacks, weakness changes damage, destroyed Daemons cost Invoker life.";
+                    footer = "Press END TURN when your attacks are finished.";
                     accent = new Color(0.42f, 0.94f, 0.58f, 1f);
                 }
                 else
@@ -7795,13 +9099,9 @@ namespace DualCraft.UI
                     : canFuse
                         ? (_selectedFusionPrimaryIndex >= 0 ? "Choose matching daemon" : "Select twins + a seal")
                         : "Attack and summon here";
-            string playerPillarSubtitle = "Active relic row";
             string opponentFieldSubtitle = waitingForTarget
                 ? "Select a foe"
                 : "Enemy daemon row";
-            string opponentPillarSubtitle = waitingForTarget
-                ? "Relics are inert"
-                : "Shielding relics";
             bool invokerUnleashReady = isPlayerTurn
                 && state.Phase == GamePhase.Main
                 && !localPlayer.InvokerAbilityUsedThisTurn;
@@ -7820,10 +9120,8 @@ namespace DualCraft.UI
 
             UpdateLanePlate(p1HandContainer, "Player Hand", HandTint, "HAND", playerHandSubtitle, canPlayCards);
             UpdateLanePlate(p1FieldContainer, "Player Field", FieldTint, "YOUR FIELD", playerFieldSubtitle, waitingForSummonSeat || canAttack || canFuse);
-            UpdateLanePlate(p1PillarContainer, "Player Pillars", PillarTint, "YOUR PILLARS", playerPillarSubtitle, false);
             UpdateLanePlate(p2HandContainer, "Opponent Hand", HandTint, "ENEMY HAND", "Hidden cards", false);
             UpdateLanePlate(p2FieldContainer, "Opponent Field", FieldTint, "ENEMY FIELD", opponentFieldSubtitle, waitingForTarget);
-            UpdateLanePlate(p2PillarContainer, "Opponent Pillars", PillarTint, "ENEMY PILLARS", opponentPillarSubtitle, waitingForTarget);
             UpdateLanePlate(FindRootRect("P1InvokerZone"), "P1InvokerPlate", InvokerTint, "YOUR INVOKER", playerInvokerSubtitle, false);
             UpdateLanePlate(FindRootRect("P2InvokerZone"), "P2InvokerPlate", InvokerTint, "ENEMY INVOKER", opponentInvokerSubtitle, waitingForTarget && intactOpponentPillars == 0);
         }
@@ -7904,6 +9202,16 @@ namespace DualCraft.UI
             return color;
         }
 
+        private static string GetElementShortLabel(Element element)
+        {
+            return element switch
+            {
+                Element.Dark => "DARK",
+                Element.Flame => "FLAME",
+                _ => element.ToString().ToUpperInvariant(),
+            };
+        }
+
         private static Color LiftColor(Color color, float lift, float alpha)
         {
             return new Color(
@@ -7932,6 +9240,7 @@ namespace DualCraft.UI
 
                 string msg = (entry.Message ?? string.Empty).ToLowerInvariant();
                 if (msg.Contains("summoned") || msg.Contains("played") || msg.Contains("cast")
+                    || msg.Contains("sets source") || msg.Contains("set source")
                     || msg.Contains("equipped") || msg.Contains("mask equipped")
                     || msg.Contains("set a seal") || msg.Contains("activated"))
                     return true;
@@ -7940,10 +9249,25 @@ namespace DualCraft.UI
             return false;
         }
 
+        private static bool HasPlayableSourceInHand(PlayerState player)
+        {
+            return player?.Hand != null && player.Hand.Any(card => card?.Card is AsheCardData);
+        }
+
+        private static bool HasPlayableDaemonInHand(PlayerState player)
+        {
+            if (player?.Hand == null || player.Field == null || player.Field.Count >= GameConstants.MaxFieldDaemons)
+                return false;
+
+            return player.Hand.Any(card =>
+                card?.Card is DaemonCardData daemon
+                && player.Will >= daemon.GetWillCost());
+        }
+
         private static string PhaseDisplayName(GamePhase phase) => phase switch
         {
             GamePhase.Setup => "SETUP",
-            GamePhase.RollSE => "SE ROLL",
+            GamePhase.RollSE => "SOURCE PULSE",
             GamePhase.Draw => "DRAW",
             GamePhase.Main => "MAIN PHASE",
             GamePhase.Combat => "COMBAT",
@@ -8301,6 +9625,17 @@ namespace DualCraft.UI
             {
                 StartCoroutine(UIAnimUtils.PopScale(hpText.transform, 0.18f, hp < prevHp ? 1.18f : 1.1f));
                 hpText.color = hp < prevHp ? new Color(1f, 0.55f, 0.55f) : new Color(0.75f, 1f, 0.8f);
+                RectTransform invokerRect = FindInvokerCardRect(playerIndex);
+                if (invokerRect != null)
+                {
+                    int delta = hp - prevHp;
+                    bool healed = delta > 0;
+                    Color color = healed
+                        ? new Color(0.42f, 1f, 0.56f, 0.96f)
+                        : new Color(1f, 0.18f, 0.14f, 0.98f);
+                    string label = healed ? $"+{delta}" : delta.ToString();
+                    SpawnFloatingCombatText(GetRectWorldPoint(invokerRect) + Vector3.up * 26f, label, color, healed ? 0.92f : 1.08f);
+                }
             }
 
             if (prevWill >= 0 && willText != null && will != prevWill)
@@ -8344,7 +9679,7 @@ namespace DualCraft.UI
             if (GetDisplayedKillCooldownTurns(daemon) > 0) statusIcons += $" CD{GetDisplayedKillCooldownTurns(daemon)}";
             if (daemon.ShieldAmount > 0) statusIcons += $" SH{daemon.ShieldAmount}";
             if (daemon.NextAttackDouble) statusIcons += " x2";
-            if (daemon.Masks.Count > 0) statusIcons += $" MSK{daemon.Masks.Count}";
+            if (daemon.Masks.Count > 0) statusIcons += $" RLC{daemon.Masks.Count}";
             int attackCost = ResolveDisplayedAttackCost(daemon, ownerAsheCards);
 
             var mainTextGo = new GameObject("MainStat");
@@ -8384,6 +9719,24 @@ namespace DualCraft.UI
             costTmp.fontSizeMin = 6f;
             costTmp.fontSizeMax = 8f;
             costTmp.raycastTarget = false;
+
+            var fallTextGo = new GameObject("FallStat");
+            fallTextGo.transform.SetParent(overlay.transform, false);
+            var fallRt = fallTextGo.AddComponent<RectTransform>();
+            fallRt.anchorMin = new Vector2(0.72f, 0f);
+            fallRt.anchorMax = new Vector2(1f, 1f);
+            fallRt.offsetMin = new Vector2(0f, 0f);
+            fallRt.offsetMax = new Vector2(-5f, 0f);
+            var fallTmp = fallTextGo.AddComponent<TextMeshProUGUI>();
+            int fallLifeLoss = GameConstants.GetInvokerLifeLossForRarity(daemon.Card.rarity);
+            fallTmp.text = $"FALL -{fallLifeLoss}";
+            fallTmp.fontSize = 7f;
+            fallTmp.color = new Color(1f, 0.62f, 0.52f, 0.94f);
+            fallTmp.alignment = TextAlignmentOptions.MidlineRight;
+            fallTmp.enableAutoSizing = true;
+            fallTmp.fontSizeMin = 5f;
+            fallTmp.fontSizeMax = 7f;
+            fallTmp.raycastTarget = false;
 
             if (!string.IsNullOrWhiteSpace(statusIcons))
             {
@@ -8524,7 +9877,7 @@ namespace DualCraft.UI
             lrt.offsetMin = new Vector2(0f, 2f);
             lrt.offsetMax = new Vector2(0f, -1f);
             var tmp = labelGO.AddComponent<TextMeshProUGUI>();
-            tmp.text = "MASK\nEQUIPPED";
+            tmp.text = "RELIC\nBOUND";
             tmp.fontSize = 6;
             tmp.color = Color.white;
             tmp.alignment = TextAlignmentOptions.Bottom;
@@ -8783,7 +10136,7 @@ namespace DualCraft.UI
                     return SpawnMoveVfx(center, BattleEffectAssetKind.Radiant, "SEAL", new Color(1f, 0.92f, 0.5f), 0.86f, Audio.SfxCue.SealTrigger);
 
                 if (lower.Contains("equipped") || lower.Contains("mask"))
-                    return SpawnMoveVfx(center, BattleEffectAssetKind.Bind, "MASK", new Color(0.74f, 0.82f, 1f), 0.86f, Audio.SfxCue.SpellPlay);
+                    return SpawnMoveVfx(center, BattleEffectAssetKind.Bind, "RELIC", new Color(0.74f, 0.82f, 1f), 0.86f, Audio.SfxCue.SpellPlay);
 
                 if (lower.Contains("dispel") || lower.Contains("cast "))
                     return SpawnMoveVfx(center, BattleEffectAssetKind.Gale, lower.Contains("dispel") ? "DISPEL" : "CAST", new Color(0.72f, 0.94f, 1f), 0.88f, Audio.SfxCue.SpellPlay);
@@ -9021,6 +10374,7 @@ namespace DualCraft.UI
             string line = entry.Message.Trim();
             EffectScope scope = ResolveEffectScope(line);
             Color tint = ResolveEffectTint(line, entry.Type);
+            BattleEffectAssetKind effectKind = ResolveEffectAssetKind(line, entry.Type);
             Audio.SfxManager.EnsureInstance().Play(Audio.SfxCue.EffectReveal, 0.36f, 1f);
 
             var banner = new GameObject("EffectBanner", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
@@ -9089,10 +10443,10 @@ namespace DualCraft.UI
             }
 
             Destroy(banner);
-            yield return PlayEffectAreaReaction(scope, tint);
+            yield return PlayEffectAreaReaction(scope, tint, effectKind);
         }
 
-        private IEnumerator PlayEffectAreaReaction(EffectScope scope, Color tint)
+        private IEnumerator PlayEffectAreaReaction(EffectScope scope, Color tint, BattleEffectAssetKind effectKind)
         {
             if (scope == EffectScope.BoardWide)
             {
@@ -9101,6 +10455,7 @@ namespace DualCraft.UI
 
                 StartCoroutine(UIAnimUtils.ScreenShake(transform, 5f, 0.22f));
                 Audio.SfxManager.EnsureInstance().Play(Audio.SfxCue.DomainPulse, 0.36f, 0.96f);
+                SpawnAetherSheetImpactFX(GetRectWorldPoint(_combatFxLayer), effectKind, tint, 1.34f);
                 HopFieldCards(p1FieldContainer, 12f);
                 HopFieldCards(p2FieldContainer, 12f);
                 yield return null;
@@ -9108,6 +10463,7 @@ namespace DualCraft.UI
             }
 
             Vector3 centerWorld = GetRectWorldPoint(_combatFxLayer);
+            SpawnAetherSheetImpactFX(centerWorld, effectKind, tint, 1.08f);
             SpawnImpactBurst(centerWorld, tint, 1.25f);
             Audio.SfxManager.EnsureInstance().Play(Audio.SfxCue.SealTrigger, 0.34f, 1f);
             HopFieldCards(p2FieldContainer, 8f);
@@ -9161,11 +10517,51 @@ namespace DualCraft.UI
                 return new Color(1f, 0.54f, 0.26f, 0.96f);
             if (lower.Contains("freeze") || lower.Contains("frost") || lower.Contains("ice"))
                 return new Color(0.64f, 0.88f, 1f, 0.96f);
+            if (lower.Contains("water") || lower.Contains("tide") || lower.Contains("wave"))
+                return new Color(0.40f, 0.74f, 1f, 0.96f);
+            if (lower.Contains("grass") || lower.Contains("vine") || lower.Contains("nature") || lower.Contains("entangle"))
+                return new Color(0.42f, 0.92f, 0.38f, 0.96f);
+            if (lower.Contains("stone") || lower.Contains("earth") || lower.Contains("shatter"))
+                return new Color(0.88f, 0.66f, 0.36f, 0.96f);
+            if (lower.Contains("storm") || lower.Contains("lightning") || lower.Contains("shock"))
+                return new Color(0.54f, 0.90f, 1f, 0.96f);
+            if (lower.Contains("dark") || lower.Contains("shadow") || lower.Contains("drain") || lower.Contains("poison"))
+                return new Color(0.72f, 0.42f, 1f, 0.96f);
+            if (lower.Contains("light") || lower.Contains("radiant") || lower.Contains("heal") || lower.Contains("protect"))
+                return new Color(1f, 0.94f, 0.62f, 0.96f);
 
             return new Color(0.96f, 0.90f, 0.70f, 0.96f);
         }
 
-        private void AnimateDaemonHealingFx(GameState state)
+        private static BattleEffectAssetKind ResolveEffectAssetKind(string msg, LogEntryType type)
+        {
+            string lower = msg?.ToLowerInvariant() ?? string.Empty;
+            if (type == LogEntryType.Combat)
+                return BattleEffectAssetKind.Flame;
+            if (lower.Contains("seal") || lower.Contains("negated") || lower.Contains("counter") || lower.Contains("bind"))
+                return BattleEffectAssetKind.Bind;
+            if (lower.Contains("burn") || lower.Contains("flame") || lower.Contains("fire") || lower.Contains("ignite"))
+                return BattleEffectAssetKind.Flame;
+            if (lower.Contains("water") || lower.Contains("tide") || lower.Contains("wave") || lower.Contains("surge"))
+                return BattleEffectAssetKind.Water;
+            if (lower.Contains("grass") || lower.Contains("vine") || lower.Contains("nature") || lower.Contains("verdant") || lower.Contains("entangle"))
+                return BattleEffectAssetKind.Verdant;
+            if (lower.Contains("freeze") || lower.Contains("frost") || lower.Contains("ice"))
+                return BattleEffectAssetKind.Frost;
+            if (lower.Contains("stone") || lower.Contains("earth") || lower.Contains("rock") || lower.Contains("shatter") || lower.Contains("pillar"))
+                return BattleEffectAssetKind.Stone;
+            if (lower.Contains("air") || lower.Contains("wind") || lower.Contains("gale") || lower.Contains("dispel"))
+                return BattleEffectAssetKind.Gale;
+            if (lower.Contains("storm") || lower.Contains("lightning") || lower.Contains("shock") || lower.Contains("power"))
+                return BattleEffectAssetKind.Storm;
+            if (lower.Contains("dark") || lower.Contains("shadow") || lower.Contains("drain") || lower.Contains("poison") || lower.Contains("void"))
+                return BattleEffectAssetKind.Shadow;
+            if (lower.Contains("light") || lower.Contains("radiant") || lower.Contains("heal") || lower.Contains("protect"))
+                return BattleEffectAssetKind.Radiant;
+            return BattleEffectAssetKind.Bind;
+        }
+
+        private void AnimateDaemonAsheDeltaFx(GameState state)
         {
             if (state?.Players == null || state.Players.Length < 2)
                 return;
@@ -9192,15 +10588,22 @@ namespace DualCraft.UI
                         continue;
 
                     int delta = daemon.CurrentAshe - priorAshe;
-                    if (delta <= 0)
+                    if (delta == 0)
                         continue;
 
                     RectTransform daemonRect = GetDaemonCardRect(playerIndex, daemon.InstanceId);
                     if (daemonRect == null)
                         continue;
 
-                    SpawnFloatingCombatText(GetRectWorldPoint(daemonRect) + Vector3.up * 18f,
-                        $"+{delta}", new Color(0.30f, 1f, 0.44f, 0.95f), 0.92f);
+                    bool healed = delta > 0;
+                    int amount = Mathf.Abs(delta);
+                    Color color = healed
+                        ? new Color(0.30f, 1f, 0.44f, 0.96f)
+                        : new Color(1f, 0.20f, 0.16f, 0.98f);
+                    string label = healed ? $"+{amount}" : $"-{amount}";
+                    Vector3 offset = healed ? new Vector3(0f, 28f, 0f) : new Vector3(0f, 20f, 0f);
+
+                    SpawnFloatingCombatText(GetRectWorldPoint(daemonRect) + offset, label, color, healed ? 0.98f : 1.12f);
                 }
             }
 
@@ -9305,8 +10708,8 @@ namespace DualCraft.UI
             go.transform.SetParent(parent, false);
 
             var rt = go.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0.878f, 0.032f);
-            rt.anchorMax = new Vector2(0.976f, 0.064f);
+            rt.anchorMin = new Vector2(0.02f, 0.92f);
+            rt.anchorMax = new Vector2(0.15f, 0.98f);
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
 
@@ -9322,10 +10725,14 @@ namespace DualCraft.UI
             trt.offsetMin = Vector2.zero; trt.offsetMax = Vector2.zero;
             var tmp = textGo.GetComponent<TextMeshProUGUI>();
             tmp.text = "FORFEIT";
-            tmp.fontSize = 13;
+            tmp.fontSize = 10;
             tmp.fontStyle = FontStyles.Bold;
             tmp.color = new Color(1f, 0.7f, 0.7f);
             tmp.alignment = TextAlignmentOptions.Center;
+            tmp.enableAutoSizing = true;
+            tmp.fontSizeMin = 7f;
+            tmp.fontSizeMax = 10f;
+            tmp.raycastTarget = false;
 
             _forfeitButton = go.GetComponent<Button>();
             _forfeitButton.onClick.AddListener(OnForfeitClicked);
@@ -9335,15 +10742,41 @@ namespace DualCraft.UI
 
         private void OnForfeitClicked()
         {
+            if (_battle?.State != null && _battle.State.GameOver) return;
+
+            if (Time.unscaledTime > _forfeitConfirmUntil)
+            {
+                _forfeitConfirmUntil = Time.unscaledTime + 3.0f;
+                SetForfeitButtonLabel("CONFIRM");
+                ShowTargetingHint("Click confirm to forfeit");
+                return;
+            }
+
+            if (_battle == null && !_storyEncounterMode)
+                return;
+
+            _forfeitConfirmUntil = -1f;
+            SetForfeitButtonLabel("FORFEIT");
+
             if (_storyEncounterMode)
             {
                 HandleStoryEncounterEnd(false, "Player forfeited.", false);
                 return;
             }
 
-            if (_battle == null || _battle.State.GameOver) return;
             _battle.State.GameOver = true;
             HandleGameOver(AIPlayerIndex, "Player forfeited.");
+        }
+
+        private void SetForfeitButtonLabel(string label)
+        {
+            if (_forfeitButton == null)
+                return;
+
+            var text = _forfeitButton.transform.Find("Label")?.GetComponent<TextMeshProUGUI>()
+                ?? _forfeitButton.GetComponentInChildren<TextMeshProUGUI>();
+            if (text != null)
+                text.text = label;
         }
 
         private void EnsureGameOverButtons(Transform panel)
@@ -9403,17 +10836,72 @@ namespace DualCraft.UI
         /// <summary>Visual dice roll when SE is rolled at the start of a turn.</summary>
         private void HandleSERolled(string playerName, int rollAmount, int storedTotal)
         {
-            if (diceRoller == null || _suppressSERolledVisual)
+            if (_suppressSERolledVisual)
                 return;
 
-            int displayValue = Mathf.Clamp(rollAmount, 1, GameConstants.SEDiceSides);
-            ActivateDiceArea();
-            Audio.SfxManager.EnsureInstance().Play(Audio.SfxCue.Dice, 0.70f, 1f);
-            diceRoller.RollToValue(displayValue, () =>
+            DeactivateDiceArea();
+            Audio.SfxManager.EnsureInstance().Play(Audio.SfxCue.Collect, 0.55f, 1.1f);
+            string message = rollAmount > 0
+                ? $"{playerName}'s Sources +{rollAmount} SE ({storedTotal})"
+                : $"{playerName} has no Source income";
+            AddLogEntry(new LogEntry { Message = message, Type = LogEntryType.System });
+            ShowSourcePulse(playerName, rollAmount, storedTotal);
+        }
+
+        private void ShowSourcePulse(string playerName, int rollAmount, int storedTotal)
+        {
+            if (_battle?.State?.Players == null)
+                return;
+
+            int playerIndex = Array.FindIndex(_battle.State.Players, p => p != null && string.Equals(p.Name, playerName, StringComparison.OrdinalIgnoreCase));
+            if (playerIndex < 0)
+                playerIndex = _battle.State.CurrentPlayer;
+
+            RectTransform sourceZone = FindRootRect(playerIndex == LocalPlayer ? "P1SourceZone" : "P2SourceZone");
+            RectTransform invokerRect = FindInvokerCardRect(playerIndex);
+            Color pulse = rollAmount > 0
+                ? new Color(0.34f, 0.78f, 1f, 0.88f)
+                : new Color(0.46f, 0.46f, 0.52f, 0.60f);
+
+            if (sourceZone != null)
             {
-                Audio.SfxManager.EnsureInstance().Play(Audio.SfxCue.Collect, 0.55f, 1.1f);
-                StartCoroutine(HideDiceAfterDelay(1.2f));
-            });
+                string label = rollAmount > 0 ? $"+{rollAmount} SE" : "NO SOURCE";
+                SpawnFloatingCombatText(GetRectWorldPoint(sourceZone) + Vector3.up * 18f, label, pulse, 0.94f);
+                StartCoroutine(PulseRectImage(sourceZone, pulse, 0.78f));
+            }
+
+            if (invokerRect != null && rollAmount > 0)
+            {
+                SpawnFloatingCombatText(GetRectWorldPoint(invokerRect) + Vector3.up * 38f, $"SE {storedTotal}", pulse, 0.82f);
+                StartCoroutine(PulseRectImage(invokerRect, pulse, 0.66f));
+            }
+        }
+
+        private IEnumerator PulseRectImage(RectTransform target, Color pulseColor, float duration)
+        {
+            if (target == null)
+                yield break;
+
+            var image = target.GetComponent<Image>();
+            if (image == null)
+                yield break;
+
+            Color original = image.color;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                if (image == null)
+                    yield break;
+
+                elapsed += Time.unscaledDeltaTime;
+                float p = Mathf.Clamp01(elapsed / duration);
+                float wave = Mathf.Sin(p * Mathf.PI);
+                image.color = Color.Lerp(original, pulseColor, wave * 0.72f);
+                yield return null;
+            }
+
+            if (image != null)
+                image.color = original;
         }
 
         /// <summary>Ensures the DiceArea parent is active so the dice can be seen.</summary>
@@ -9456,6 +10944,7 @@ namespace DualCraft.UI
         {
             if (diceRoller != null)
             {
+                diceRoller.ForceStop();
                 diceRoller.Hide();
                 // Only deactivate the named DiceArea container, not the raw parent.
                 ResolveDiceAreaContainer();

@@ -14,7 +14,7 @@ namespace DualCraft.Data
     [Serializable]
     public class PlayerProfile
     {
-        public string playerName = "Conjuror";
+        public string playerName = "Invoker";
         public int glint;  // Common currency
         public int embers; // Premium currency
         public int rank;
@@ -26,6 +26,25 @@ namespace DualCraft.Data
         public List<string> ownedCosmetics = new();
         public string activeSleeve = "default";
         public string activeBoard = "default";
+        public string activeInvokerDesign = "arcane";
+        public string preferredAIDifficulty = "Normal";
+
+        [Header("Story Progress")]
+        public bool storyIntroComplete;
+        public int storyChapter;
+        public string storyStarterCardId;
+        public string storyStarterDeckName;
+        public string storyStarterSavedDeckId;
+        public string storyAreaId;
+        public int storyPlayerX;
+        public int storyPlayerY;
+        public bool storyHallIntroComplete;
+        public bool storyTrialBriefingComplete;
+        public bool storyTrialComplete;
+        public bool storyFirstInvokerReported;
+        public List<string> caughtWildCardIds = new();
+        public string storyWildInvokerCardId;
+        public List<string> defeatedInvokerIds = new();
 
         // Statistics
         public int totalWins;
@@ -62,8 +81,10 @@ namespace DualCraft.Data
         {
             string json = PlayerPrefs.GetString(ProfileKey, "");
             if (string.IsNullOrEmpty(json))
-                return new PlayerProfile { glint = 100 };
-            return JsonUtility.FromJson<PlayerProfile>(json);
+                return EnsureDefaults(new PlayerProfile { glint = 100 });
+
+            var profile = JsonUtility.FromJson<PlayerProfile>(json);
+            return EnsureDefaults(profile);
         }
 
         public static void Save(PlayerProfile profile)
@@ -87,6 +108,38 @@ namespace DualCraft.Data
         {
             profile.customDecks.RemoveAll(d => d.id == deckId);
             Save(profile);
+        }
+
+        private static PlayerProfile EnsureDefaults(PlayerProfile profile)
+        {
+            profile ??= new PlayerProfile { glint = 100 };
+            profile.ownedCardIds ??= new List<string>();
+            profile.customDecks ??= new List<SavedDeck>();
+            profile.challengeProgress ??= new ChallengeProgress();
+            profile.ownedCosmetics ??= new List<string>();
+            profile.caughtWildCardIds ??= new List<string>();
+            profile.defeatedInvokerIds ??= new List<string>();
+            profile.storyAreaId ??= string.Empty;
+
+            if (string.IsNullOrWhiteSpace(profile.playerName))
+                profile.playerName = "Invoker";
+            if (string.IsNullOrWhiteSpace(profile.activeSleeve))
+                profile.activeSleeve = "default";
+            if (string.IsNullOrWhiteSpace(profile.activeBoard))
+                profile.activeBoard = "default";
+            if (string.IsNullOrWhiteSpace(profile.activeInvokerDesign))
+                profile.activeInvokerDesign = "arcane";
+            if (string.IsNullOrWhiteSpace(profile.preferredAIDifficulty))
+                profile.preferredAIDifficulty = "Normal";
+
+            if (profile.storyChapter >= 2)
+                profile.storyTrialComplete = true;
+            if (profile.defeatedInvokerIds.Count > 0)
+                profile.storyChapter = Math.Max(profile.storyChapter, 3);
+            if (profile.storyFirstInvokerReported)
+                profile.storyChapter = Math.Max(profile.storyChapter, 4);
+
+            return profile;
         }
     }
 }
