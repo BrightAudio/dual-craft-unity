@@ -13,6 +13,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using DG.Tweening;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace DualCraft.UI
 {
@@ -85,6 +89,7 @@ namespace DualCraft.UI
         private Net.RelayGameClient _relayClient;
         private bool _onlineBattle;
         private int _onlineActionSequence;
+        private bool _onlineGameOverHandled;
         private const int LocalPlayer = 0;
         private const int AIPlayerIndex = 1;
         private const float AIActionDelay = 0.95f;
@@ -92,7 +97,7 @@ namespace DualCraft.UI
         private const bool ShowPersistentGameLog = false;
         private const bool UseDragDropHandPlay = false;
         private const bool UseSeatSelectionForDaemonPlay = true;
-        private const float AttackAnticipationSeconds = 1.18f;
+        private const float AttackAnticipationSeconds = 1.85f;
         private Button _forfeitButton;
         private float _forfeitConfirmUntil = -1f;
         private static readonly Color HandTint = new(0.05f, 0.04f, 0.065f, 0.42f);
@@ -149,6 +154,9 @@ namespace DualCraft.UI
         private bool _autoDrawRunning;
         private bool _suppressSERolledVisual;
         private bool _layoutRefreshQueued;
+        private bool _p1SourceExpanded;
+        private bool _p2SourceExpanded;
+        private readonly HashSet<string> _announcedNetworkLogKeys = new();
         private int _p1HandHash, _p2HandHash, _p1FieldHash, _p2FieldHash;
         private int _p1PillarHash, _p2PillarHash;
         private int _p1PrevHandCount = -1;
@@ -182,17 +190,22 @@ namespace DualCraft.UI
         private readonly Dictionary<string, int> _lastDaemonAsheById = new();
         private bool _daemonAsheSnapshotReady;
         private DeckConverter.StoryBattleConfig _storyBattleConfig;
+        private bool _wildDaemonBattleConfigured;
         private GameObject _storyTutorialPanel;
         private TextMeshProUGUI _storyTutorialTitleText;
         private TextMeshProUGUI _storyTutorialBodyText;
         private TextMeshProUGUI _storyTutorialFooterText;
         private Image _storyTutorialAccentImage;
+        private bool _storyTutorialDismissed;
         private bool _storyTutorialEnemyTurnSeen;
         private bool _storyTutorialAttackSeen;
+        private bool _progressionAwardedThisMatch;
         private GameObject _storyBattleBannerPanel;
         private TextMeshProUGUI _storyBattleBannerTitleText;
         private TextMeshProUGUI _storyBattleBannerSubtitleText;
         private Image _storyBattleBannerAccentImage;
+        private GameObject _storyResultPanel;
+        private bool _storyResultAwaitingReturn;
 
         // Highlight colors
         private static readonly Color HighlightPlay = new(0.96f, 0.82f, 0.34f, 0.24f);
@@ -291,7 +304,14 @@ namespace DualCraft.UI
 
             flatMain = BuildBalancedBattleMainDeck(source, flatMain);
             if (flatMain.Count != GameConstants.DeckSize)
-                return source;
+            {
+                Debug.LogWarning($"[Battle] Could not fully rebalance {source.deckName}; built {flatMain.Count}/{GameConstants.DeckSize} cards. Using generated archetype-safe cards for the remainder.");
+                FillBattleDeckRemainder(source, flatMain);
+                if (flatMain.Count > GameConstants.DeckSize)
+                    flatMain.RemoveRange(GameConstants.DeckSize, flatMain.Count - GameConstants.DeckSize);
+                if (flatMain.Count != GameConstants.DeckSize)
+                    return source;
+            }
 
             DeckData clone = ScriptableObject.CreateInstance<DeckData>();
             clone.name = $"{source.name}_BattleVariant";
@@ -308,35 +328,85 @@ namespace DualCraft.UI
             clone.battleMusicOverride = source.battleMusicOverride;
             clone.cards = GroupDeckEntries(flatMain);
             clone.pillars = Array.Empty<DeckEntry>();
+            clone.wardIds = source.wardIds;
 
-            Debug.Log($"[Battle] Rebalanced {source.deckName}: {GameConstants.DeckDaemonCount} daemons, {GameConstants.DeckAsheCount} Sources, {GameConstants.DeckRelicCount} relics, {GameConstants.DeckDomainCount} domains, {GameConstants.DeckHexCount} hexes, {GameConstants.DeckDispelCount} dispels.");
+            Debug.Log($"[Battle] Rebalanced {source.deckName}: {flatMain.Count(card => card is DaemonCardData)} daemons, {flatMain.Count(card => card is AsheCardData)} Sources, {flatMain.Count(card => card is MaskCardData)} relics, {flatMain.Count(card => card is DomainCardData)} domains, {flatMain.Count(card => card is HexCardData)} hexes, {flatMain.Count(card => card is DispelCardData)} dispels.");
             return clone;
         }
 
         private List<CardData> BuildBalancedBattleMainDeck(DeckData source, List<CardData> cards)
         {
             var balanced = new List<CardData>();
-            AddCategoryCards(balanced, cards, card => card is DaemonCardData, GameConstants.DeckDaemonCount,
+            AddCategoryCards(balanced, cards, card => card is DaemonCardData && IsCardAllowedForDeck(source, card), GameConstants.DeckDaemonCount,
                 () => BuildRuntimeDaemonPackage(source, GameConstants.DeckDaemonCount).Cast<CardData>());
-            AddCategoryCards(balanced, cards, card => card is AsheCardData, GameConstants.DeckAsheCount,
+            AddCategoryCards(balanced, cards, card => card is AsheCardData && IsCardAllowedForDeck(source, card), GameConstants.DeckAsheCount,
                 () => BuildRuntimeAshePackage(source, GameConstants.DeckAsheCount).Cast<CardData>());
             AddCategoryCards(balanced, cards, card => card is MaskCardData, GameConstants.DeckRelicCount,
                 () => BuildRuntimeRelicPackage(source, GameConstants.DeckRelicCount).Cast<CardData>());
-            AddCategoryCards(balanced, cards, card => card is DomainCardData, GameConstants.DeckDomainCount,
+            AddCategoryCards(balanced, cards, card => card is DomainCardData && IsCardAllowedForDeck(source, card), GameConstants.DeckDomainCount,
                 () => BuildRuntimeDomainPackage(source, GameConstants.DeckDomainCount).Cast<CardData>());
-            AddCategoryCards(balanced, cards, card => card is HexCardData, GameConstants.DeckHexCount,
+            AddCategoryCards(balanced, cards, card => card is HexCardData && IsCardAllowedForDeck(source, card), GameConstants.DeckHexCount,
                 () => BuildRuntimeHexPackage(source, GameConstants.DeckHexCount).Cast<CardData>());
-            AddCategoryCards(balanced, cards, card => card is DispelCardData, GameConstants.DeckDispelCount,
+            AddCategoryCards(balanced, cards, card => card is DispelCardData && IsCardAllowedForDeck(source, card), GameConstants.DeckDispelCount,
                 () => BuildRuntimeAttackDispelPackage(source, GameConstants.DeckDispelCount).Cast<CardData>());
             SeedSecondForms(balanced);
+            FillBattleDeckRemainder(source, balanced);
+            if (balanced.Count > GameConstants.DeckSize)
+                balanced.RemoveRange(GameConstants.DeckSize, balanced.Count - GameConstants.DeckSize);
             return balanced;
+        }
+
+        private void FillBattleDeckRemainder(DeckData source, List<CardData> cards)
+        {
+            if (source == null || cards == null || cards.Count >= GameConstants.DeckSize)
+                return;
+
+            List<CardData> fallback = BuildRuntimeAshePackage(source, GameConstants.DeckAsheCount).Cast<CardData>()
+                .Concat(BuildRuntimeDaemonPackage(source, GameConstants.DeckDaemonCount).Cast<CardData>())
+                .Concat(BuildRuntimeAttackDispelPackage(source, GameConstants.DeckDispelCount).Cast<CardData>())
+                .Concat(BuildRuntimeHexPackage(source, GameConstants.DeckHexCount).Cast<CardData>())
+                .Concat(BuildRuntimeRelicPackage(source, GameConstants.DeckRelicCount).Cast<CardData>())
+                .Concat(BuildRuntimeDomainPackage(source, GameConstants.DeckDomainCount).Cast<CardData>())
+                .Where(card => card != null && IsCardAllowedForDeck(source, card))
+                .ToList();
+
+            if (fallback.Count == 0)
+                return;
+
+            int cursor = 0;
+            while (cards.Count < GameConstants.DeckSize)
+            {
+                cards.Add(fallback[cursor % fallback.Count]);
+                cursor++;
+            }
+        }
+
+        private static bool IsCardAllowedForDeck(DeckData source, CardData card)
+        {
+            if (source == null || card == null)
+                return false;
+
+            return card switch
+            {
+                DaemonCardData daemon => daemon.creatureType == source.primaryCreatureType,
+                AsheCardData ashe => ashe.matchType == AsheMatchType.CreatureType
+                    && ashe.targetCreatureType == source.primaryCreatureType,
+                DispelCardData dispel => IsCleanDispelCard(dispel),
+                HexCardData hex => GetHexFitScore(hex, source.element, source.primaryCreatureType) > 0,
+                DomainCardData domain => domain.effectElement == source.element || domain.effectElement == Element.Light,
+                _ => true,
+            };
         }
 
         private static void AddCategoryCards(List<CardData> output, List<CardData> sourceCards, Func<CardData, bool> predicate,
             int targetCount, Func<IEnumerable<CardData>> fallbackFactory)
         {
             foreach (CardData card in sourceCards.Where(predicate).Take(targetCount))
+            {
+                if (output.Count(existing => existing != null && existing.cardId == card.cardId) >= GameConstants.MaxCardCopies)
+                    continue;
                 output.Add(card);
+            }
 
             if (output.Count(card => predicate(card)) >= targetCount)
                 return;
@@ -345,10 +415,31 @@ namespace DualCraft.UI
             {
                 if (card == null)
                     continue;
+                if (output.Count(existing => existing != null && existing.cardId == card.cardId) >= GameConstants.MaxCardCopies)
+                    continue;
                 output.Add(card);
                 if (output.Count(predicate) >= targetCount)
                     break;
             }
+        }
+
+        private static bool IsCleanDispelCard(DispelCardData dispel)
+        {
+            if (dispel == null)
+                return false;
+            if (dispel.canCounterAttack)
+                return true;
+            string text = $"{dispel.cardName} {dispel.description}".ToLowerInvariant();
+            return text.Contains("dispel")
+                || text.Contains("dissolve")
+                || text.Contains("erase")
+                || text.Contains("unmake")
+                || text.Contains("strip")
+                || text.Contains("shatter")
+                || text.Contains("remove")
+                || text.Contains("destroy")
+                || text.Contains("cancel")
+                || text.Contains("counter");
         }
 
         private static void SeedSecondForms(List<CardData> cards)
@@ -417,9 +508,7 @@ namespace DualCraft.UI
 
             if (preferredTemplates.Count > 0)
             {
-                for (int i = 0; i < requestedCount; i++)
-                    package.Add(preferredTemplates[i % preferredTemplates.Count]);
-                return package;
+                return BuildSourceVariants(source, preferredTemplates, requestedCount);
             }
 
             var cache = new Dictionary<string, AsheCardData>();
@@ -430,9 +519,8 @@ namespace DualCraft.UI
                     .Where(card => card.Category == CardCategory.AsheCard)
                     .OrderBy(card =>
                     {
-                        bool elementMatch = card.RequiredElement == source.element;
                         bool creatureMatch = card.RequiredCreatureType == source.primaryCreatureType;
-                        return elementMatch && creatureMatch ? 0 : elementMatch || creatureMatch ? 1 : 2;
+                        return creatureMatch ? 0 : 1;
                     })
                     .ThenBy(card => card.WillCost)
                     .Select(card => card.Id)
@@ -440,7 +528,11 @@ namespace DualCraft.UI
             }
 
             if (desiredIds.Count == 0)
+            {
+                for (int i = 0; i < requestedCount; i++)
+                    package.Add(CreateFallbackSourceCard(source, i));
                 return package;
+            }
 
             int safety = Mathf.Max(requestedCount * 3, desiredIds.Count);
             for (int i = 0; i < safety && package.Count < requestedCount; i++)
@@ -455,13 +547,191 @@ namespace DualCraft.UI
                     asheCard = CreateRuntimeAsheCard(runtime);
                     if (asheCard == null)
                         continue;
+                    ForceSourceToDeckArchetype(asheCard, source);
                     cache[id] = asheCard;
                 }
 
                 package.Add(asheCard);
             }
 
-            return package;
+            while (package.Count < requestedCount)
+                package.Add(CreateFallbackSourceCard(source, package.Count));
+
+            return BuildSourceVariants(source, package, requestedCount);
+        }
+
+        private List<AsheCardData> BuildSourceVariants(DeckData source, List<AsheCardData> templates, int requestedCount)
+        {
+            var variants = new List<AsheCardData>();
+            if (source == null || templates == null || templates.Count == 0 || requestedCount <= 0)
+                return variants;
+
+            for (int i = 0; i < requestedCount; i++)
+            {
+                AsheCardData clone = Instantiate(templates[i % templates.Count]);
+                clone.hideFlags = HideFlags.DontSave;
+                ApplySourceVariantIdentity(clone, source, i);
+                variants.Add(clone);
+            }
+
+            return variants;
+        }
+
+        private static void ApplySourceVariantIdentity(AsheCardData card, DeckData source, int variant)
+        {
+            if (card == null || source == null)
+                return;
+
+            ForceSourceToDeckArchetype(card, source);
+            string affinity = source.primaryCreatureType == CreatureType.Elemental
+                ? "Elemental"
+                : source.primaryCreatureType.ToString();
+            string variantName = GetSourceVariantName(source.primaryCreatureType, variant);
+            string slugAffinity = affinity.ToLowerInvariant();
+            string slugVariant = variantName.ToLowerInvariant().Replace(" ", "-");
+            card.cardId = $"rt-source-{slugAffinity}-{slugVariant}-{variant % 8}";
+            card.cardName = $"{affinity} {variantName}";
+            card.name = card.cardId;
+            card.description = $"Source. Generates {GameConstants.SourceSEPerTurn} SE at the start of your turn.";
+            card.flavorText = GetSourceVariantLore(source, variantName, variant);
+            Element artElement = GetSourceArtElement(source);
+            card.artwork = Resources.Load<Sprite>($"CardArt/{card.cardId}")
+                ?? ResolveSourceBaseArtwork(source, variant)
+                ?? card.artwork
+                ?? CardTextureGenerator.GenerateCardArt(artElement, CardCategory.AsheCard, card.rarity, card.cardId);
+            card.fullArt = card.artwork;
+        }
+
+        private static Sprite ResolveSourceBaseArtwork(DeckData source, int variant)
+        {
+            if (source == null)
+                return null;
+
+            int safeVariant = Mathf.Abs(variant);
+            List<string> candidates = new();
+            if (source.primaryCreatureType == CreatureType.Elemental)
+            {
+                string element = source.element.ToString().ToLowerInvariant();
+                candidates.Add($"CardArt/rt-source-{element}-{safeVariant % 8}");
+                candidates.Add($"CardArt/p-{element}-{1 + safeVariant % 2}");
+                candidates.Add($"CardArt/p-elemental-{1 + (safeVariant + 1) % 2}");
+                candidates.Add($"CardArt/ae-{element}");
+            }
+            else
+            {
+                string type = source.primaryCreatureType.ToString().ToLowerInvariant();
+                string element = GetSourceArtElement(source).ToString().ToLowerInvariant();
+                candidates.Add($"CardArt/rt-source-{type}-{safeVariant % 8}");
+                candidates.Add($"CardArt/p-{type}-{1 + safeVariant % 2}");
+                candidates.Add($"CardArt/p-{element}-{1 + (safeVariant + 1) % 2}");
+                candidates.Add($"CardArt/ac-{type}");
+            }
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                string path = candidates[(safeVariant + i) % candidates.Count];
+                Sprite sprite = Resources.Load<Sprite>(path);
+                if (sprite != null)
+                    return sprite;
+            }
+
+            return null;
+        }
+
+        private static string GetSourceVariantName(CreatureType type, int variant)
+        {
+            string[] names = type switch
+            {
+                CreatureType.Machine => new[] { "Dynamo", "Relay", "Core", "Conduit", "Foundry", "Battery", "Turbine", "Grid" },
+                CreatureType.Artificial => new[] { "Prism", "Matrix", "Lens", "Hologram", "Beacon", "Engine", "Mirror", "Array" },
+                CreatureType.Spirit => new[] { "Shrine", "Echo", "Chorus", "Lantern", "Veil", "Resonance", "Sanctum", "Bell" },
+                CreatureType.Undead => new[] { "Crypt", "Gravewell", "Ossuary", "Dirge", "Mausoleum", "Relicpit", "Wraithgate", "Tombfire" },
+                _ => new[] { "Wellspring", "Nexus", "Font", "Surge", "Channel", "Pulse", "Current", "Spire" },
+            };
+            return names[Mathf.Abs(variant) % names.Length];
+        }
+
+        private static string GetSourceVariantLore(DeckData source, string variantName, int variant)
+        {
+            if (source == null)
+                return "The Grimware drinks quietly from the unseen current.";
+
+            string[] lines = source.primaryCreatureType switch
+            {
+                CreatureType.Machine => new[]
+                {
+                    "The first city engines were built to calm wild daemons, not command them.",
+                    "An Invoker does not tame a machine by force. They teach it which rhythm belongs to home.",
+                    "Old conduits beneath the courts still hum when an Awakening Crystal is near.",
+                    "Steel remembers every pact made under pressure.",
+                    "A good Invoker knows when the engine is hungry and when it is afraid.",
+                    "The machine host wakes cleanest for hands that do not flinch.",
+                    "Balance is sometimes a governor, sometimes a spark gap.",
+                    "A city survives because someone listens when the metal starts dreaming.",
+                },
+                CreatureType.Artificial => new[]
+                {
+                    "A pattern given long enough will ask why it was made.",
+                    "Artificial daemons do not need wilderness. They make their own.",
+                    "The old Invokers used crystal lattices to give borrowed minds a place to return.",
+                    "A perfect shield is less wall than agreement.",
+                    "Some Awakening Crystals reflect the Invoker before they reveal the daemon.",
+                    "Constructed life learns balance by measuring what humans refuse to measure.",
+                    "A false star can still guide a frightened road.",
+                    "The cleanest magic leaves no bruise on the world.",
+                },
+                CreatureType.Spirit => new[]
+                {
+                    "A spirit is never caught. It is invited to stay.",
+                    "Invokers learn the old names so wild daemons do not have to become monsters.",
+                    "The quiet side of the world answers only when the hand is steady.",
+                    "Awakening Crystals ring softly near places where promises were kept.",
+                    "Memory is a road. Spirits know every stone in it.",
+                    "A child who listens well can calm what soldiers only wound.",
+                    "The unseen current does not belong to humans, but it will carry them.",
+                    "Balance begins when fear stops shouting.",
+                },
+                CreatureType.Undead => new[]
+                {
+                    "The dead are not proof that balance failed. Sometimes they are the warning that kept it.",
+                    "An Invoker at a gravewell speaks softly, because hunger answers quickly.",
+                    "Some wild daemons return because no one finished saying goodbye.",
+                    "Awakening Crystals blacken near old battlefields, then glow when the names are read.",
+                    "A last rite is not mercy unless the living change after it.",
+                    "The grave gives back only what still has a task.",
+                    "Cold vows gather wherever humans forget the cost of victory.",
+                    "Undead power must be led carefully; it already knows how to follow pain.",
+                },
+                _ => new[]
+                {
+                    "The wild does not hate the city. It only hates being ignored.",
+                    "An Invoker stands where human need and daemon hunger would otherwise collide.",
+                    "Every element has a temper; the Source teaches it a pulse.",
+                    "Awakening Crystals were planted before the borders had names.",
+                    "A daemon is tamed when it chooses the bond again after the door is open.",
+                    "The old courts called balance a law. The wild called it breathing.",
+                    "Power gathers around an Invoker who can wait one heartbeat longer than fear.",
+                    "The first pact was not written. It was survived.",
+                },
+            };
+
+            string line = lines[Mathf.Abs(variant) % lines.Length];
+            return $"{variantName}: {line}";
+        }
+
+        private static Element GetSourceArtElement(DeckData source)
+        {
+            if (source == null || source.primaryCreatureType == CreatureType.Elemental)
+                return source != null ? source.element : Element.Light;
+
+            return source.primaryCreatureType switch
+            {
+                CreatureType.Machine => Element.Air,
+                CreatureType.Artificial => Element.Light,
+                CreatureType.Spirit => Element.Nature,
+                CreatureType.Undead => Element.Dark,
+                _ => source.element,
+            };
         }
 
         private List<DispelCardData> BuildRuntimeAttackDispelPackage(DeckData source, int requestedCount)
@@ -483,19 +753,55 @@ namespace DualCraft.UI
                 return package;
 
             MaskCardData[] relics = Resources.LoadAll<MaskCardData>("CardData/Cards");
-            List<MaskCardData> preferred = relics
+            List<MaskCardData> preferred = BuildFallbackRelicSuite(source);
+            preferred.AddRange(relics
                 .Where(card => card != null)
-                .OrderBy(card => card.GetWillCost())
-                .ThenByDescending(card => card.isAscensionRelic)
-                .ToList();
-
-            if (preferred.Count == 0)
-                return package;
+                .OrderByDescending(card => card.isAscensionRelic)
+                .ThenByDescending(card => card.grantsRangedAttacks)
+                .ThenBy(card => card.GetWillCost()));
 
             for (int i = 0; i < requestedCount; i++)
                 package.Add(preferred[i % preferred.Count]);
 
             return package;
+        }
+
+        private List<MaskCardData> BuildFallbackRelicSuite(DeckData source)
+        {
+            var relics = new List<MaskCardData>();
+            relics.Add(CreateRuntimeRelic(source, "Relic of Reach", "Equip: change this daemon's attack letter to R. R attacks diagonal lanes with an accuracy check.", MaskEffectType.AtkBoost, 0, true, false, DaemonAttackPattern.Ranged));
+            relics.Add(CreateRuntimeRelic(source, "Anchor Brand", "Equip: change this daemon's attack letter to D. D attacks straight ahead.", MaskEffectType.AtkBoost, 0, false, false, DaemonAttackPattern.Direct));
+            relics.Add(CreateRuntimeRelic(source, "Guard Sigil", "Equip: change this daemon's attack letter to G. G protects neighboring open lanes. Prevent 1 damage.", MaskEffectType.DamageReduction, 1, false, false, DaemonAttackPattern.Guard));
+            relics.Add(CreateRuntimeRelic(source, "Sweep Charm", "Rare. Equip: change this daemon's attack letter to S. S splashes adjacent lanes for 1 damage.", MaskEffectType.AtkBoost, 0, false, false, DaemonAttackPattern.Sweep));
+            relics.Add(CreateRuntimeRelic(source, "Cinder Sweep", "Rare. Equip: change this daemon to S; neighboring splash also burns.", MaskEffectType.AtkBoost, 0, false, false, DaemonAttackPattern.Sweep, MaskEffectType.Burn, 1, Rarity.Rare));
+            relics.Add(CreateRuntimeRelic(source, "Ascension Thread", "Equip only if this daemon's Second Form is in your deck or hand.", MaskEffectType.AsheBoost, 0, false, true));
+            return relics;
+        }
+
+        private MaskCardData CreateRuntimeRelic(DeckData source, string name, string description, MaskEffectType type, int value, bool ranged, bool ascension,
+            DaemonAttackPattern? grantedPattern = null, MaskEffectType splashStatus = MaskEffectType.AtkBoost, int splashStatusValue = 0, Rarity? rarityOverride = null)
+        {
+            var card = ScriptableObject.CreateInstance<MaskCardData>();
+            card.hideFlags = HideFlags.DontSave;
+            card.category = CardCategory.Relic;
+            card.cardId = $"rt-relic-{name.ToLowerInvariant().Replace(" ", "-")}";
+            card.cardName = name;
+            card.description = description;
+            card.rarity = rarityOverride ?? (ascension ? Rarity.Rare : grantedPattern == DaemonAttackPattern.Sweep ? Rarity.Rare : Rarity.Common);
+            card.willCost = ascension ? 2 : 1;
+            card.duration = 3;
+            card.effectType = type;
+            card.effectValue = value;
+            card.grantsRangedAttacks = ranged;
+            card.overridesAttackPattern = grantedPattern.HasValue;
+            card.grantedAttackPattern = grantedPattern ?? DaemonAttackPattern.Direct;
+            card.splashStatusEffect = splashStatus;
+            card.splashStatusValue = splashStatusValue;
+            card.isAscensionRelic = ascension;
+            Element artElement = source != null && source.primaryCreatureType == CreatureType.Elemental ? source.element : Element.Light;
+            card.artwork = CardTextureGenerator.GenerateCardArt(artElement, CardCategory.Relic, card.rarity, card.cardId);
+            card.fullArt = card.artwork;
+            return card;
         }
 
         private List<DomainCardData> BuildRuntimeDomainPackage(DeckData source, int requestedCount)
@@ -529,16 +835,53 @@ namespace DualCraft.UI
                 hexes = Resources.LoadAll<HexCardData>("CardData/Cards/Hexes");
 
             List<HexCardData> preferred = hexes
-                .Where(card => card != null && (source == null || card.effectElement == source.element || card.effectElement == Element.Dark))
-                .OrderBy(card => card.GetWillCost())
+                .Where(card => card != null)
+                .OrderByDescending(card => source == null ? 0 : GetHexFitScore(card, source.element, source.primaryCreatureType))
+                .ThenBy(card => card.GetWillCost())
+                .ThenBy(card => card.cardId)
                 .ToList();
-            if (preferred.Count == 0)
-                preferred = hexes.Where(card => card != null).OrderBy(card => card.GetWillCost()).ToList();
 
             for (int i = 0; i < requestedCount && preferred.Count > 0; i++)
                 package.Add(preferred[i % preferred.Count]);
 
             return package;
+        }
+
+        private static int GetHexFitScore(HexCardData card, Element element, CreatureType primaryType)
+        {
+            if (card == null)
+                return 0;
+
+            int score = card.effectElement == element ? 80 : 0;
+            string id = (card.cardId ?? string.Empty).ToLowerInvariant();
+
+            if (primaryType == CreatureType.Machine)
+            {
+                if (id.Contains("overclock") || id.Contains("rust") || id.Contains("logic")) score += 90;
+            }
+            else if (primaryType == CreatureType.Artificial)
+            {
+                if (id.Contains("glass") || id.Contains("tithe") || id.Contains("rust") || id.Contains("logic")) score += 90;
+            }
+            else if (primaryType == CreatureType.Spirit)
+            {
+                if (id.Contains("whisper") || id.Contains("tithe") || id.Contains("void")) score += 90;
+            }
+            else if (primaryType == CreatureType.Undead)
+            {
+                if (id.Contains("whisper") || id.Contains("grave") || id.Contains("void") || id.Contains("logic")) score += 90;
+            }
+            else if (primaryType == CreatureType.Elemental)
+            {
+                if (card.effectElement == element || id.Contains("mark") || id.Contains("frost") || id.Contains("ember")) score += 90;
+            }
+
+            if (card.effectElement == Element.Dark && (primaryType == CreatureType.Undead || primaryType == CreatureType.Spirit))
+                score += 30;
+            if (card.effectElement == Element.Light && (primaryType == CreatureType.Artificial || primaryType == CreatureType.Spirit))
+                score += 25;
+
+            return score;
         }
 
         private List<DaemonCardData> BuildRuntimeDaemonPackage(DeckData source, int requestedCount)
@@ -552,7 +895,7 @@ namespace DualCraft.UI
                 return package;
 
             List<DaemonCardData> preferred = templates
-                .Where(card => card != null && card.creatureType == source.primaryCreatureType)
+                .Where(card => card != null && !IsWildOnlyDaemonCard(card) && card.creatureType == source.primaryCreatureType)
                 .OrderBy(card => card.GetWillCost())
                 .ThenBy(card => Mathf.Abs(card.asheCost - 1))
                 .ThenByDescending(card => card.attack)
@@ -561,7 +904,7 @@ namespace DualCraft.UI
             if (preferred.Count == 0)
             {
                 preferred = templates
-                    .Where(card => card != null && card.element == source.element)
+                    .Where(card => card != null && !IsWildOnlyDaemonCard(card) && card.element == source.element)
                     .OrderBy(card => card.GetWillCost())
                     .ThenByDescending(card => card.attack)
                     .ToList();
@@ -576,6 +919,13 @@ namespace DualCraft.UI
             return package;
         }
 
+        private static bool IsWildOnlyDaemonCard(DaemonCardData card)
+        {
+            return card != null
+                && !string.IsNullOrEmpty(card.cardId)
+                && card.cardId.StartsWith("wild-", StringComparison.OrdinalIgnoreCase);
+        }
+
         private DispelCardData CreateRuntimeAttackDispel(DeckData source, int variant)
         {
             var card = ScriptableObject.CreateInstance<DispelCardData>();
@@ -586,14 +936,16 @@ namespace DualCraft.UI
             card.target = DispelTarget.Any;
             card.canCounterAttack = true;
             card.preventDamage = source.primaryCreatureType == CreatureType.Artificial ? 4 : 3;
+            card.matchAttackElement = false;
+            card.matchAttackerCreatureType = false;
+            card.responseElement = source.element;
+            card.responseCreatureType = source.primaryCreatureType;
 
             if (source.primaryCreatureType == CreatureType.Elemental)
             {
                 card.cardId = $"rt-dispel-{source.element.ToString().ToLowerInvariant()}-{variant}";
-                card.cardName = $"{source.element} Reversal";
-                card.description = $"Attack response: counter an incoming {source.element} move and prevent {card.preventDamage} damage.";
-                card.matchAttackElement = true;
-                card.responseElement = source.element;
+                card.cardName = variant == 0 ? $"{source.element} Reversal" : $"{source.element} Break";
+                card.description = $"Attack response: block {card.preventDamage} damage from any incoming attack. Elemental patterning lets it bend around unknown foes.";
             }
             else
             {
@@ -606,9 +958,7 @@ namespace DualCraft.UI
                     CreatureType.Undead => variant == 0 ? "Grave Denial" : "Last Breath Ward",
                     _ => "Attack Reversal",
                 };
-                card.description = $"Attack response: counter a {source.primaryCreatureType} move and prevent {card.preventDamage} damage.";
-                card.matchAttackerCreatureType = true;
-                card.responseCreatureType = source.primaryCreatureType;
+                card.description = $"Attack response: block {card.preventDamage} damage from any incoming attack. Shaped by {source.primaryCreatureType} wardcraft.";
             }
 
             Element artElement = source.primaryCreatureType == CreatureType.Elemental
@@ -636,26 +986,9 @@ namespace DualCraft.UI
             if (templates == null || templates.Length == 0)
                 return new List<AsheCardData>();
 
-            if (source.primaryCreatureType == CreatureType.Elemental)
-            {
-                AsheCardData matched = templates.FirstOrDefault(card =>
-                    card != null
-                    && !string.IsNullOrEmpty(card.cardId)
-                    && card.cardId.StartsWith("ae-", StringComparison.OrdinalIgnoreCase)
-                    && card.targetElement == source.element);
-
-                if (matched != null)
-                    return new List<AsheCardData> { matched };
-
-                AsheCardData fallbackElemental = templates.FirstOrDefault(card =>
-                    card != null
-                    && !string.IsNullOrEmpty(card.cardId)
-                    && card.cardId.StartsWith("ae-", StringComparison.OrdinalIgnoreCase));
-                return fallbackElemental != null ? new List<AsheCardData> { fallbackElemental } : new List<AsheCardData>();
-            }
-
             string preferredId = source.primaryCreatureType switch
             {
+                CreatureType.Elemental => "ac-elemental",
                 CreatureType.Machine => "ac-machine",
                 CreatureType.Artificial => "ac-artificial",
                 CreatureType.Spirit => "ac-spirit",
@@ -667,7 +1000,15 @@ namespace DualCraft.UI
                 card != null
                 && string.Equals(card.cardId, preferredId, StringComparison.OrdinalIgnoreCase));
 
-            return directMatch != null ? new List<AsheCardData> { directMatch } : new List<AsheCardData>();
+            if (directMatch != null)
+                return new List<AsheCardData> { directMatch };
+
+            AsheCardData typeMatch = templates.FirstOrDefault(card =>
+                card != null
+                && card.matchType == AsheMatchType.CreatureType
+                && card.targetCreatureType == source.primaryCreatureType);
+
+            return typeMatch != null ? new List<AsheCardData> { typeMatch } : new List<AsheCardData>();
         }
 
         private AsheCardData CloneBattleAsheTemplate(AsheCardData template, DeckData source)
@@ -679,39 +1020,36 @@ namespace DualCraft.UI
             clone.name = $"{template.name}_{source.deckName}_Battle";
             clone.hideFlags = HideFlags.DontSave;
             clone.willCost = 0;
-            clone.matchType = source.primaryCreatureType == CreatureType.Elemental
-                ? AsheMatchType.Element
-                : AsheMatchType.CreatureType;
+            clone.matchType = AsheMatchType.CreatureType;
             clone.targetCreatureType = source.primaryCreatureType;
+            clone.targetElement = source.element;
 
             if (source.primaryCreatureType == CreatureType.Elemental)
             {
-                clone.targetElement = source.element;
-                clone.description = $"Bound Elemental attacks cost 0 SE while {clone.cardName} is attached.";
+                clone.description = $"Source: free to play. Generates {GameConstants.SourceSEPerTurn} SE each turn.";
             }
             else if (source.primaryCreatureType == CreatureType.Machine)
             {
-                clone.sePerTurn = Mathf.Max(clone.sePerTurn, 2);
-                clone.description = $"Flux Siphon steals {clone.sePerTurn} SE for each enemy daemon in play and adds it to your reserve each turn.";
+                clone.description = $"Source: free to play. Generates {GameConstants.SourceSEPerTurn} SE each turn.";
             }
             else if (source.primaryCreatureType == CreatureType.Artificial)
             {
-                clone.shieldAmount = Mathf.Max(clone.shieldAmount, 8);
-                clone.sePerTurn = 1;
-                clone.description = $"Force Field absorbs {Mathf.Max(1, clone.shieldAmount)} damage for the bound Artificial daemon.";
+                clone.shieldAmount = 0;
+                clone.description = $"Source: free to play. Generates {GameConstants.SourceSEPerTurn} SE each turn.";
             }
             else if (source.primaryCreatureType == CreatureType.Spirit)
             {
-                clone.buffAttack = Mathf.Max(clone.buffAttack, 2);
-                clone.buffAshe = Mathf.Max(clone.buffAshe, 2);
-                clone.buffTurns = Mathf.Max(clone.buffTurns, 3);
-                clone.description = $"Ascendant Bond grants +{clone.buffAttack} ATK and +{clone.buffAshe} Life for {Mathf.Max(1, clone.buffTurns)} turns.";
+                clone.buffAttack = 0;
+                clone.buffAshe = 0;
+                clone.buffTurns = 0;
+                clone.description = $"Source: free to play. Generates {GameConstants.SourceSEPerTurn} SE each turn.";
             }
             else if (source.primaryCreatureType == CreatureType.Undead)
             {
-                clone.resurrectHp = Mathf.Max(clone.resurrectHp, 4);
-                clone.description = $"Last Rite revives the bound Undead once with {Mathf.Max(1, clone.resurrectHp)} Life, then falls into the Void.";
+                clone.resurrectHp = 0;
+                clone.description = $"Source: free to play. Generates {GameConstants.SourceSEPerTurn} SE each turn.";
             }
+            clone.sePerTurn = GameConstants.SourceSEPerTurn;
 
             if (clone.artwork == null)
             {
@@ -770,6 +1108,44 @@ namespace DualCraft.UI
             return card;
         }
 
+        private static void ForceSourceToDeckArchetype(AsheCardData card, DeckData source)
+        {
+            if (card == null || source == null)
+                return;
+
+            card.willCost = 0;
+            card.sePerTurn = GameConstants.SourceSEPerTurn;
+            card.matchType = AsheMatchType.CreatureType;
+            card.targetElement = source.element;
+            card.targetCreatureType = source.primaryCreatureType;
+            card.shieldAmount = 0;
+            card.resurrectHp = 0;
+            card.buffAttack = 0;
+            card.buffAshe = 0;
+            card.buffTurns = 0;
+            card.description = $"Source. Free to play. Generates {GameConstants.SourceSEPerTurn} SE each turn.";
+            if (string.IsNullOrWhiteSpace(card.flavorText))
+                card.flavorText = GetSourceVariantLore(source, "Source", 0);
+        }
+
+        private AsheCardData CreateFallbackSourceCard(DeckData source, int variant)
+        {
+            var card = ScriptableObject.CreateInstance<AsheCardData>();
+            card.hideFlags = HideFlags.DontSave;
+            card.category = CardCategory.AsheCard;
+            card.rarity = Rarity.Common;
+            card.willCost = 0;
+            card.cardId = $"rt-source-{source.primaryCreatureType.ToString().ToLowerInvariant()}-{variant}";
+            card.cardName = $"{source.primaryCreatureType} Source";
+            ForceSourceToDeckArchetype(card, source);
+            card.flavorText = GetSourceVariantLore(source, GetSourceVariantName(source.primaryCreatureType, variant), variant);
+            Element artElement = GetSourceArtElement(source);
+            card.artwork = ResolveSourceBaseArtwork(source, variant)
+                ?? CardTextureGenerator.GenerateCardArt(artElement, CardCategory.AsheCard, card.rarity, card.cardId);
+            card.fullArt = card.artwork;
+            return card;
+        }
+
         private static void ApplyArchetypeAsheDefaults(AsheCardData card)
         {
             if (card == null || card.matchType != AsheMatchType.CreatureType)
@@ -778,18 +1154,18 @@ namespace DualCraft.UI
             switch (card.targetCreatureType)
             {
                 case CreatureType.Machine:
-                    card.sePerTurn = Mathf.Max(card.sePerTurn, 2);
+                    card.sePerTurn = GameConstants.SourceSEPerTurn;
                     break;
                 case CreatureType.Artificial:
-                    card.shieldAmount = Mathf.Max(card.shieldAmount, 8);
+                    card.shieldAmount = 0;
                     break;
                 case CreatureType.Spirit:
-                    card.buffAttack = Mathf.Max(card.buffAttack, 2);
-                    card.buffAshe = Mathf.Max(card.buffAshe, 2);
-                    card.buffTurns = Mathf.Max(card.buffTurns, 3);
+                    card.buffAttack = 0;
+                    card.buffAshe = 0;
+                    card.buffTurns = 0;
                     break;
                 case CreatureType.Undead:
-                    card.resurrectHp = Mathf.Max(card.resurrectHp, 4);
+                    card.resurrectHp = 0;
                     break;
             }
         }
@@ -857,6 +1233,7 @@ namespace DualCraft.UI
                 return;
 
             _storyBattleConfig = DeckConverter.ConsumeStoryBattleConfig();
+            _wildDaemonBattleConfigured = false;
             if (!string.IsNullOrWhiteSpace(_storyBattleConfig?.battlebackThemeId))
                 BattlePresentationRuntime.SetStoryBattleBattlebackTheme(_storyBattleConfig.battlebackThemeId);
             else
@@ -864,7 +1241,9 @@ namespace DualCraft.UI
             DeckData resolvedPlayer1Deck = ResolvePlayerDeck(player1Deck);
             DeckData resolvedPlayer2Deck = ResolveOpponentDeck(player2Deck, resolvedPlayer1Deck);
             player1Deck = CreateBattleDeckVariant(resolvedPlayer1Deck);
-            player2Deck = CreateBattleDeckVariant(resolvedPlayer2Deck);
+            player2Deck = _storyBattleConfig?.isWildDaemonEncounter == true
+                ? resolvedPlayer2Deck
+                : CreateBattleDeckVariant(resolvedPlayer2Deck);
             cardPrefab = RuntimeAssetLocator.LoadCardPrefab(cardPrefab, this);
             daemonFieldPrefab = RuntimeAssetLocator.LoadCardPrefab(daemonFieldPrefab ?? cardPrefab, this);
             pillarPrefab = RuntimeAssetLocator.LoadCardPrefab(pillarPrefab ?? cardPrefab, this);
@@ -969,6 +1348,12 @@ namespace DualCraft.UI
         {
             if (WasSubmitPressedThisFrame())
             {
+                if (_storyResultAwaitingReturn)
+                {
+                    ReturnToStoryFromResult();
+                    return;
+                }
+
                 if (_battleDialogueAwaitingAdvance)
                 {
                     AdvanceBattleDialogue();
@@ -1028,18 +1413,41 @@ namespace DualCraft.UI
 
         private static bool WasSubmitPressedThisFrame()
         {
-            return Input.GetKeyDown(KeyCode.Return)
+            bool pressed = Input.GetKeyDown(KeyCode.Return)
                 || Input.GetKeyDown(KeyCode.KeypadEnter)
                 || Input.GetKeyDown(KeyCode.Space)
                 || Input.GetKeyDown(KeyCode.JoystickButton0)
                 || Input.GetKeyDown(KeyCode.JoystickButton7);
+#if ENABLE_INPUT_SYSTEM
+            var keyboard = Keyboard.current;
+            var gamepad = Gamepad.current;
+            pressed |= keyboard != null
+                && (keyboard.enterKey.wasPressedThisFrame
+                    || keyboard.numpadEnterKey.wasPressedThisFrame
+                    || keyboard.spaceKey.wasPressedThisFrame);
+            pressed |= gamepad != null
+                && (gamepad.buttonSouth.wasPressedThisFrame
+                    || gamepad.startButton.wasPressedThisFrame);
+#endif
+            return pressed;
         }
 
         private static bool WasCancelPressedThisFrame()
         {
-            return Input.GetKeyDown(KeyCode.Escape)
+            bool pressed = Input.GetKeyDown(KeyCode.Escape)
                 || Input.GetKeyDown(KeyCode.Backspace)
                 || Input.GetKeyDown(KeyCode.JoystickButton1);
+#if ENABLE_INPUT_SYSTEM
+            var keyboard = Keyboard.current;
+            var gamepad = Gamepad.current;
+            pressed |= keyboard != null
+                && (keyboard.escapeKey.wasPressedThisFrame
+                    || keyboard.backspaceKey.wasPressedThisFrame);
+            pressed |= gamepad != null
+                && (gamepad.buttonEast.wasPressedThisFrame
+                    || gamepad.selectButton.wasPressedThisFrame);
+#endif
+            return pressed;
         }
 
         private void PressPrimaryBattleAction()
@@ -1083,16 +1491,18 @@ namespace DualCraft.UI
 
         private bool TryStartRelayBattle()
         {
-            _relayHost = FindFirstObjectByType<Net.RelayGameHost>();
-            _relayClient = FindFirstObjectByType<Net.RelayGameClient>();
+            _relayHost = FindAnyObjectByType<Net.RelayGameHost>();
+            _relayClient = FindAnyObjectByType<Net.RelayGameClient>();
 
             if (_relayHost != null && _relayHost.Room?.Started == true && _relayHost.Room.Core?.Engine != null)
             {
                 _onlineBattle = true;
                 _onlineActionSequence = 0;
+                _onlineGameOverHandled = false;
                 _battle = _relayHost.Room.Core.Engine;
                 BindBattleEvents();
                 _relayHost.OnLocalMessage += HandleRelayHostMessage;
+                _relayHost.OnGuestSyncStatusChanged += HandleRelayGuestSyncStatus;
                 endTurnButton?.onClick.AddListener(OnEndTurnClicked);
                 CreateForfeitButton();
                 if (gameOverPanel) gameOverPanel.SetActive(false);
@@ -1107,6 +1517,7 @@ namespace DualCraft.UI
             {
                 _onlineBattle = true;
                 _onlineActionSequence = 0;
+                _onlineGameOverHandled = false;
                 _battle = new BattleManager(cardDatabase);
                 BindBattleEvents();
                 _relayClient.OnGameStateReceived += HandleRelayClientSnapshot;
@@ -1149,7 +1560,12 @@ namespace DualCraft.UI
                     break;
                 case nameof(Net.GameOver):
                     var over = Net.JsonUtility.FromJson<Net.GameOver>(envelope.Payload);
-                    HandleGameOver(over.WinnerIndex, over.WinReason);
+                    if (_onlineGameOverHandled)
+                        return;
+                    _onlineGameOverHandled = true;
+                    if (over?.FinalState != null)
+                        ApplyRelayState(over.FinalState, 0);
+                    HandleGameOver(over.WinnerIndex == 0 ? LocalPlayer : AIPlayerIndex, over.WinReason);
                     break;
             }
         }
@@ -1162,7 +1578,11 @@ namespace DualCraft.UI
         private void HandleRelayClientActionConfirmed(Net.ActionConfirmed confirmed)
         {
             if (confirmed?.State == null) return;
-            ApplyRelayState(confirmed.State, 1);
+            if (ApplyRelayState(confirmed.State, 1))
+            {
+                _relayClient?.AcknowledgeAppliedState(confirmed.ServerSequence, "ActionConfirmed");
+                AddLogEntry(new LogEntry { Message = $"Synced action #{confirmed.ServerSequence}.", Type = LogEntryType.System });
+            }
         }
 
         private void HandleRelayClientActionRejected(Net.ActionRejected rejected)
@@ -1172,8 +1592,17 @@ namespace DualCraft.UI
 
         private void HandleRelayClientGameOver(Net.GameOver gameOver)
         {
+            if (_onlineGameOverHandled)
+                return;
+            _onlineGameOverHandled = true;
             if (gameOver?.FinalState != null)
-                ApplyRelayState(gameOver.FinalState, 1);
+            {
+                if (ApplyRelayState(gameOver.FinalState, 1))
+                {
+                    _relayClient?.AcknowledgeAppliedState(gameOver.ServerSequence, "GameOver");
+                    AddLogEntry(new LogEntry { Message = $"Synced game over #{gameOver.ServerSequence}.", Type = LogEntryType.System });
+                }
+            }
             HandleGameOver(gameOver.WinnerIndex == 1 ? 0 : 1, gameOver.WinReason);
         }
 
@@ -1186,15 +1615,50 @@ namespace DualCraft.UI
         private void ApplyRelaySnapshot(Net.GameStateSnapshot snapshot)
         {
             if (snapshot?.State == null) return;
-            ApplyRelayState(snapshot.State, snapshot.YourPlayerIndex);
+            if (ApplyRelayState(snapshot.State, snapshot.YourPlayerIndex))
+            {
+                _relayClient?.AcknowledgeAppliedState(snapshot.ServerSequence, "Snapshot");
+                if (_relayClient != null)
+                    AddLogEntry(new LogEntry { Message = $"Synced snapshot #{snapshot.ServerSequence}.", Type = LogEntryType.System });
+            }
         }
 
-        private void ApplyRelayState(Net.SerializableGameState networkState, int localSeat)
+        private bool ApplyRelayState(Net.SerializableGameState networkState, int localSeat)
         {
             var projected = Net.NetworkStateProjector.ToLocalGameState(networkState, localSeat, cardDatabase);
-            if (projected == null) return;
+            if (projected == null) return false;
+            AnnounceRelayLogEntries(projected);
             _battle.SetExternalState(projected);
             RefreshUI(projected);
+            return true;
+        }
+
+        private void HandleRelayGuestSyncStatus(Net.SyncStatus status)
+        {
+            if (status == null || string.IsNullOrWhiteSpace(status.Message))
+                return;
+
+            AddLogEntry(new LogEntry { Message = status.Message, Type = LogEntryType.System });
+            ShowTargetingHint(status.Message);
+        }
+
+        private void AnnounceRelayLogEntries(GameState projected)
+        {
+            if (projected?.Log == null)
+                return;
+
+            foreach (LogEntry entry in projected.Log)
+            {
+                if (entry == null || string.IsNullOrWhiteSpace(entry.Message))
+                    continue;
+
+                string key = $"{entry.Turn}|{entry.Player}|{entry.Type}|{entry.Message}";
+                if (!_announcedNetworkLogKeys.Add(key))
+                    continue;
+
+                AddLogEntry(entry);
+                ShowTargetingHint(entry.Message);
+            }
         }
 
         private bool SubmitPlayerAction(GameAction action)
@@ -1583,6 +2047,9 @@ namespace DualCraft.UI
             }
 
             var image = rect.GetComponent<Image>();
+            image.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            image.type = image.sprite != null && image.sprite.border.sqrMagnitude > 0f ? Image.Type.Sliced : Image.Type.Simple;
+            image.color = new Color(0.035f, 0.030f, 0.046f, 0.70f);
             image.raycastTarget = false;
             return rect;
         }
@@ -2144,12 +2611,12 @@ namespace DualCraft.UI
 
             ApplyRect(p2HandContainer as RectTransform, new Vector2(0.372f, 0.875f), new Vector2(0.628f, 0.998f), Vector2.zero, Vector2.zero);
             ApplyRect(p2FieldContainer as RectTransform, new Vector2(combatMin, 0.640f), new Vector2(combatMax, 0.865f), Vector2.zero, Vector2.zero);
-            ApplyRect(FindRootRect("P2SourceZone"), new Vector2(0.155f, 0.810f), new Vector2(0.242f, 0.948f), Vector2.zero, Vector2.zero);
+            ApplyRect(FindRootRect("P2SourceZone"), new Vector2(0.148f, 0.690f), new Vector2(0.232f, 0.830f), Vector2.zero, Vector2.zero);
             ApplyRect(p2PillarContainer as RectTransform, new Vector2(-0.18f, 1.08f), new Vector2(-0.10f, 1.20f), Vector2.zero, Vector2.zero);
             ApplyRect(FindRootRect("P2InvokerZone"), new Vector2(0.854f, 0.914f), new Vector2(0.978f, 0.982f), Vector2.zero, Vector2.zero);
 
             ApplyRect(p1FieldContainer as RectTransform, new Vector2(combatMin, 0.270f), new Vector2(combatMax, 0.460f), Vector2.zero, Vector2.zero);
-            ApplyRect(FindRootRect("P1SourceZone"), new Vector2(0.155f, 0.025f), new Vector2(0.242f, 0.209f), Vector2.zero, Vector2.zero);
+            ApplyRect(FindRootRect("P1SourceZone"), new Vector2(0.148f, 0.118f), new Vector2(0.232f, 0.260f), Vector2.zero, Vector2.zero);
             ApplyRect(p1PillarContainer as RectTransform, new Vector2(-0.18f, -0.20f), new Vector2(-0.10f, -0.08f), Vector2.zero, Vector2.zero);
             ApplyRect(FindRootRect("P1InvokerZone"), new Vector2(0.854f, 0.018f), new Vector2(0.978f, 0.086f), Vector2.zero, Vector2.zero);
             ApplyRect(p1HandContainer as RectTransform, new Vector2(handMin, 0.000f), new Vector2(handMax, 0.148f), Vector2.zero, Vector2.zero);
@@ -2283,14 +2750,13 @@ namespace DualCraft.UI
             if (pile == null)
                 return;
 
-            var image = pile.GetComponent<Image>();
-            if (image != null)
-            {
-                image.sprite = Resources.Load<Sprite>(spritePath);
-                image.type = image.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
-                image.color = new Color(tint.r, tint.g, tint.b, tint.a * 0.14f);
-                image.raycastTarget = true;
-            }
+            var image = pile.GetComponent<Image>() ?? pile.gameObject.AddComponent<Image>();
+            image.sprite = !string.IsNullOrWhiteSpace(spritePath)
+                ? Resources.Load<Sprite>(spritePath) ?? Resources.Load<Sprite>("UI/panel-dark")
+                : Resources.Load<Sprite>("UI/panel-dark");
+            image.type = image.sprite != null && image.sprite.border.sqrMagnitude > 0f ? Image.Type.Sliced : Image.Type.Simple;
+            image.color = new Color(tint.r, tint.g, tint.b, Mathf.Max(0.28f, tint.a * 0.22f));
+            image.raycastTarget = true;
 
             var outline = pile.GetComponent<Outline>() ?? pile.gameObject.AddComponent<Outline>();
             outline.effectColor = new Color(tint.r * 1.5f, tint.g * 1.2f, tint.b * 1.4f, tint.a * 0.30f);
@@ -2324,10 +2790,10 @@ namespace DualCraft.UI
             frameRect.offsetMax = Vector2.zero;
             var frameImage = frame.GetComponent<Image>();
             frameImage.sprite = Resources.Load<Sprite>("UI/panel-dark");
-            frameImage.type = frameImage.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            frameImage.type = frameImage.sprite != null && frameImage.sprite.border.sqrMagnitude > 0f ? Image.Type.Sliced : Image.Type.Simple;
             frameImage.color = tall
-                ? new Color(tint.r, tint.g, tint.b, 0.16f)
-                : new Color(tint.r, tint.g, tint.b, 0.13f);
+                ? new Color(tint.r, tint.g, tint.b, 0.32f)
+                : new Color(tint.r, tint.g, tint.b, 0.28f);
             frameImage.raycastTarget = false;
             var frameOutline = frame.GetComponent<Outline>();
             frameOutline.effectColor = tall
@@ -2352,7 +2818,7 @@ namespace DualCraft.UI
 
             var image = zone.GetComponent<Image>() ?? zone.gameObject.AddComponent<Image>();
             image.sprite = Resources.Load<Sprite>("UI/panel-dark");
-            image.type = image.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            image.type = image.sprite != null && image.sprite.border.sqrMagnitude > 0f ? Image.Type.Sliced : Image.Type.Simple;
             image.color = fill;
             image.raycastTarget = false;
 
@@ -2782,6 +3248,16 @@ namespace DualCraft.UI
 
             if (resolution.TargetDestroyed)
                 detail += $" {target} falls.";
+            if (!string.IsNullOrWhiteSpace(resolution.WardName))
+            {
+                detail += $" {resolution.WardName} rolled {resolution.WardRoll}.";
+                if (resolution.WardPreventedDamage > 0)
+                    detail += $" It blocked {resolution.WardPreventedDamage}.";
+                if (resolution.WardReflectedDamage > 0)
+                    detail += $" It reflected {resolution.WardReflectedDamage}.";
+                if (resolution.WardDrainedSE > 0)
+                    detail += $" It drained {resolution.WardDrainedSE} SE.";
+            }
             if (resolution.TargetOwnerInvokerLifeLoss > 0)
                 detail += $" Invoker loses {resolution.TargetOwnerInvokerLifeLoss} Life.";
             if (resolution.AttackerDestroyed && resolution.AttackerOwnerInvokerLifeLoss > 0)
@@ -2868,16 +3344,21 @@ namespace DualCraft.UI
                         attackerElement = card.element;
                 }
             }
+            CardData attackerCard = ResolveCombatAttackerCard(resolution);
             Element capturedElement = attackerElement;
-            string effectTag = ResolveAttackEffectTag(resolution);
-
-            if (!string.IsNullOrEmpty(effectTag))
-                SpawnFloatingCombatText(fromWorld + Vector3.up * 22f, effectTag, new Color(impactColor.r, impactColor.g, impactColor.b, 0.92f), 0.62f);
+            string resolvedAttackName = ResolveAttackName(resolveState, resolution.AttackerPlayer, resolution.AttackerIndex, capturedElement);
+            string attackLetter = ResolveCombatAttackLetter(resolution);
+            string attackOutcome = resolution.HitInvoker
+                ? $"{attackLetter}  {resolvedAttackName}  -{resolution.Damage} INVOKER"
+                : $"{attackLetter}  {resolvedAttackName}  -{resolution.Damage}";
+            ShowAttackActionBand(attackOutcome, impactColor);
+            StartCoroutine(PlayActionPoseBurst(attackerCard, fromWorld, toWorld, impactColor, false, resolvedAttackName));
 
             // Lunge the attacker card toward target, trigger effects on impact
             PlayAttackLungeOnField(attackerContainer, resolution.AttackerIndex, toWorld, () =>
             {
                 StartCoroutine(UIAnimUtils.HitPause(resolution.WasCritical ? 0.055f : resolution.WasWeak ? 0.020f : 0.030f));
+                ShakeCombatTarget(resolution, resolution.TargetDestroyed ? 11f : 7f, resolution.TargetDestroyed ? 0.18f : 0.13f);
 
                 // Play impact sounds
                 var sfxOnImpact = Audio.SfxManager.EnsureInstance();
@@ -2890,19 +3371,19 @@ namespace DualCraft.UI
                         sfxOnImpact.PlayCreatureDeath(resolution.TargetCreatureType, resolution.TargetElement, 0.58f);
                 }
 
-                SpawnImpactBurst(fromWorld, new Color(impactColor.r, impactColor.g, impactColor.b, 0.82f), resolution.WasCritical ? 0.92f : 0.72f);
-                SpawnCombatBeam(fromWorld, toWorld, impactColor);
-                SpawnElementalTrail(fromWorld, toWorld, impactColor);
                 SpawnElementalAttackFX(fromWorld, toWorld, capturedElement);
-                SpawnImpactBurst(toWorld, impactColor, resolution.TargetDestroyed ? 1.7f : 1.15f);
-                SpawnAetherSheetImpactFX(toWorld, capturedElement, impactColor, resolution.TargetDestroyed ? 1.18f : 0.96f);
+                SpawnElementalAttackBeam(fromWorld, toWorld, capturedElement, impactColor, resolution.WasCritical || resolution.TargetDestroyed);
+                SpawnUnityParticleImpact(toWorld, capturedElement, impactColor, resolution.TargetDestroyed ? 2.05f : 1.62f);
+                SpawnImpactBurst(toWorld, impactColor, resolution.TargetDestroyed ? 2.25f : 1.62f);
+                SpawnAetherSheetImpactFX(toWorld, capturedElement, impactColor, resolution.TargetDestroyed ? 1.42f : 1.12f);
                 SpawnElementalImpactPulse(toWorld, impactColor);
+                SpawnDamageMeter(toWorld, resolution, impactColor);
                 SpawnImpactShards(
                     toWorld,
                     impactColor,
-                    resolution.TargetDestroyed ? 14 : resolution.WasCritical ? 11 : 8,
-                    resolution.HitPillar ? 102f : 78f,
-                    resolution.TargetDestroyed ? 1.16f : resolution.WasCritical ? 1.06f : 0.94f);
+                    resolution.TargetDestroyed ? 24 : resolution.WasCritical ? 18 : 14,
+                    resolution.HitPillar ? 136f : 104f,
+                    resolution.TargetDestroyed ? 1.42f : resolution.WasCritical ? 1.24f : 1.08f);
 
 	                if (resolution.HitPillar && resolution.TargetDestroyed)
 	                {
@@ -2929,9 +3410,24 @@ namespace DualCraft.UI
                 if (resolution.HitInvoker)
                 {
                     SpawnFloatingCombatText(toWorld, $"-{resolution.Damage} to INVOKER", CombatHitTint, 1.4f);
+                    if (!string.IsNullOrWhiteSpace(resolution.WardName))
+                    {
+                        string wardRollText = resolution.WardThreshold > 0
+                            ? $"WARD d6 {resolution.WardRoll}/{resolution.WardThreshold}+"
+                            : $"WARD d6 {resolution.WardRoll}";
+                        SpawnFloatingCombatText(toWorld + Vector3.up * 76f, wardRollText, new Color(0.88f, 0.76f, 1f, 1f), 1.08f);
+                        string wardText = resolution.WardPreventedDamage > 0
+                            ? $"{resolution.WardName} -{resolution.WardPreventedDamage}"
+                            : resolution.WardReflectedDamage > 0
+                                ? $"{resolution.WardName} reflect"
+                                : resolution.WardDrainedSE > 0
+                                    ? $"{resolution.WardName} drain"
+                                    : $"{resolution.WardName} roll";
+                        SpawnFloatingCombatText(toWorld + Vector3.up * 42f, wardText, new Color(0.78f, 0.62f, 1f, 1f), 1.35f);
+                    }
                     if (_combatFlashOverlay != null)
                         StartCoroutine(UIAnimUtils.ScreenFlash(_combatFlashOverlay, new Color(0.92f, 0.14f, 0.14f, 0.9f), 0.28f));
-                    StartCoroutine(UIAnimUtils.ScreenShake(transform, 14f, 0.22f));
+                    StartSafeScreenShake(transform, 14f, 0.22f);
                 }
                 else if (resolution.HitPillar)
                 {
@@ -2939,7 +3435,7 @@ namespace DualCraft.UI
                         ? $"{resolution.TargetName} DESTROYED!"
                         : $"-{resolution.Damage} to {resolution.TargetName}";
                     SpawnFloatingCombatText(toWorld, pillarOutcome, CombatPillarTint, resolution.TargetDestroyed ? 1.25f : 1.05f);
-                    StartCoroutine(UIAnimUtils.ScreenShake(transform, resolution.TargetDestroyed ? 10f : 6f, 0.16f));
+                    StartSafeScreenShake(transform, resolution.TargetDestroyed ? 10f : 6f, 0.16f);
                     if (resolution.PillarIntercepted)
                         SpawnFloatingCombatText(toWorld + Vector3.up * 28f, "BLOCKED!", new Color(1f, 0.85f, 0.35f), 0.9f);
                 }
@@ -2953,7 +3449,7 @@ namespace DualCraft.UI
                     {
                         if (_combatFlashOverlay != null)
                             StartCoroutine(UIAnimUtils.ScreenFlash(_combatFlashOverlay, new Color(impactColor.r, impactColor.g, impactColor.b, 0.65f), 0.18f));
-                        StartCoroutine(UIAnimUtils.ScreenShake(transform, 6f, 0.14f));
+                        StartSafeScreenShake(transform, 6f, 0.14f);
                         SpawnCardShatterFx(toWorld, impactColor, resolution.TargetRarity >= Rarity.Epic);
                         if (resolution.TargetOwnerInvokerLifeLoss > 0)
                             SpawnFloatingCombatText(toWorld + Vector3.down * 30f, $"-{resolution.TargetOwnerInvokerLifeLoss} INVOKER", CombatHitTint, 0.86f);
@@ -3068,6 +3564,19 @@ namespace DualCraft.UI
             return Color.Lerp(CombatHitTint, elementTint, 0.62f);
         }
 
+        private CardData ResolveCombatAttackerCard(CombatResolution resolution)
+        {
+            var state = _battle?.State;
+            if (state == null || resolution.AttackerPlayer < 0 || resolution.AttackerPlayer >= state.Players.Length)
+                return null;
+
+            var field = state.Players[resolution.AttackerPlayer].Field;
+            if (field == null || resolution.AttackerIndex < 0 || resolution.AttackerIndex >= field.Count)
+                return null;
+
+            return field[resolution.AttackerIndex]?.Card;
+        }
+
         private string ResolveAttackEffectTag(CombatResolution resolution)
         {
             var state = _battle?.State;
@@ -3134,11 +3643,79 @@ namespace DualCraft.UI
 
             return resolution.TargetType switch
             {
-                TargetType.Daemon => GetSocketWorldPoint(resolution.TargetPlayer == LocalPlayer ? p1FieldContainer : p2FieldContainer, resolution.TargetIndex),
+                TargetType.Daemon => GetCombatDaemonTargetWorldPoint(resolution),
                 TargetType.Pillar => GetSocketWorldPoint(resolution.TargetPlayer == LocalPlayer ? p1PillarContainer : p2PillarContainer, 0),
                 TargetType.Invoker => GetRectWorldPoint(FindInvokerCardRect(resolution.TargetPlayer)),
                 _ => Vector3.zero,
             };
+        }
+
+        private Vector3 GetCombatDaemonTargetWorldPoint(CombatResolution resolution)
+        {
+            RectTransform targetRect = GetCombatDaemonTargetRect(resolution);
+            if (targetRect != null)
+                return GetRectWorldPoint(targetRect);
+
+            return GetSocketWorldPoint(resolution.TargetPlayer == LocalPlayer ? p1FieldContainer : p2FieldContainer, resolution.TargetIndex);
+        }
+
+        private void ShakeCombatTarget(CombatResolution resolution, float magnitude, float duration)
+        {
+            RectTransform target = resolution.TargetType switch
+            {
+                TargetType.Daemon => GetCombatDaemonTargetRect(resolution),
+                TargetType.Pillar => GetSocketTargetRect(resolution.TargetPlayer == LocalPlayer ? p1PillarContainer : p2PillarContainer, 0),
+                TargetType.Invoker => FindInvokerCardRect(resolution.TargetPlayer),
+                _ => null,
+            };
+
+            if (target != null)
+                StartSafeScreenShake(target, magnitude, duration);
+        }
+
+        private RectTransform GetCombatDaemonTargetRect(CombatResolution resolution)
+        {
+            if (!string.IsNullOrWhiteSpace(resolution.TargetInstanceId))
+            {
+                RectTransform byId = GetDaemonCardRect(resolution.TargetPlayer, resolution.TargetInstanceId);
+                if (byId != null)
+                    return byId;
+            }
+
+            return GetSocketTargetRect(resolution.TargetPlayer == LocalPlayer ? p1FieldContainer : p2FieldContainer, resolution.TargetIndex);
+        }
+
+        private void StartSafeScreenShake(Transform target, float magnitude, float duration)
+        {
+            if (!isActiveAndEnabled || target == null)
+                return;
+
+            StartCoroutine(SafeScreenShake(target, magnitude, duration));
+        }
+
+        private static IEnumerator SafeScreenShake(Transform target, float magnitude, float duration)
+        {
+            if (target == null)
+                yield break;
+
+            Vector3 originalPosition = target.localPosition;
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                if (target == null)
+                    yield break;
+
+                float offsetX = UnityEngine.Random.Range(-magnitude, magnitude);
+                float offsetY = UnityEngine.Random.Range(-magnitude, magnitude);
+                target.localPosition = originalPosition + new Vector3(offsetX, offsetY, 0f);
+
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            if (target != null)
+                target.localPosition = originalPosition;
         }
 
         private Vector3 GetSocketWorldPoint(Transform container, int slotIndex)
@@ -3303,8 +3880,7 @@ namespace DualCraft.UI
         /// </summary>
         private void SpawnElementalAttackFX(Vector3 fromWorld, Vector3 toWorld, Element element)
         {
-            if (TrySpawnAetherSheetAttackFX(fromWorld, toWorld, element))
-                return;
+            TrySpawnAetherSheetAttackFX(fromWorld, toWorld, element);
 
             if (_combatFxLayer == null) return;
             if (!WorldToFxPoint(fromWorld, out Vector2 fromLocal) || !WorldToFxPoint(toWorld, out Vector2 toLocal))
@@ -3345,14 +3921,14 @@ namespace DualCraft.UI
                     rotBase = 30f; speedMin = 0.22f; speedMax = 0.32f; fadeTime = 0.38f;
                     break;
                 case Element.Air:
-                    count = 10; baseColor = new Color(0.82f, 0.96f, 1f);
-                    sizeMin = new Vector2(6f, 4f); sizeMax = new Vector2(32f, 6f);
-                    rotBase = 0f; speedMin = 0.10f; speedMax = 0.18f; fadeTime = 0.22f;
+                    count = 12; baseColor = new Color(0.62f, 0.92f, 1f);
+                    sizeMin = new Vector2(4f, 4f); sizeMax = new Vector2(28f, 7f);
+                    rotBase = 18f; speedMin = 0.09f; speedMax = 0.17f; fadeTime = 0.20f;
                     break;
                 case Element.Nature:
-                    count = 8; baseColor = new Color(0.28f, 0.82f, 0.22f);
-                    sizeMin = new Vector2(10f, 10f); sizeMax = new Vector2(20f, 20f);
-                    rotBase = 0f; speedMin = 0.18f; speedMax = 0.28f; fadeTime = 0.36f;
+                    count = 11; baseColor = new Color(0.32f, 0.86f, 0.24f);
+                    sizeMin = new Vector2(8f, 14f); sizeMax = new Vector2(13f, 24f);
+                    rotBase = 28f; speedMin = 0.20f; speedMax = 0.34f; fadeTime = 0.42f;
                     break;
                 case Element.Light:
                     count = 10; baseColor = new Color(1f, 0.96f, 0.60f);
@@ -3371,15 +3947,20 @@ namespace DualCraft.UI
                     break;
             }
 
+            count = Mathf.CeilToInt(count * 1.55f);
+            sizeMin *= 1.22f;
+            sizeMax *= 1.28f;
+            fadeTime *= 1.22f;
+
             var rng = new System.Random();
             for (int i = 0; i < count; i++)
             {
                 float t = (float)i / Mathf.Max(1, count - 1);
-                Vector2 basePos = Vector2.Lerp(fromLocal, toLocal, t * 0.85f);
+                Vector2 basePos = Vector2.Lerp(fromLocal, toLocal, Mathf.Lerp(0.04f, 1.0f, t));
 
                 // Perpendicular scatter
                 Vector2 perp = new Vector2(-dir.y, dir.x);
-                float scatter = ((float)rng.NextDouble() - 0.5f) * Mathf.Min(60f, dist * 0.22f);
+                float scatter = ((float)rng.NextDouble() - 0.5f) * Mathf.Min(74f, dist * 0.24f);
                 Vector2 spawnPos = basePos + perp * scatter;
 
                 float w = Mathf.Lerp(sizeMin.x, sizeMax.x, (float)rng.NextDouble());
@@ -3398,15 +3979,197 @@ namespace DualCraft.UI
                 rt.localRotation = Quaternion.Euler(0f, 0f, rot);
 
                 var img = go.GetComponent<Image>();
-                img.color = new Color(baseColor.r, baseColor.g, baseColor.b, 0.80f);
+                img.color = new Color(baseColor.r, baseColor.g, baseColor.b, 0.94f);
                 img.raycastTarget = false;
 
                 // Upward drift offset varies by element
                 float driftY = element == Element.Earth ? -18f :
-                               element == Element.Dark  ? -10f : 22f + (float)rng.NextDouble() * 16f;
+                               element == Element.Dark ? -10f :
+                               element == Element.Nature ? -24f - (float)rng.NextDouble() * 18f :
+                               22f + (float)rng.NextDouble() * 16f;
                 StartCoroutine(ElemFXParticle(go, driftY, dur, fadeTime, delay));
             }
         }
+
+        private void SpawnElementalAttackBeam(Vector3 fromWorld, Vector3 toWorld, Element element, Color tint, bool heavy)
+        {
+            if (_combatFxLayer == null)
+                return;
+            if (!WorldToFxPoint(fromWorld, out Vector2 fromLocal) || !WorldToFxPoint(toWorld, out Vector2 toLocal))
+                return;
+
+            Color core = Color.Lerp(Color.white, tint, 0.42f);
+            Color edge = Color.Lerp(ResolveElementTint(element), tint, 0.35f);
+            float scale = heavy ? 1.22f : 1f;
+
+            SpawnAttackBeamStrip("AttackBeamCore", fromLocal, toLocal, 1.02f, 18f * scale, 0f,
+                new Color(core.r, core.g, core.b, heavy ? 0.72f : 0.56f), 0.30f, 0.26f);
+            SpawnAttackBeamStrip("AttackBeamGlow", fromLocal, toLocal, 1.08f, 42f * scale, 0f,
+                new Color(edge.r, edge.g, edge.b, heavy ? 0.30f : 0.22f), 0.42f, 0.38f);
+
+            if (heavy)
+            {
+                SpawnAttackBeamStrip("AttackBeamCross", fromLocal, toLocal, 0.96f, 12f, 90f,
+                    new Color(1f, 1f, 1f, 0.34f), 0.22f, 0.18f);
+            }
+        }
+
+        private void SpawnAttackBeamStrip(string name, Vector2 fromLocal, Vector2 toLocal, float lengthScale, float thickness, float angleOffset, Color color, float duration, float endScaleFactor)
+        {
+            Vector2 delta = toLocal - fromLocal;
+            if (delta.sqrMagnitude < 1f || _combatFxLayer == null)
+                return;
+
+            var beam = new GameObject(name, typeof(RectTransform), typeof(Image));
+            beam.transform.SetParent(_combatFxLayer, false);
+            var rect = beam.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(Mathf.Max(70f, delta.magnitude * lengthScale), thickness);
+            rect.anchoredPosition = (fromLocal + toLocal) * 0.5f;
+            rect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg + angleOffset);
+            rect.localScale = Vector3.one;
+
+            var image = beam.GetComponent<Image>();
+            image.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            image.type = image.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            image.color = color;
+            image.raycastTarget = false;
+
+            StartCoroutine(FadeAndShrink(rect, image, duration, endScaleFactor));
+        }
+
+        private void SpawnUnityParticleImpact(Vector3 worldPos, Element element, Color tint, float intensity)
+        {
+            if (_combatFxLayer == null)
+                return;
+
+            var go = new GameObject($"ParticleImpact_{element}", typeof(ParticleSystem));
+            go.transform.SetParent(_combatFxLayer, false);
+            go.transform.position = worldPos;
+            go.transform.localScale = Vector3.one;
+
+            var ps = go.GetComponent<ParticleSystem>();
+            if (ps.isPlaying || ps.isEmitting)
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var main = ps.main;
+            main.loop = false;
+            main.playOnAwake = false;
+            main.duration = 0.92f;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.36f, 0.86f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(1.9f * intensity, 5.6f * intensity);
+            main.startSize = ResolveParticleSize(element, intensity);
+            main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+            main.startColor = new ParticleSystem.MinMaxGradient(
+                new Color(Mathf.Min(1f, tint.r + 0.18f), Mathf.Min(1f, tint.g + 0.18f), Mathf.Min(1f, tint.b + 0.18f), 0.96f),
+                new Color(tint.r, tint.g, tint.b, 0.55f));
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+            main.maxParticles = Mathf.RoundToInt(120f * intensity);
+
+            var emission = ps.emission;
+            emission.rateOverTime = 0f;
+            emission.SetBursts(new[]
+            {
+                new ParticleSystem.Burst(0f, (short)Mathf.RoundToInt(ResolveParticleCount(element) * intensity * 1.42f)),
+                new ParticleSystem.Burst(0.08f, (short)Mathf.RoundToInt(ResolveParticleCount(element) * intensity * 0.38f))
+            });
+
+            var shape = ps.shape;
+            shape.enabled = true;
+            shape.shapeType = element == Element.Water || element == Element.Air
+                ? ParticleSystemShapeType.Cone
+                : ParticleSystemShapeType.Sphere;
+            shape.radius = 0.28f * intensity;
+            shape.angle = element == Element.Water ? 30f : 42f;
+
+            var velocity = ps.velocityOverLifetime;
+            velocity.enabled = true;
+            velocity.space = ParticleSystemSimulationSpace.Local;
+            velocity.y = element switch
+            {
+                Element.Earth => new ParticleSystem.MinMaxCurve(-0.25f, 0.55f),
+                Element.Water => new ParticleSystem.MinMaxCurve(-0.10f, 0.95f),
+                Element.Nature => new ParticleSystem.MinMaxCurve(0.20f, 1.20f),
+                _ => new ParticleSystem.MinMaxCurve(0.15f, 1.60f),
+            };
+            velocity.x = new ParticleSystem.MinMaxCurve(-1.15f, 1.15f);
+            velocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+
+            var colorOverLife = ps.colorOverLifetime;
+            colorOverLife.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(Color.white, 0f),
+                    new GradientColorKey(tint, 0.22f),
+                    new GradientColorKey(Color.Lerp(tint, Color.black, 0.35f), 1f),
+                },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(0.95f, 0.08f),
+                    new GradientAlphaKey(0.68f, 0.46f),
+                    new GradientAlphaKey(0f, 1f),
+                });
+            colorOverLife.color = new ParticleSystem.MinMaxGradient(gradient);
+
+            var sizeOverLife = ps.sizeOverLifetime;
+            sizeOverLife.enabled = true;
+            sizeOverLife.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(
+                new Keyframe(0f, 0.55f),
+                new Keyframe(0.18f, 1.25f),
+                new Keyframe(1f, 0f)));
+
+            var noise = ps.noise;
+            noise.enabled = element == Element.Air || element == Element.Dark || element == Element.Nature || element == Element.Flame;
+            noise.strength = new ParticleSystem.MinMaxCurve(0.32f, 0.86f);
+            noise.frequency = 0.82f;
+
+            var renderer = ps.GetComponent<ParticleSystemRenderer>();
+            if (renderer != null)
+            {
+                renderer.renderMode = ParticleSystemRenderMode.Billboard;
+                renderer.sortingOrder = 6000;
+                Material particleMaterial = Resources.GetBuiltinResource<Material>("Sprites-Default.mat");
+                if (particleMaterial != null)
+                    renderer.sharedMaterial = particleMaterial;
+            }
+
+            ps.Play(true);
+            Destroy(go, 1.85f);
+        }
+
+        private static ParticleSystem.MinMaxCurve ResolveParticleSize(Element element, float intensity)
+        {
+            float scale = Mathf.Max(0.65f, intensity);
+            return element switch
+            {
+                Element.Flame => new ParticleSystem.MinMaxCurve(0.12f * scale, 0.30f * scale),
+                Element.Water => new ParticleSystem.MinMaxCurve(0.10f * scale, 0.28f * scale),
+                Element.Air => new ParticleSystem.MinMaxCurve(0.07f * scale, 0.22f * scale),
+                Element.Nature => new ParticleSystem.MinMaxCurve(0.09f * scale, 0.25f * scale),
+                Element.Earth => new ParticleSystem.MinMaxCurve(0.13f * scale, 0.32f * scale),
+                Element.Light => new ParticleSystem.MinMaxCurve(0.08f * scale, 0.24f * scale),
+                Element.Dark => new ParticleSystem.MinMaxCurve(0.10f * scale, 0.29f * scale),
+                _ => new ParticleSystem.MinMaxCurve(0.09f * scale, 0.24f * scale),
+            };
+        }
+
+        private static int ResolveParticleCount(Element element) => element switch
+        {
+            Element.Flame => 44,
+            Element.Water => 40,
+            Element.Air => 52,
+            Element.Nature => 46,
+            Element.Earth => 38,
+            Element.Light => 54,
+            Element.Dark => 46,
+            _ => 38,
+        };
 
         private bool TrySpawnAetherSheetAttackFX(Vector3 fromWorld, Vector3 toWorld, Element element)
         {
@@ -3817,7 +4580,169 @@ namespace DualCraft.UI
             textLabel.outlineWidth = 0.24f;
             textLabel.outlineColor = new Color(0f, 0f, 0f, 0.82f);
             textLabel.raycastTarget = false;
-            StartCoroutine(UIAnimUtils.FloatingText(textLabel, 110f, 0.9f));
+            StartCoroutine(UIAnimUtils.FloatingText(textLabel, 110f, GameConstants.CombatNoticeSeconds));
+        }
+
+        private void SpawnDamageMeter(Vector3 worldPos, CombatResolution resolution, Color tint)
+        {
+            if (_combatFxLayer == null || resolution == null || resolution.Damage <= 0)
+                return;
+            if (!WorldToFxPoint(worldPos, out Vector2 localPos))
+                return;
+
+            ResolveDamageMeterValues(resolution, out int before, out int after);
+            int max = Mathf.Max(1, Mathf.Max(before, after));
+            float startRatio = Mathf.Clamp01(before / (float)max);
+            float endRatio = Mathf.Clamp01(after / (float)max);
+
+            var root = new GameObject("DamageMeter", typeof(RectTransform), typeof(CanvasGroup));
+            root.transform.SetParent(_combatFxLayer, false);
+            var rect = root.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = localPos + new Vector2(0f, -72f);
+            rect.sizeDelta = new Vector2(148f, 38f);
+
+            var bg = new GameObject("BarBack", typeof(RectTransform), typeof(Image));
+            bg.transform.SetParent(root.transform, false);
+            var bgRect = bg.GetComponent<RectTransform>();
+            bgRect.anchorMin = new Vector2(0.5f, 0f);
+            bgRect.anchorMax = new Vector2(0.5f, 0f);
+            bgRect.pivot = new Vector2(0.5f, 0.5f);
+            bgRect.anchoredPosition = new Vector2(0f, 9f);
+            bgRect.sizeDelta = new Vector2(132f, 12f);
+            var bgImage = bg.GetComponent<Image>();
+            bgImage.color = new Color(0.03f, 0.025f, 0.02f, 0.88f);
+            bgImage.raycastTarget = false;
+
+            var fill = new GameObject("BarFill", typeof(RectTransform), typeof(Image));
+            fill.transform.SetParent(bg.transform, false);
+            var fillRect = fill.GetComponent<RectTransform>();
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = new Vector2(startRatio, 1f);
+            fillRect.offsetMin = new Vector2(2f, 2f);
+            fillRect.offsetMax = new Vector2(-2f, -2f);
+            var fillImage = fill.GetComponent<Image>();
+            fillImage.color = Color.Lerp(new Color(0.94f, 0.14f, 0.12f, 0.98f), tint, 0.22f);
+            fillImage.raycastTarget = false;
+
+            var labelGO = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+            labelGO.transform.SetParent(root.transform, false);
+            var labelRect = labelGO.GetComponent<RectTransform>();
+            labelRect.anchorMin = new Vector2(0.5f, 1f);
+            labelRect.anchorMax = new Vector2(0.5f, 1f);
+            labelRect.pivot = new Vector2(0.5f, 0.5f);
+            labelRect.anchoredPosition = new Vector2(0f, -8f);
+            labelRect.sizeDelta = new Vector2(138f, 22f);
+            var label = labelGO.GetComponent<TextMeshProUGUI>();
+            label.text = $"-{resolution.Damage}";
+            label.alignment = TextAlignmentOptions.Center;
+            label.fontStyle = FontStyles.Bold;
+            label.fontSize = 20f;
+            label.color = new Color(1f, 0.30f, 0.24f, 1f);
+            label.outlineWidth = 0.22f;
+            label.outlineColor = new Color(0f, 0f, 0f, 0.85f);
+            label.raycastTarget = false;
+
+            PlayDamageMeterTween(root.GetComponent<CanvasGroup>(), rect, fillRect, startRatio, endRatio);
+        }
+
+        private void ResolveDamageMeterValues(CombatResolution resolution, out int before, out int after)
+        {
+            after = 0;
+            before = Mathf.Max(1, resolution.Damage);
+
+            var state = _battle?.State;
+            if (state?.Players == null || resolution.TargetPlayer < 0 || resolution.TargetPlayer >= state.Players.Length)
+                return;
+
+            var targetPlayer = state.Players[resolution.TargetPlayer];
+            if (resolution.HitInvoker && targetPlayer?.Invoker != null)
+            {
+                after = Mathf.Max(0, targetPlayer.Invoker.Hp);
+                before = Mathf.Clamp(after + resolution.Damage, 1, Mathf.Max(1, targetPlayer.Invoker.MaxHp));
+                return;
+            }
+
+            if (resolution.TargetType == TargetType.Daemon && targetPlayer?.Field != null)
+            {
+                DaemonInstance target = null;
+                if (resolution.TargetIndex >= 0 && resolution.TargetIndex < targetPlayer.Field.Count)
+                    target = targetPlayer.Field[resolution.TargetIndex];
+
+                if (target != null && target.Card != null)
+                {
+                    after = Mathf.Max(0, target.CurrentAshe);
+                    before = Mathf.Clamp(after + resolution.Damage, 1, Mathf.Max(1, target.MaxAshe));
+                    return;
+                }
+            }
+
+            if (resolution.TargetDestroyed)
+            {
+                after = 0;
+                before = Mathf.Max(1, resolution.Damage);
+            }
+        }
+
+        private void PlayDamageMeterTween(CanvasGroup group, RectTransform root, RectTransform fill, float startRatio, float endRatio)
+        {
+            const float hold = 0.12f;
+            const float drain = 0.72f;
+            const float fade = 0.22f;
+
+            if (group != null)
+                group.alpha = 0f;
+            Vector3 baseScale = root != null ? root.localScale : Vector3.one;
+            Vector2 startPos = root != null ? root.anchoredPosition : Vector2.zero;
+            if (root != null)
+                root.localScale = baseScale * 0.88f;
+
+            Sequence seq = DOTween.Sequence().SetUpdate(true);
+            if (group != null)
+            {
+                DOTween.Kill(group);
+                seq.Join(DOTween.To(() => group.alpha, value => group.alpha = value, 1f, hold).SetEase(Ease.OutQuad).SetTarget(group));
+            }
+            if (root != null)
+            {
+                DOTween.Kill(root);
+                seq.Join(DOTween.To(() => root.localScale, value => root.localScale = value, baseScale, hold).SetEase(Ease.OutBack).SetTarget(root));
+            }
+
+            if (fill != null)
+            {
+                DOTween.Kill(fill);
+                seq.Append(DOTween.To(
+                    () => fill.anchorMax.x,
+                    value => fill.anchorMax = new Vector2(value, 1f),
+                    endRatio,
+                    drain).SetEase(Ease.OutQuad).SetTarget(fill));
+            }
+            else
+            {
+                seq.AppendInterval(drain);
+            }
+
+            if (group != null)
+                seq.Append(DOTween.To(() => group.alpha, value => group.alpha = value, 0f, fade).SetEase(Ease.OutQuad).SetTarget(group));
+            else
+                seq.AppendInterval(fade);
+
+            if (root != null)
+            {
+                seq.Join(DOTween.To(
+                    () => root.anchoredPosition,
+                    value => root.anchoredPosition = value,
+                    startPos + Vector2.up * 18f,
+                    fade).SetEase(Ease.OutQuad).SetTarget(root));
+                seq.OnComplete(() =>
+                {
+                    if (root != null)
+                        Destroy(root.gameObject);
+                });
+            }
         }
 
         private bool WorldToFxPoint(Vector3 worldPoint, out Vector2 localPoint)
@@ -3885,8 +4810,30 @@ namespace DualCraft.UI
             _refreshScheduled = false;
             if (_battle != null)
             {
+                ResolveWildDaemonBattleOutcome();
                 RefreshUI(_battle.State);
             }
+        }
+
+        private void ResolveWildDaemonBattleOutcome()
+        {
+            if (_storyBattleConfig?.isWildDaemonEncounter != true || _battle?.State == null || _battle.State.GameOver)
+                return;
+            if (!_wildDaemonBattleConfigured)
+                return;
+
+            PlayerState wild = _battle.State.Players[AIPlayerIndex];
+            if (wild == null)
+                return;
+
+            bool bossGone = wild.Field.Count == 0 || wild.Field.All(daemon => daemon == null || daemon.CurrentAshe <= 0);
+            if (!bossGone && wild.Invoker.Hp > 0)
+                return;
+
+            wild.Invoker.Hp = 0;
+            _battle.State.Winner = LocalPlayer;
+            _battle.State.GameOver = true;
+            HandleGameOver(LocalPlayer, "Wild daemon subdued!");
         }
 
         /// <summary>Opening sequence: shuffle, deal, and start with Ashe-based SE.</summary>
@@ -3903,6 +4850,7 @@ namespace DualCraft.UI
             // frame in standalone builds, which leaves the player trapped behind the Unity splash.
             var (quickR1, quickR2) = _battle.CompleteSetup();
             Debug.Log($"[Battle] CompleteSetup legacy values p1={quickR1} p2={quickR2}");
+            ConfigureWildDaemonBattleState();
             string quickFirstName = _battle.State.Players[_battle.State.CurrentPlayer].Name;
             AddLogEntry(new LogEntry { Message = $"{quickFirstName} takes the first turn.", Type = LogEntryType.System });
             int quickSeTotal = _battle.State.Players[_battle.State.CurrentPlayer].Will;
@@ -3920,64 +4868,6 @@ namespace DualCraft.UI
             LogHybridDiagnosticsSnapshot();
             LogRenderDiagnostics();
             yield break;
-
-            if (_storyBattleConfig != null)
-                yield return PlayStoryBattleIntroBanner();
-            else
-                yield return new WaitForSecondsRealtime(0.25f);
-
-            // Roll for first player (both roll 12d)
-            var (r1, r2) = _battle.CompleteSetup();
-            Debug.Log($"[Battle] CompleteSetup rolls p1={r1} p2={r2}");
-            AddLogEntry(new LogEntry { Message = $"Player 1 rolls {r1}, Player 2 rolls {r2}!", Type = LogEntryType.System });
-
-            // Animate dice if available
-            if (diceRoller != null)
-            {
-                ActivateDiceArea();
-                bool diceFinished = false;
-                int higherRoll = Mathf.Max(r1, r2);
-                Debug.Log($"[Battle] OpeningSequence: rolling dice to {higherRoll}");
-                diceRoller.RollToValue(higherRoll, () => diceFinished = true);
-                float diceDeadline = Time.realtimeSinceStartup + 3.0f;
-                while (!diceFinished && Time.realtimeSinceStartup < diceDeadline) yield return null;
-                if (!diceFinished)
-                    Debug.LogWarning("[Battle] OpeningSequence: dice roll timed out; continuing setup.");
-                Debug.Log("[Battle] OpeningSequence: dice callback received, hiding dice");
-                yield return new WaitForSecondsRealtime(0.35f);
-                DeactivateDiceArea();
-
-                // Source income is deterministic now; no SE dice animation here.
-            }
-            else
-            {
-                yield return new WaitForSecondsRealtime(0.55f);
-            }
-
-            string firstName = _battle.State.Players[_battle.State.CurrentPlayer].Name;
-            AddLogEntry(new LogEntry { Message = $"{firstName} goes first!", Type = LogEntryType.System });
-            yield return new WaitForSecondsRealtime(0.25f);
-
-            // Show stored SE for the first player after setup.
-            int seTotal = _battle.State.Players[_battle.State.CurrentPlayer].Will;
-            AddLogEntry(new LogEntry { Message = $"{firstName} starts with {seTotal} stored SE.", Type = LogEntryType.System });
-
-            _suppressSERolledVisual = false;
-
-            if (endTurnButton) endTurnButton.interactable = true;
-            Debug.Log("[Battle] OpeningSequence setup complete");
-
-            // If AI goes first, run AI turn; otherwise wait for player draw
-            if (_battle.State.CurrentPlayer == AIPlayerIndex)
-            {
-                StartCoroutine(RunAITurn());
-            }
-            // else: player sees Draw phase — clicks a card in hand or the draw happens
-            // Auto-draw for player convenience
-            else
-            {
-                StartCoroutine(AutoDrawCoroutine());
-            }
         }
 
         private IEnumerator AutoDrawCoroutine()
@@ -4013,6 +4903,18 @@ namespace DualCraft.UI
         {
             if (_aiTurnRunning) yield break;
             _aiTurnRunning = true;
+
+            if (_storyBattleConfig?.isWildDaemonEncounter == true && _battle?.State?.Players?.Length >= 2)
+            {
+                yield return RunWildDaemonTurn();
+                _aiTurnRunning = false;
+                if (!_battle.State.GameOver && _battle.State.CurrentPlayer == LocalPlayer
+                    && _battle.State.Phase == GamePhase.Draw)
+                {
+                    StartCoroutine(AutoDrawCoroutine());
+                }
+                yield break;
+            }
 
             // Auto-draw for AI if in Draw phase
             if (_battle.State.Phase == GamePhase.Draw)
@@ -4078,6 +4980,176 @@ namespace DualCraft.UI
             {
                 StartCoroutine(AutoDrawCoroutine());
             }
+        }
+
+        private void ConfigureWildDaemonBattleState()
+        {
+            if (_storyBattleConfig?.isWildDaemonEncounter != true || _battle?.State?.Players == null)
+                return;
+
+            if (!(cardDatabase.GetCard(_storyBattleConfig.wildDaemonCardId) is DaemonCardData wildDaemon))
+            {
+                AddLogEntry(new LogEntry
+                {
+                    Message = "Wild encounter could not load its daemon. Returning to story is safer than auto-winning.",
+                    Type = LogEntryType.System
+                });
+                return;
+            }
+
+            _wildDaemonBattleConfigured = false;
+            PlayerState wild = _battle.State.Players[AIPlayerIndex];
+            wild.Pillars.Clear();
+            wild.Will = 99;
+            wild.MaxWill = 99;
+
+            int bossLife = Mathf.Max(12, wildDaemon.ashe * 3 + 10 + (int)wildDaemon.rarity * 4);
+            int bossAttack = Mathf.Max(2, wildDaemon.attack + 1 + (int)wildDaemon.rarity);
+            wild.Invoker.MaxHp = bossLife;
+            wild.Invoker.Hp = bossLife;
+            wild.Field.Clear();
+            wild.Field.Add(new DaemonInstance
+            {
+                InstanceId = $"wild-boss-{wildDaemon.cardId}",
+                Card = wildDaemon,
+                BaseAttack = bossAttack,
+                BaseAshe = bossLife,
+                Attack = bossAttack,
+                CurrentAshe = bossLife,
+                MaxAshe = bossLife,
+                AsheCost = 0,
+                LaneIndex = 2,
+                CanAttack = true,
+                HasAttacked = false,
+            });
+            SeedWildBossSources(wild, wildDaemon, 2);
+            _wildDaemonBattleConfigured = true;
+
+            AddLogEntry(new LogEntry
+            {
+                Message = $"Wild boss: {wildDaemon.cardName} enters as the opposing Invoker. Defeat it to attempt capture.",
+                Type = LogEntryType.System
+            });
+        }
+
+        private void SeedWildBossSources(PlayerState wild, DaemonCardData wildDaemon, int desiredSources)
+        {
+            if (wild == null || wildDaemon == null || desiredSources <= 0)
+                return;
+
+            wild.AsheCards ??= new List<AsheCardInstance>();
+            int needed = Mathf.Max(0, desiredSources - wild.AsheCards.Count);
+            for (int i = 0; i < needed; i++)
+            {
+                CardInstance sourceInstance = TakeWildSourceFromZone(wild.Hand, wildDaemon)
+                    ?? TakeWildSourceFromZone(wild.Deck, wildDaemon);
+                if (sourceInstance?.Card is not AsheCardData source)
+                    break;
+
+                wild.AsheCards.Add(new AsheCardInstance
+                {
+                    InstanceId = string.IsNullOrWhiteSpace(sourceInstance.InstanceId)
+                        ? Guid.NewGuid().ToString()
+                        : sourceInstance.InstanceId,
+                    Card = source,
+                    AssignedDaemonInstanceId = null,
+                });
+            }
+        }
+
+        private static CardInstance TakeWildSourceFromZone(List<CardInstance> zone, DaemonCardData wildDaemon)
+        {
+            if (zone == null || wildDaemon == null)
+                return null;
+
+            int index = zone.FindIndex(card => card?.Card is AsheCardData source && source.Matches(wildDaemon));
+            if (index < 0)
+                index = zone.FindIndex(card => card?.Card is AsheCardData);
+            if (index < 0)
+                return null;
+
+            CardInstance sourceInstance = zone[index];
+            zone.RemoveAt(index);
+            return sourceInstance;
+        }
+
+        private IEnumerator RunWildDaemonTurn()
+        {
+            PlayerState wild = _battle.State.Players[AIPlayerIndex];
+            if (_battle.State.Phase == GamePhase.Draw)
+                _battle.State.Phase = GamePhase.Main;
+
+            if (_battle.State.Phase == GamePhase.Main)
+            {
+                int sourceIndex = wild.Hand.FindIndex(card => card?.Card is AsheCardData);
+                if (sourceIndex >= 0 && wild.AsheCards.Count < 4)
+                {
+                    _battle.ProcessAction(AIPlayerIndex, new PlayAsheCardAction
+                    {
+                        HandIndex = sourceIndex,
+                        TargetDaemonFieldIndex = -1,
+                    });
+                    yield return new WaitForSeconds(StoryBattleDelay(0.34f));
+                }
+
+                int hexIndex = wild.Hand.FindIndex(card => card?.Card is HexCardData);
+                if (hexIndex >= 0)
+                {
+                    _battle.ProcessAction(AIPlayerIndex, new PlayHexAction { HandIndex = hexIndex });
+                    yield return new WaitForSeconds(StoryBattleDelay(0.42f));
+                }
+
+                yield return new WaitForSeconds(StoryBattleDelay(0.42f));
+                _battle.ProcessAction(AIPlayerIndex, new NextPhaseAction());
+            }
+
+            int swings = Mathf.Clamp(1 + _battle.State.TurnNumber / 4, 1, 3);
+            for (int i = 0; i < swings && !_battle.State.GameOver && _battle.State.CurrentPlayer == AIPlayerIndex; i++)
+            {
+                if (wild.Field.Count == 0)
+                    break;
+
+                DaemonInstance boss = wild.Field[0];
+                boss.CanAttack = true;
+                boss.HasAttacked = false;
+                wild.Will = Mathf.Max(wild.Will, 99);
+
+                int targetIndex = ChooseWildDaemonTargetIndex();
+                var action = targetIndex >= 0
+                    ? new AttackAction { AttackerIndex = 0, Target = TargetType.Daemon, TargetIndex = targetIndex }
+                    : new AttackAction { AttackerIndex = 0, Target = TargetType.Invoker, TargetIndex = -1 };
+
+                yield return new WaitForSeconds(StoryBattleDelay(0.92f));
+                yield return WaitForLocalAttackResponse(AIPlayerIndex, 0);
+                action.ResponseDispelHandIndex = _chosenAttackResponseHandIndex;
+                _battle.ProcessAction(AIPlayerIndex, action);
+                _ = _battle.CombatAutoEnd;
+            }
+
+            if (!_battle.State.GameOver && _battle.State.CurrentPlayer == AIPlayerIndex)
+            {
+                if (_battle.State.Phase == GamePhase.Draw)
+                    _battle.State.Phase = GamePhase.Main;
+                if (_battle.State.Phase == GamePhase.Main)
+                    _battle.ProcessAction(AIPlayerIndex, new NextPhaseAction());
+                if (_battle.State.Phase == GamePhase.Combat)
+                    _battle.ProcessAction(AIPlayerIndex, new EndTurnAction());
+            }
+        }
+
+        private int ChooseWildDaemonTargetIndex()
+        {
+            PlayerState player = _battle.State.Players[LocalPlayer];
+            if (player.Field.Count == 0)
+                return -1;
+
+            return player.Field
+                .Select((daemon, index) => new { daemon, index })
+                .Where(x => x.daemon != null)
+                .OrderBy(x => x.daemon.CurrentAshe)
+                .ThenByDescending(x => x.daemon.Attack)
+                .Select(x => x.index)
+                .FirstOrDefault();
         }
 
         // ─── Player Button Handlers ─────────────────────
@@ -4166,9 +5238,17 @@ namespace DualCraft.UI
         {
             DismissCardPreview();
 
+            if (_battle?.State?.Players == null || LocalPlayer < 0 || LocalPlayer >= _battle.State.Players.Length)
+                return;
+
             var player = _battle.State.Players[LocalPlayer];
-            if (handIndex < 0 || handIndex >= player.Hand.Count) return;
-            var card = player.Hand[handIndex].Card;
+            if (player?.Hand == null || handIndex < 0 || handIndex >= player.Hand.Count)
+                return;
+
+            var card = player.Hand[handIndex]?.Card;
+            if (card == null)
+                return;
+
             int cost = card.GetWillCost();
             bool canAfford = player.Will >= cost;
             bool canPlay = canAfford && CanPlayCard(player, card);
@@ -4186,6 +5266,7 @@ namespace DualCraft.UI
             {
                 _pendingMaskHandIndex = -1;
                 _pendingAsheHandIndex = -1;
+                _p1FieldHash = int.MinValue;
                 RefreshUI(_battle.State);
                 ShowTargetingHint("Choose a glowing summon seat");
                 return;
@@ -4208,39 +5289,59 @@ namespace DualCraft.UI
             var cancelBtn = _cardPreviewOverlay.AddComponent<Button>();
             cancelBtn.onClick.AddListener(DismissCardPreview);
 
-            // Keep the preview off the center lane so the battlefield remains readable.
-            var cardGO = Instantiate(cardPrefab, _cardPreviewOverlay.transform);
+            // Center the inspected card so rules text is readable before committing an action.
+            var cardGO = cardPrefab != null
+                ? Instantiate(cardPrefab, _cardPreviewOverlay.transform)
+                : new GameObject("PreviewCard", typeof(RectTransform), typeof(Image), typeof(CardVisual));
             var cardRT = cardGO.GetComponent<RectTransform>();
-            cardRT.anchorMin = new Vector2(0.03f, 0.13f);
-            cardRT.anchorMax = new Vector2(0.46f, 0.88f);
+            if (cardRT == null)
+                cardRT = cardGO.AddComponent<RectTransform>();
+            cardRT.anchorMin = new Vector2(0.20f, 0.15f);
+            cardRT.anchorMax = new Vector2(0.80f, 0.94f);
             cardRT.offsetMin = Vector2.zero;
             cardRT.offsetMax = Vector2.zero;
-            cardRT.localScale = Vector3.one;
+            cardRT.localScale = Vector3.one * 1.78f;
             var visual = cardGO.GetComponent<CardVisual>();
-            if (visual != null) visual.SetCard(card);
+            if (visual != null)
+            {
+                visual.SetTextMode(CardTextMode.Inspect);
+                visual.SetCard(card);
+            }
 
             // Prevent card click from dismissing
             var cardImg = cardGO.GetComponent<Image>();
             if (cardImg != null) cardImg.raycastTarget = true;
             var cardBtn = cardGO.GetComponent<Button>() ?? cardGO.AddComponent<Button>();
-            cardBtn.onClick.AddListener(() => { }); // swallow click
+            cardBtn.onClick.AddListener(() => CycleCardZoom(cardRT));
 
             // Info text below card
             var infoGO = new GameObject("PreviewInfo");
             infoGO.transform.SetParent(_cardPreviewOverlay.transform, false);
             var infoRT = infoGO.AddComponent<RectTransform>();
-            infoRT.anchorMin = new Vector2(0.03f, 0.055f);
-            infoRT.anchorMax = new Vector2(0.46f, 0.115f);
+            infoRT.anchorMin = new Vector2(0.18f, 0.105f);
+            infoRT.anchorMax = new Vector2(0.82f, 0.185f);
             infoRT.offsetMin = Vector2.zero;
             infoRT.offsetMax = Vector2.zero;
-            var infoTMP = infoGO.AddComponent<TextMeshProUGUI>();
-            infoTMP.fontSize = 17;
+            var infoBg = infoGO.AddComponent<Image>();
+            infoBg.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            infoBg.type = infoBg.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            infoBg.color = new Color(0.015f, 0.012f, 0.018f, 0.88f);
+            infoBg.raycastTarget = false;
+            var infoTextGO = new GameObject("Text");
+            infoTextGO.transform.SetParent(infoGO.transform, false);
+            var infoTextRT = infoTextGO.AddComponent<RectTransform>();
+            infoTextRT.anchorMin = Vector2.zero;
+            infoTextRT.anchorMax = Vector2.one;
+            infoTextRT.offsetMin = new Vector2(8f, 2f);
+            infoTextRT.offsetMax = new Vector2(-8f, -2f);
+            var infoTMP = infoTextGO.AddComponent<TextMeshProUGUI>();
+            infoTMP.fontSize = 20;
             infoTMP.fontStyle = FontStyles.Bold;
             infoTMP.alignment = TextAlignmentOptions.Center;
             infoTMP.raycastTarget = false;
             infoTMP.enableAutoSizing = true;
-            infoTMP.fontSizeMin = 13f;
-            infoTMP.fontSizeMax = 17f;
+            infoTMP.fontSizeMin = 14f;
+            infoTMP.fontSizeMax = 20f;
 
             if (!canAfford)
             {
@@ -4286,34 +5387,28 @@ namespace DualCraft.UI
             }
             else if (isAsheCard)
             {
-                bool hasTarget = player.Field.Any(d => ((AsheCardData)card).Matches(d.Card));
                 var ashe = (AsheCardData)card;
                 string affinity = BuildSourceAffinityLabel(ashe);
-                infoTMP.text = hasTarget
-                    ? $"{affinity}: +{Mathf.Max(1, ashe.sePerTurn)} SE each turn, or bond to a matching daemon"
-                    : $"{affinity}: +{Mathf.Max(1, ashe.sePerTurn)} SE each turn";
-                infoTMP.color = Color.Lerp(CardVisual.GetSourceAffinityColor(ashe), Color.white, 0.18f);
-                int idx = handIndex;
-                CreateCenteredActionButton(_cardPreviewOverlay.transform, "SET SOURCE", () =>
+                if (!canPlay)
                 {
-                    DismissCardPreview();
-                    bool played = SubmitPlayerAction(new PlayAsheCardAction
-                    {
-                        HandIndex = idx,
-                        TargetDaemonFieldIndex = -1,
-                    });
-                    if (played && _battle?.State != null)
-                        RefreshUI(_battle.State);
-                });
-
-                if (hasTarget)
+                    infoTMP.text = "Only one Source can be set each turn";
+                    infoTMP.color = new Color(1f, 0.55f, 0.40f);
+                }
+                else
                 {
-                    CreatePreviewActionButton(_cardPreviewOverlay.transform, "BOND TO DAEMON", () =>
+                    infoTMP.text = $"{affinity}: +{GameConstants.SourceSEPerTurn} SE each turn";
+                    infoTMP.color = Color.Lerp(CardVisual.GetSourceAffinityColor(ashe), Color.white, 0.18f);
+                    int idx = handIndex;
+                    CreateCenteredActionButton(_cardPreviewOverlay.transform, "SET SOURCE", () =>
                     {
                         DismissCardPreview();
-                        _pendingAsheHandIndex = idx;
-                        if (_battle?.State != null)
-                            OnStateChanged(_battle.State);
+                        bool played = SubmitPlayerAction(new PlayAsheCardAction
+                        {
+                            HandIndex = idx,
+                            TargetDaemonFieldIndex = -1,
+                        });
+                        if (played && _battle?.State != null)
+                            RefreshUI(_battle.State);
                     });
                 }
             }
@@ -4424,11 +5519,16 @@ namespace DualCraft.UI
 
         private void CreateCenteredActionButton(Transform parent, string label, Action onClick)
         {
+            CreateActionButton(parent, label, new Vector2(0.05f, 0.05f), new Vector2(0.35f, 0.11f), onClick);
+        }
+
+        private void CreateActionButton(Transform parent, string label, Vector2 anchorMin, Vector2 anchorMax, Action onClick)
+        {
             var actionGo = new GameObject("ActionButton", typeof(RectTransform), typeof(Image), typeof(Button));
             actionGo.transform.SetParent(parent, false);
             var actionRT = actionGo.GetComponent<RectTransform>();
-            actionRT.anchorMin = new Vector2(0.05f, 0.05f);
-            actionRT.anchorMax = new Vector2(0.35f, 0.11f);
+            actionRT.anchorMin = anchorMin;
+            actionRT.anchorMax = anchorMax;
             actionRT.offsetMin = Vector2.zero;
             actionRT.offsetMax = Vector2.zero;
 
@@ -4457,6 +5557,82 @@ namespace DualCraft.UI
                 button.onClick.AddListener(() => onClick());
         }
 
+        private void CreateCardZoomControls(Transform parent, RectTransform target)
+        {
+            if (parent == null || target == null)
+                return;
+
+            var zoomRoot = new GameObject("CardZoomControls", typeof(RectTransform), typeof(Image));
+            zoomRoot.transform.SetParent(parent, false);
+            zoomRoot.transform.SetAsLastSibling();
+
+            var rootRT = zoomRoot.GetComponent<RectTransform>();
+            rootRT.anchorMin = new Vector2(0.68f, 0.83f);
+            rootRT.anchorMax = new Vector2(0.96f, 0.93f);
+            rootRT.offsetMin = Vector2.zero;
+            rootRT.offsetMax = Vector2.zero;
+
+            var bg = zoomRoot.GetComponent<Image>();
+            bg.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            bg.type = bg.sprite != null && bg.sprite.border.sqrMagnitude > 0f ? Image.Type.Sliced : Image.Type.Simple;
+            bg.color = new Color(0.015f, 0.012f, 0.020f, 0.86f);
+            bg.raycastTarget = true;
+
+            string[] labels = { "ZOOM", "BIG", "MAX" };
+            float[] scales = { 1.12f, 1.45f, 1.78f };
+            for (int i = 0; i < labels.Length; i++)
+            {
+                var buttonGo = new GameObject($"Zoom_{labels[i]}", typeof(RectTransform), typeof(Image), typeof(Button));
+                buttonGo.transform.SetParent(zoomRoot.transform, false);
+                var rt = buttonGo.GetComponent<RectTransform>();
+                float min = i / 3f;
+                float max = (i + 1) / 3f;
+                rt.anchorMin = new Vector2(min, 0f);
+                rt.anchorMax = new Vector2(max, 1f);
+                rt.offsetMin = new Vector2(3f, 3f);
+                rt.offsetMax = new Vector2(-3f, -3f);
+
+                var img = buttonGo.GetComponent<Image>();
+                img.sprite = Resources.Load<Sprite>("UI/panel-dark");
+                img.type = img.sprite != null && img.sprite.border.sqrMagnitude > 0f ? Image.Type.Sliced : Image.Type.Simple;
+                img.color = i == labels.Length - 1
+                    ? new Color(0.56f, 0.42f, 0.20f, 0.92f)
+                    : new Color(0.13f, 0.12f, 0.16f, 0.92f);
+
+                var labelGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+                labelGo.transform.SetParent(buttonGo.transform, false);
+                var lrt = labelGo.GetComponent<RectTransform>();
+                lrt.anchorMin = Vector2.zero;
+                lrt.anchorMax = Vector2.one;
+                lrt.offsetMin = Vector2.zero;
+                lrt.offsetMax = Vector2.zero;
+                var tmp = labelGo.GetComponent<TextMeshProUGUI>();
+                tmp.text = labels[i];
+                tmp.fontSize = 12f;
+                tmp.fontStyle = FontStyles.Bold;
+                tmp.color = new Color(0.96f, 0.90f, 0.74f, 0.98f);
+                tmp.alignment = TextAlignmentOptions.Center;
+                tmp.enableAutoSizing = true;
+                tmp.fontSizeMin = 8f;
+                tmp.fontSizeMax = 12f;
+                tmp.raycastTarget = false;
+
+                float scale = scales[i];
+                var button = buttonGo.GetComponent<Button>();
+                button.onClick.AddListener(() => target.localScale = Vector3.one * scale);
+            }
+        }
+
+        private void CycleCardZoom(RectTransform target)
+        {
+            if (target == null)
+                return;
+
+            float current = target.localScale.x;
+            float next = current < 1.30f ? 1.45f : current < 1.62f ? 1.78f : 1.12f;
+            target.localScale = Vector3.one * next;
+        }
+
         private void ConfirmDaemonPlay(int handIndex)
         {
             ConfirmDaemonPlay(handIndex, -1);
@@ -4479,7 +5655,7 @@ namespace DualCraft.UI
 
             DismissCardPreview();
             _pendingLocalSummonSlot = targetSlotIndex;
-            bool played = SubmitPlayerAction(new PlayDaemonAction { HandIndex = handIndex });
+            bool played = SubmitPlayerAction(new PlayDaemonAction { HandIndex = handIndex, TargetLane = targetSlotIndex });
             if (played)
             {
                 AssignNewestDaemonToSlot(_battle.State.Players[LocalPlayer], LocalPlayer, targetSlotIndex);
@@ -4494,6 +5670,8 @@ namespace DualCraft.UI
 
         private IEnumerator RefreshUiAfterPlay()
         {
+            yield return new WaitForSecondsRealtime(GameConstants.SummonPoseHoldSeconds);
+
             yield return null;
             yield return null;
 
@@ -4525,11 +5703,11 @@ namespace DualCraft.UI
                     if (_battle?.State != null)
                         OnStateChanged(_battle.State);
                     return;
-                case AsheCardData:
-                    played = SubmitPlayerAction(new PlayAsheCardAction
-                    {
-                        HandIndex = handIndex,
-                        TargetDaemonFieldIndex = -1,
+                    case AsheCardData:
+                        played = SubmitPlayerAction(new PlayAsheCardAction
+                        {
+                            HandIndex = handIndex,
+                            TargetDaemonFieldIndex = -1,
                     });
                     break;
                 case DispelCardData:
@@ -4612,12 +5790,18 @@ namespace DualCraft.UI
             _pendingLocalSummonSlot = -1;
 
             if (fieldContainer == null || slotIndex < 0 || slotIndex >= fieldContainer.childCount || cardData == null)
+            {
+                _summonAnimInFlight = false;
                 yield break;
+            }
 
             Transform slot = fieldContainer.GetChild(slotIndex);
             RectTransform target = (FindSlotCard(slot) ?? slot) as RectTransform;
             if (target == null)
+            {
+                _summonAnimInFlight = false;
                 yield break;
+            }
 
             CanvasGroup targetGroup = target.GetComponent<CanvasGroup>();
             if (targetGroup == null)
@@ -4629,12 +5813,14 @@ namespace DualCraft.UI
                 catch (System.Exception ex)
                 {
                     Debug.LogError($"[SummonAnimation] Failed to add CanvasGroup to {target.name}: {ex}");
+                    _summonAnimInFlight = false;
                     yield break;
                 }
             }
             if (targetGroup == null)
             {
                 Debug.LogError($"[SummonAnimation] CanvasGroup is null on {target.name} after attempted AddComponent");
+                _summonAnimInFlight = false;
                 yield break;
             }
             targetGroup.alpha = 0.72f;
@@ -4643,6 +5829,12 @@ namespace DualCraft.UI
             var canvasRoot = transform as RectTransform;
             if (canvasRoot != null)
             {
+                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRoot, sourceScreenPoint, null, out Vector2 burstFrom) &&
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRoot, RectTransformUtility.WorldToScreenPoint(null, target.position), null, out Vector2 burstTo))
+                {
+                    yield return PlaySummonPoseBurst(canvasRoot, cardData, burstFrom, burstTo);
+                }
+
                 var flyer = Instantiate(daemonFieldPrefab ?? cardPrefab, canvasRoot);
                 flyer.name = "SummonFlyer";
                 var flyerVisual = flyer.GetComponent<CardVisual>();
@@ -4686,6 +5878,16 @@ namespace DualCraft.UI
             }
 
             targetGroup.alpha = 1f;
+            Element summonElement = cardData is DaemonCardData daemon ? daemon.element : Element.Light;
+            Color summonTint = Color.Lerp(CardVisual.GetElementColor(summonElement), Color.white, 0.16f);
+            Vector3 targetWorld = GetRectWorldPoint(target);
+            SpawnElementalAttackBeam(targetWorld + Vector3.up * 92f, targetWorld, summonElement, summonTint, true);
+            SpawnUnityParticleImpact(targetWorld, summonElement, summonTint, 1.72f);
+            SpawnImpactBurst(targetWorld, summonTint, 2.0f);
+            SpawnAetherSheetImpactFX(targetWorld, summonElement, summonTint, 1.25f);
+            SpawnElementalImpactPulse(targetWorld, summonTint);
+            if (_combatFlashOverlay != null)
+                StartCoroutine(UIAnimUtils.ScreenFlash(_combatFlashOverlay, new Color(summonTint.r, summonTint.g, summonTint.b, 0.22f), 0.13f));
             Audio.SfxManager.EnsureInstance().Play(Audio.SfxCue.Summon, 0.86f, 1f);
             StartCoroutine(UIAnimUtils.PopScale(target, 0.22f, 1.06f));
 
@@ -4697,7 +5899,7 @@ namespace DualCraft.UI
             glowRT.offsetMin = Vector2.zero;
             glowRT.offsetMax = Vector2.zero;
             var glowImg = glow.AddComponent<Image>();
-            glowImg.color = new Color(0.78f, 0.66f, 0.42f, 0.6f);
+            glowImg.color = new Color(summonTint.r, summonTint.g, summonTint.b, 0.82f);
             glowImg.raycastTarget = false;
 
             float glowDur = 0.4f;
@@ -4715,6 +5917,156 @@ namespace DualCraft.UI
             _summonAnimInFlight = false;
             if (_battle?.State != null)
                 OnStateChanged(_battle.State);  // Deferred refresh to ensure field is updated
+        }
+
+        private IEnumerator PlaySummonPoseBurst(RectTransform canvasRoot, CardData cardData, Vector2 localFrom, Vector2 localTo)
+        {
+            if (canvasRoot == null || cardData == null)
+                yield break;
+
+            Sprite art = ResolveSummonPoseArtwork(cardData) ?? ResolveCardArtwork(cardData);
+            if (art == null)
+                yield break;
+
+            var burst = new GameObject("SummonPoseBurst", typeof(RectTransform), typeof(CanvasGroup));
+            burst.transform.SetParent(canvasRoot, false);
+            var burstRT = burst.GetComponent<RectTransform>();
+            burstRT.anchorMin = new Vector2(0.5f, 0.5f);
+            burstRT.anchorMax = new Vector2(0.5f, 0.5f);
+            burstRT.pivot = new Vector2(0.5f, 0.5f);
+            burstRT.sizeDelta = new Vector2(320f, 390f);
+            burstRT.anchoredPosition = localFrom;
+            burstRT.localScale = Vector3.one * 0.45f;
+            burstRT.localRotation = Quaternion.Euler(0f, 0f, -10f);
+            burstRT.SetAsLastSibling();
+
+            var artGO = new GameObject("DaemonArt", typeof(RectTransform), typeof(Image));
+            artGO.transform.SetParent(burst.transform, false);
+            var artRT = artGO.GetComponent<RectTransform>();
+            artRT.anchorMin = Vector2.zero;
+            artRT.anchorMax = Vector2.one;
+            artRT.offsetMin = Vector2.zero;
+            artRT.offsetMax = Vector2.zero;
+            var artImage = artGO.GetComponent<Image>();
+            artImage.sprite = art;
+            artImage.preserveAspect = true;
+            artImage.color = Color.white;
+            artImage.raycastTarget = false;
+
+            var group = burst.GetComponent<CanvasGroup>();
+            group.alpha = 0f;
+            group.blocksRaycasts = false;
+
+            float intro = 0.20f;
+            for (float t = 0f; t < intro; t += Time.unscaledDeltaTime)
+            {
+                float p = UIAnimUtils.EaseOutBack(Mathf.Clamp01(t / intro));
+                group.alpha = Mathf.Lerp(0f, 1f, p);
+                burstRT.localScale = Vector3.one * Mathf.Lerp(0.35f, 1.16f, p);
+                burstRT.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-14f, 3f, p));
+                yield return null;
+            }
+
+            Vector2 lift = (localFrom + localTo) * 0.5f + Vector2.up * 170f;
+            float travel = 0.56f;
+            for (float t = 0f; t < travel; t += Time.unscaledDeltaTime)
+            {
+                float p = Mathf.Clamp01(t / travel);
+                float eased = UIAnimUtils.EaseInOutQuad(p);
+                float u = 1f - eased;
+                burstRT.anchoredPosition = u * u * localFrom + 2f * u * eased * lift + eased * eased * localTo;
+                burstRT.localScale = Vector3.one * Mathf.Lerp(1.16f, 0.78f, eased);
+                burstRT.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(3f, -3f, Mathf.Sin(p * Mathf.PI)));
+                group.alpha = Mathf.Lerp(1f, 0.12f, Mathf.Max(0f, p - 0.68f) / 0.32f);
+                yield return null;
+            }
+
+            Destroy(burst);
+        }
+
+        private IEnumerator PlayActionPoseBurst(CardData cardData, Vector3 fromWorld, Vector3 toWorld, Color tint, bool summon, string actionName = null)
+        {
+            if (_combatFxLayer == null || cardData == null)
+                yield break;
+
+            Sprite art = ResolveSummonPoseArtwork(cardData) ?? ResolveCardArtwork(cardData);
+            if (art == null)
+                yield break;
+
+            if (!WorldToFxPoint(fromWorld, out Vector2 fromLocal) || !WorldToFxPoint(toWorld, out Vector2 toLocal))
+                yield break;
+
+            var burst = new GameObject(summon ? "SummonActionPose" : "AttackActionPose", typeof(RectTransform), typeof(CanvasGroup));
+            burst.transform.SetParent(_combatFxLayer, false);
+            var burstRT = burst.GetComponent<RectTransform>();
+            burstRT.anchorMin = new Vector2(0.5f, 0.5f);
+            burstRT.anchorMax = new Vector2(0.5f, 0.5f);
+            burstRT.pivot = new Vector2(0.5f, 0.5f);
+            burstRT.sizeDelta = summon ? new Vector2(340f, 410f) : new Vector2(275f, 335f);
+            burstRT.anchoredPosition = fromLocal;
+            burstRT.localScale = Vector3.one * (summon ? 0.38f : 0.52f);
+            burstRT.localRotation = Quaternion.Euler(0f, 0f, summon ? -10f : -6f);
+            burstRT.SetAsLastSibling();
+
+            var auraGO = new GameObject("Aura", typeof(RectTransform), typeof(Image));
+            auraGO.transform.SetParent(burst.transform, false);
+            var auraRT = auraGO.GetComponent<RectTransform>();
+            auraRT.anchorMin = new Vector2(-0.10f, -0.08f);
+            auraRT.anchorMax = new Vector2(1.10f, 1.08f);
+            auraRT.offsetMin = Vector2.zero;
+            auraRT.offsetMax = Vector2.zero;
+            var aura = auraGO.GetComponent<Image>();
+            aura.sprite = GetGeneratedGlowSprite();
+            aura.color = new Color(tint.r, tint.g, tint.b, 0.44f);
+            aura.raycastTarget = false;
+
+            var artGO = new GameObject("DaemonPoseArt", typeof(RectTransform), typeof(Image));
+            artGO.transform.SetParent(burst.transform, false);
+            var artRT = artGO.GetComponent<RectTransform>();
+            artRT.anchorMin = Vector2.zero;
+            artRT.anchorMax = Vector2.one;
+            artRT.offsetMin = Vector2.zero;
+            artRT.offsetMax = Vector2.zero;
+            var image = artGO.GetComponent<Image>();
+            image.sprite = art;
+            image.preserveAspect = true;
+            image.color = Color.white;
+            image.raycastTarget = false;
+
+            var group = burst.GetComponent<CanvasGroup>();
+            group.alpha = 0f;
+            group.blocksRaycasts = false;
+
+            Vector2 direction = (toLocal - fromLocal).sqrMagnitude > 1f ? (toLocal - fromLocal).normalized : Vector2.up;
+            Vector2 windup = fromLocal - direction * (summon ? 18f : 44f) + Vector2.up * (summon ? 80f : 28f);
+            Vector2 strike = summon ? toLocal + Vector2.up * 52f : Vector2.Lerp(fromLocal, toLocal, 0.82f) + Vector2.up * 26f;
+            float travel = summon ? 0.46f : 0.50f;
+
+            Sequence seq = DOTween.Sequence().SetUpdate(true).SetTarget(burst);
+            seq.Append(DOTween.To(() => group.alpha, value => group.alpha = value, 1f, 0.10f).SetEase(Ease.OutQuad));
+            seq.Join(DOTween.To(() => burstRT.localScale, value => burstRT.localScale = value, Vector3.one * (summon ? 1.16f : 1.04f), 0.16f).SetEase(Ease.OutBack));
+            seq.Join(DOTween.To(() => burstRT.anchoredPosition, value => burstRT.anchoredPosition = value, windup, 0.16f).SetEase(Ease.OutQuad));
+            seq.Append(DOTween.To(() => burstRT.anchoredPosition, value => burstRT.anchoredPosition = value, strike, travel).SetEase(summon ? Ease.InOutCubic : Ease.InCubic));
+            seq.Join(DOTween.To(() => burstRT.localScale, value => burstRT.localScale = value, Vector3.one * (summon ? 0.78f : 1.24f), travel).SetEase(Ease.OutQuad));
+            float startZ = summon ? -10f : -6f;
+            float endZ = summon ? -2f : Mathf.Clamp(-direction.x * 14f, -14f, 14f);
+            seq.Join(DOTween.To(() => 0f, p =>
+            {
+                burstRT.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(startZ, endZ, p));
+            }, 1f, travel).SetEase(Ease.OutQuad));
+            seq.Append(DOTween.To(() => group.alpha, value => group.alpha = value, 0f, 0.16f).SetEase(Ease.OutQuad));
+            seq.Join(DOTween.To(() => burstRT.localScale, value => burstRT.localScale = value, Vector3.one * (summon ? 0.66f : 0.84f), 0.16f).SetEase(Ease.OutQuad));
+            seq.OnComplete(() =>
+            {
+                if (burst != null)
+                    Destroy(burst);
+            });
+
+            while (seq.IsActive() && seq.IsPlaying())
+                yield return null;
+
+            if (burst != null)
+                Destroy(burst);
         }
 
         private Vector2 GetHandCardScreenPoint(int handIndex)
@@ -4766,29 +6118,48 @@ namespace DualCraft.UI
             // Large centered card
             var cardGO = Instantiate(cardPrefab, _cardPreviewOverlay.transform);
             var cardRT = cardGO.GetComponent<RectTransform>();
-            cardRT.anchorMin = new Vector2(0.22f, 0.22f);
-            cardRT.anchorMax = new Vector2(0.78f, 0.82f);
+            cardRT.anchorMin = new Vector2(0.20f, 0.15f);
+            cardRT.anchorMax = new Vector2(0.80f, 0.94f);
             cardRT.offsetMin = Vector2.zero;
             cardRT.offsetMax = Vector2.zero;
-            cardRT.localScale = Vector3.one;
+            cardRT.localScale = Vector3.one * 1.78f;
             var visual = cardGO.GetComponent<CardVisual>();
-            if (visual != null) visual.SetCard(card);
+            if (visual != null)
+            {
+                visual.SetTextMode(CardTextMode.Inspect);
+                visual.SetCard(card);
+            }
             var cardBtn = cardGO.GetComponent<Button>() ?? cardGO.AddComponent<Button>();
-            cardBtn.onClick.AddListener(() => { });
+            cardBtn.onClick.AddListener(() => CycleCardZoom(cardRT));
 
             // Description / info text
             var infoGO = new GameObject("InspectInfo");
             infoGO.transform.SetParent(_cardPreviewOverlay.transform, false);
             var infoRT = infoGO.AddComponent<RectTransform>();
-            infoRT.anchorMin = new Vector2(0.15f, 0.12f);
-            infoRT.anchorMax = new Vector2(0.85f, 0.21f);
+            infoRT.anchorMin = new Vector2(0.16f, 0.105f);
+            infoRT.anchorMax = new Vector2(0.84f, 0.205f);
             infoRT.offsetMin = Vector2.zero;
             infoRT.offsetMax = Vector2.zero;
-            var infoTMP = infoGO.AddComponent<TextMeshProUGUI>();
+            var infoBg = infoGO.AddComponent<Image>();
+            infoBg.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            infoBg.type = infoBg.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            infoBg.color = new Color(0.015f, 0.012f, 0.018f, 0.90f);
+            infoBg.raycastTarget = false;
+            var infoTextGO = new GameObject("Text");
+            infoTextGO.transform.SetParent(infoGO.transform, false);
+            var infoTextRT = infoTextGO.AddComponent<RectTransform>();
+            infoTextRT.anchorMin = Vector2.zero;
+            infoTextRT.anchorMax = Vector2.one;
+            infoTextRT.offsetMin = new Vector2(10f, 3f);
+            infoTextRT.offsetMax = new Vector2(-10f, -3f);
+            var infoTMP = infoTextGO.AddComponent<TextMeshProUGUI>();
             infoTMP.text = string.IsNullOrEmpty(card.description) ? card.cardName : card.description;
-            infoTMP.fontSize = 13;
+            infoTMP.fontSize = 18;
             infoTMP.color = new Color(0.88f, 0.84f, 0.78f);
             infoTMP.alignment = TextAlignmentOptions.Center;
+            infoTMP.enableAutoSizing = true;
+            infoTMP.fontSizeMin = 12f;
+            infoTMP.fontSizeMax = 18f;
             infoTMP.raycastTarget = false;
 
             // "click to close" hint
@@ -4810,7 +6181,7 @@ namespace DualCraft.UI
         }
 
         /// <summary>Shows a read-only inspect overlay for a daemon already on the field.</summary>
-        private void ShowFieldDaemonInspect(DaemonInstance daemon)
+        private void ShowFieldDaemonInspect(DaemonInstance daemon, int localFieldIndex = -1)
         {
             DismissCardPreview();
 
@@ -4833,19 +6204,20 @@ namespace DualCraft.UI
             // Large card
             var cardGO = Instantiate(daemonFieldPrefab ?? cardPrefab, _cardPreviewOverlay.transform);
             var cardRT = cardGO.GetComponent<RectTransform>();
-            cardRT.anchorMin = new Vector2(0.22f, 0.22f);
-            cardRT.anchorMax = new Vector2(0.78f, 0.82f);
+            cardRT.anchorMin = new Vector2(0.20f, 0.24f);
+            cardRT.anchorMax = new Vector2(0.80f, 0.88f);
             cardRT.offsetMin = Vector2.zero;
             cardRT.offsetMax = Vector2.zero;
-            cardRT.localScale = Vector3.one;
+            cardRT.localScale = Vector3.one * 1.78f;
             var visual = cardGO.GetComponent<CardVisual>();
             if (visual != null)
             {
+                visual.SetTextMode(CardTextMode.Inspect);
                 visual.SetCard(daemon.Card);
                 visual.SetRuntimeMainStat(daemon.CurrentAshe);
             }
             var cardBtn = cardGO.GetComponent<Button>() ?? cardGO.AddComponent<Button>();
-            cardBtn.onClick.AddListener(() => { });
+            cardBtn.onClick.AddListener(() => CycleCardZoom(cardRT));
 
             // Build a stat / status line
             var daemonCard = daemon.Card as DaemonCardData;
@@ -4854,17 +6226,25 @@ namespace DualCraft.UI
                 statLine += $"  •  ATK {daemon.Attack}";
             statLine += $"  •  Falls: Invoker -{GameConstants.GetInvokerLifeLossForRarity(daemon.Card.rarity)}";
 
-            string status = "";
-            if (daemon.Frozen)  status += " [Frozen]";
-            if (daemon.Entangled) status += " [Entangled]";
-            if (daemon.Stealthed) status += " [Stealth]";
-            if (daemon.Poisoned) status += " [Poison]";
-            if (daemon.Burning) status += " [Burn]";
-            if (daemon.HasTaunt) status += " [Taunt]";
-            if (daemon.ShieldAmount > 0) status += $" [Shield {daemon.ShieldAmount}]";
-            if (daemon.NextAttackDouble) status += " [×2 ATK]";
-            if (!daemon.CanAttack && !daemon.Frozen) status += " [Summoning Sickness]";
-
+            var statusParts = new List<string>();
+            if (daemon.Frozen)  statusParts.Add("Frozen: cannot attack");
+            if (daemon.Entangled) statusParts.Add("Entangled: held in place");
+            if (daemon.Stealthed) statusParts.Add("Stealth: hard to target");
+            if (daemon.Poisoned) statusParts.Add($"Poison: -{Mathf.Max(1, daemon.PoisonDamage)} each turn");
+            if (daemon.Burning) statusParts.Add($"Burn: -{Mathf.Max(1, daemon.BurnDamage)} each turn");
+            if (daemon.HasTaunt) statusParts.Add("Taunt: must be attacked first");
+            if (daemon.Silenced) statusParts.Add("Silenced: abilities off");
+            if (daemon.Darkened) statusParts.Add("Darkened: shifted to Darkness");
+            if (daemon.Marked) statusParts.Add($"Marked: +{Mathf.Max(1, daemon.MarkedBonusDamage)} next damage");
+            if (daemon.Fractured) statusParts.Add("Fractured: shields fail");
+            if (daemon.Haunted) statusParts.Add($"Haunted: owner loses {Mathf.Max(1, daemon.HauntedLifeLoss)} on death");
+            if (daemon.Corrupted) statusParts.Add("Corrupted: drains SE or Life");
+            if (daemon.Overloaded) statusParts.Add($"+{Mathf.Max(1, daemon.OverloadAttackBonus)} ATK, -{Mathf.Max(1, daemon.OverloadBacklash)} after attack");
+            if (daemon.Taxed) statusParts.Add($"Taxed: attacks cost +{Mathf.Max(1, daemon.TaxedExtraCost)} SE");
+            if (daemon.Sundered) statusParts.Add("Sundered: Relic attack modes off");
+            if (daemon.ShieldAmount > 0) statusParts.Add($"Shield: absorbs {daemon.ShieldAmount}");
+            if (daemon.NextAttackDouble) statusParts.Add("Next attack x2");
+            string status = statusParts.Count > 0 ? "\n" + string.Join("  |  ", statusParts) : string.Empty;
             // Description
             var descGO = new GameObject("Description");
             descGO.transform.SetParent(_cardPreviewOverlay.transform, false);
@@ -4884,16 +6264,53 @@ namespace DualCraft.UI
             var statsGO = new GameObject("Stats");
             statsGO.transform.SetParent(_cardPreviewOverlay.transform, false);
             var statsRT = statsGO.AddComponent<RectTransform>();
-            statsRT.anchorMin = new Vector2(0.12f, 0.10f);
-            statsRT.anchorMax = new Vector2(0.88f, 0.16f);
+            statsRT.anchorMin = new Vector2(0.12f, 0.075f);
+            statsRT.anchorMax = new Vector2(0.88f, 0.165f);
             statsRT.offsetMin = Vector2.zero;
             statsRT.offsetMax = Vector2.zero;
             var statsTMP = statsGO.AddComponent<TextMeshProUGUI>();
             statsTMP.text = statLine + status;
             statsTMP.fontSize = 12;
+            statsTMP.enableAutoSizing = true;
+            statsTMP.fontSizeMin = 8;
+            statsTMP.fontSizeMax = 12;
             statsTMP.color = new Color(0.78f, 0.88f, 1f);
             statsTMP.alignment = TextAlignmentOptions.Center;
             statsTMP.raycastTarget = false;
+
+            bool canSacrifice = _battle?.State != null
+                && _battle.State.CurrentPlayer == LocalPlayer
+                && _battle.State.Phase == GamePhase.Main
+                && localFieldIndex >= 0;
+            if (canSacrifice)
+            {
+                int seGain = Mathf.Max(1, Mathf.Max(daemon.Card.GetWillCost(), (int)daemon.Card.rarity + 1));
+                CreateActionButton(_cardPreviewOverlay.transform, $"SACRIFICE  +{seGain} SE", new Vector2(0.05f, 0.05f), new Vector2(0.35f, 0.11f), () =>
+                {
+                    DismissCardPreview();
+                    bool sacrificed = SubmitPlayerAction(new SacrificeDaemonAction { FieldIndex = localFieldIndex });
+                    if (sacrificed && _battle?.State != null)
+                        RefreshUI(_battle.State);
+                });
+
+                int currentLane = daemon.LaneIndex >= 0 ? daemon.LaneIndex : localFieldIndex;
+                if (currentLane > 0)
+                    CreateActionButton(_cardPreviewOverlay.transform, "SHIFT LEFT", new Vector2(0.37f, 0.05f), new Vector2(0.57f, 0.11f), () =>
+                    {
+                        DismissCardPreview();
+                        bool shifted = SubmitPlayerAction(new SwitchLaneAction { FieldIndex = localFieldIndex, TargetLane = currentLane - 1 });
+                        if (shifted && _battle?.State != null)
+                            RefreshUI(_battle.State);
+                    });
+                if (currentLane < GameConstants.MaxFieldDaemons - 1)
+                    CreateActionButton(_cardPreviewOverlay.transform, "SHIFT RIGHT", new Vector2(0.59f, 0.05f), new Vector2(0.79f, 0.11f), () =>
+                    {
+                        DismissCardPreview();
+                        bool shifted = SubmitPlayerAction(new SwitchLaneAction { FieldIndex = localFieldIndex, TargetLane = currentLane + 1 });
+                        if (shifted && _battle?.State != null)
+                            RefreshUI(_battle.State);
+                    });
+            }
 
             // Tap to close hint
             var hintGO = new GameObject("Hint");
@@ -4959,11 +6376,12 @@ namespace DualCraft.UI
             var visual = cardGO.GetComponent<CardVisual>();
             if (visual != null)
             {
+                visual.SetTextMode(CardTextMode.Inspect);
                 visual.SetCard(daemon.Card);
                 visual.SetRuntimeMainStat(daemon.CurrentAshe);
             }
             var cardBtn = cardGO.GetComponent<Button>() ?? cardGO.AddComponent<Button>();
-            cardBtn.onClick.AddListener(() => { }); // absorb clicks
+            cardBtn.onClick.AddListener(() => CycleCardZoom(cardRT));
 
             // ── "Choose Attack" header ──
             var headerGO = new GameObject("ChooseAttackHeader");
@@ -4984,7 +6402,8 @@ namespace DualCraft.UI
             Color elemColor = Core.ElementColors.GetElementColor(daemonCard.element);
             Color btnBg     = Color.Lerp(elemColor, new Color(0.06f, 0.06f, 0.10f), 0.58f);
 
-            int attackSpiritCost = ResolveDisplayedAttackCost(daemon, player.AsheCards);
+            bool firstAttackFree = GameConstants.EnableMomentumFirstAttack && !player.Field.Any(d => d != null && d.HasAttacked);
+            int attackSpiritCost = ResolveDisplayedAttackCost(daemon, player.AsheCards, firstAttackFree);
             string attackLabel = daemonCard.ability != null && !string.IsNullOrEmpty(daemonCard.ability.abilityName)
                 ? daemonCard.ability.abilityName
                 : $"{daemonCard.element} Strike";
@@ -5146,7 +6565,7 @@ namespace DualCraft.UI
                 else
                 {
                     // Not in fusion mode — inspect the daemon
-                    ShowFieldDaemonInspect(player.Field[fieldIndex]);
+                    ShowFieldDaemonInspect(player.Field[fieldIndex], fieldIndex);
                 }
                 return;
             }
@@ -5285,10 +6704,8 @@ namespace DualCraft.UI
                 : new Color(1f, 0.32f, 0.24f, 0.96f);
             string attackLabel = BuildAttackAnticipationLabel(attackerPlayer, defenderPlayer, attackerIndex, targetType, targetIndex);
             Color labelColor = cue;
-            SpawnFloatingCombatText(fromWorld + Vector3.up * 44f, "WIND UP", cue, 0.68f);
-            SpawnFloatingCombatText(fromWorld + Vector3.up * 18f, "CHARGING", new Color(cue.r, cue.g, cue.b, 0.86f), 0.58f);
-            SpawnFloatingCombatText(toWorld + Vector3.up * 42f, attackLabel, labelColor, 0.78f);
-            SpawnCombatBeam(fromWorld, toWorld, new Color(cue.r, cue.g, cue.b, 0.42f));
+            ShowAttackActionBand(attackLabel, cue);
+            SpawnAetherSheetImpactFX(fromWorld + Vector3.up * 18f, ResolveAetherEffectKind(GetAttackerCard(_battle?.State, attackerPlayer, attackerIndex)?.element ?? Element.Light), cue, 0.54f);
         }
 
         private string BuildAttackAnticipationLabel(int attackerPlayer, int defenderPlayer, int attackerIndex, TargetType targetType, int targetIndex)
@@ -5312,9 +6729,110 @@ namespace DualCraft.UI
                 }
             }
 
+            string attackName = !string.IsNullOrWhiteSpace(attacker.ability?.abilityName)
+                ? attacker.ability.abilityName
+                : $"{attacker.element} Strike";
             return targetType == TargetType.Invoker
-                ? $"INVOKER HIT  -{previewDamage}"
-                : $"ATTACK  -{previewDamage}";
+                ? $"{attackName}  -{previewDamage} INVOKER"
+                : $"{attackName}  -{previewDamage}";
+        }
+
+        private string ResolveAttackName(GameState state, int attackerPlayer, int attackerIndex, Element fallbackElement)
+        {
+            var attacker = GetAttackerCard(state, attackerPlayer, attackerIndex);
+            if (attacker != null && !string.IsNullOrWhiteSpace(attacker.ability?.abilityName))
+                return attacker.ability.abilityName;
+            return $"{fallbackElement} Strike";
+        }
+
+        private string ResolveCombatAttackLetter(CombatResolution resolution)
+        {
+            var state = _battle?.State;
+            if (state == null || resolution.AttackerPlayer < 0 || resolution.AttackerPlayer >= state.Players.Length)
+                return "D";
+
+            var field = state.Players[resolution.AttackerPlayer].Field;
+            if (field == null || resolution.AttackerIndex < 0 || resolution.AttackerIndex >= field.Count)
+                return "D";
+
+            return GetAttackPatternLetter(field[resolution.AttackerIndex]);
+        }
+
+        private void ShowAttackActionBand(string label, Color tint)
+        {
+            if (_combatFxLayer == null || string.IsNullOrWhiteSpace(label))
+                return;
+
+            StartCoroutine(ShowAttackActionBandCo(label, tint));
+        }
+
+        private IEnumerator ShowAttackActionBandCo(string label, Color tint)
+        {
+            var band = new GameObject("AttackActionBand", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+            band.transform.SetParent(_combatFxLayer, false);
+            var rect = band.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.64f);
+            rect.anchorMax = new Vector2(0.5f, 0.64f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(560f, 54f);
+            rect.anchoredPosition = new Vector2(-70f, 0f);
+            rect.localScale = new Vector3(0.92f, 1f, 1f);
+
+            var image = band.GetComponent<Image>();
+            image.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            image.type = image.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            image.color = new Color(0.030f, 0.024f, 0.035f, 0.88f);
+            image.raycastTarget = false;
+
+            var accent = new GameObject("Accent", typeof(RectTransform), typeof(Image));
+            accent.transform.SetParent(band.transform, false);
+            var accentRect = accent.GetComponent<RectTransform>();
+            accentRect.anchorMin = new Vector2(0f, 0f);
+            accentRect.anchorMax = new Vector2(0.035f, 1f);
+            accentRect.offsetMin = Vector2.zero;
+            accentRect.offsetMax = Vector2.zero;
+            var accentImage = accent.GetComponent<Image>();
+            accentImage.color = new Color(tint.r, tint.g, tint.b, 0.96f);
+            accentImage.raycastTarget = false;
+
+            var textGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+            textGo.transform.SetParent(band.transform, false);
+            var textRect = textGo.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = new Vector2(28f, 4f);
+            textRect.offsetMax = new Vector2(-18f, -4f);
+            var text = textGo.GetComponent<TextMeshProUGUI>();
+            text.text = label.ToUpperInvariant();
+            text.fontSize = 26f;
+            text.fontStyle = FontStyles.Bold;
+            text.alignment = TextAlignmentOptions.Center;
+            text.color = new Color(0.98f, 0.94f, 0.82f, 1f);
+            text.outlineColor = new Color(0f, 0f, 0f, 0.82f);
+            text.outlineWidth = 0.18f;
+            text.raycastTarget = false;
+
+            var group = band.GetComponent<CanvasGroup>();
+            const float inTime = 0.14f;
+            group.alpha = 0f;
+            rect.anchoredPosition = new Vector2(-70f, 0f);
+            rect.localScale = new Vector3(0.92f, 1f, 1f);
+            Sequence intro = DOTween.Sequence().SetUpdate(true).SetTarget(band);
+            intro.Join(DOTween.To(() => group.alpha, value => group.alpha = value, 1f, inTime).SetEase(Ease.OutQuad));
+            intro.Join(DOTween.To(() => rect.anchoredPosition, value => rect.anchoredPosition = value, Vector2.zero, inTime).SetEase(Ease.OutQuad));
+            intro.Join(DOTween.To(() => rect.localScale, value => rect.localScale = value, Vector3.one, inTime).SetEase(Ease.OutBack));
+            yield return intro.WaitForCompletion();
+
+            yield return new WaitForSecondsRealtime(0.52f);
+
+            const float outTime = 0.20f;
+            Sequence outro = DOTween.Sequence().SetUpdate(true).SetTarget(band);
+            outro.Join(DOTween.To(() => group.alpha, value => group.alpha = value, 0f, outTime).SetEase(Ease.OutQuad));
+            outro.Join(DOTween.To(() => rect.anchoredPosition, value => rect.anchoredPosition = value, new Vector2(70f, 0f), outTime).SetEase(Ease.OutQuad));
+            yield return outro.WaitForCompletion();
+
+            if (band != null)
+                Destroy(band);
         }
 
         private IEnumerator WaitForLocalAttackResponse(int attackerPlayer, int attackerIndex)
@@ -5325,7 +6843,7 @@ namespace DualCraft.UI
             int eligibleIndex = ChooseBestAttackResponseHandIndex(state?.Players[LocalPlayer], attackerCard);
 
             ShowAttackResponsePanel(attackerCard, state?.Players[LocalPlayer], eligibleIndex, true);
-            float duration = eligibleIndex >= 0 ? 2.35f : 1.15f;
+            float duration = eligibleIndex >= 0 ? GameConstants.AttackResponseWindowSeconds : GameConstants.AttackResponseWindowSeconds * 0.52f;
             float t = 0f;
             while (t < duration && _chosenAttackResponseHandIndex < 0)
             {
@@ -5340,7 +6858,7 @@ namespace DualCraft.UI
         private IEnumerator ShowAutoAttackResponsePreview(PlayerState defender, int responseHandIndex, DaemonCardData attackerCard)
         {
             ShowAttackResponsePanel(attackerCard, defender, responseHandIndex, false);
-            float duration = 0.82f;
+            float duration = GameConstants.AutoAttackResponsePreviewSeconds;
             float t = 0f;
             while (t < duration)
             {
@@ -5514,7 +7032,8 @@ namespace DualCraft.UI
                 return "Choose an attacker";
 
             var attacker = player.Field[_selectedAttackerIndex];
-            int attackCost = ResolveDisplayedAttackCost(attacker, player.AsheCards);
+            bool firstAttackFree = GameConstants.EnableMomentumFirstAttack && !player.Field.Any(d => d != null && d.HasAttacked);
+            int attackCost = ResolveDisplayedAttackCost(attacker, player.AsheCards, firstAttackFree);
             if (player.Will < attackCost)
                 return $"Need {attackCost} SE";
 
@@ -5544,9 +7063,12 @@ namespace DualCraft.UI
                     return "Cannot target Stealth";
 
                 bool sameLane = _selectedAttackerIndex == targetIndex;
+                bool diagonalLane = Mathf.Abs(targetIndex - _selectedAttackerIndex) == 1;
                 bool ranged = IsTacticsRangedAttacker(attacker);
                 if (GameConstants.EnableTacticsBoardMode && !sameLane && !ranged)
-                    return "Melee attacks straight ahead";
+                    return "D/S/G attack straight ahead";
+                if (GameConstants.EnableTacticsBoardMode && ranged && !diagonalLane)
+                    return "R attacks diagonally";
             }
 
             return "Choose a highlighted target";
@@ -5554,11 +7076,7 @@ namespace DualCraft.UI
 
         private static bool IsTacticsRangedAttacker(DaemonInstance attacker)
         {
-            if (attacker?.Card == null)
-                return false;
-            if (attacker.Card.rangedAttack)
-                return true;
-            return attacker.Masks != null && attacker.Masks.Any(mask => mask?.Card != null && mask.Card.grantsRangedAttacks);
+            return GetEffectiveAttackPattern(attacker) == DaemonAttackPattern.Ranged;
         }
 
         private void ShowTargetingHint(string message)
@@ -5641,6 +7159,7 @@ namespace DualCraft.UI
                 bool maskTargetMode = isPlayerTurn && isMainPhase && IsMaskTargetSelectionActive(state.Players[LocalPlayer]);
                 bool asheTargetMode = isPlayerTurn && isMainPhase && IsAsheTargetSelectionActive(state.Players[LocalPlayer]);
                 bool canFuse = isPlayerTurn && isMainPhase && CanAttemptFusion(state.Players[LocalPlayer]);
+                bool summonSeatSelection = canPlayCards && TryGetSelectedSummonHandIndex(state.Players[LocalPlayer], out _);
                 bool turnChanged = state.TurnNumber != _lastTurnNumber;
 
                 // Dismiss card preview on turn change without triggering a nested refresh.
@@ -5655,7 +7174,7 @@ namespace DualCraft.UI
                 // Hand is playable during Main; field is selectable during Combat
                 RefreshPlayerUI(state.Players[0], p1NameText, p1HpText, p1HpBar, p1WillText, p1DeckCountText,
                     p1HandContainer, p1FieldContainer, p1PillarContainer, 0,
-                    canPlayCards, canAttack || maskTargetMode || asheTargetMode || canFuse, isPlayerTurn);
+                    canPlayCards, canAttack || maskTargetMode || asheTargetMode || canFuse || summonSeatSelection, isPlayerTurn);
                 RefreshPlayerUI(state.Players[1], p2NameText, p2HpText, p2HpBar, p2WillText, p2DeckCountText,
                     p2HandContainer, p2FieldContainer, p2PillarContainer, 1,
                     false, false, state.CurrentPlayer == AIPlayerIndex && !state.GameOver);
@@ -5915,7 +7434,7 @@ namespace DualCraft.UI
                     if (!(playerIndex == LocalPlayer && i == _pendingLocalSummonSlot))
                         StartCoroutine(UIAnimUtils.PopScale(go.transform, 0.2f, 1.08f));
                     AttachCardHover(go);
-                    AddStatOverlay(go, daemon, player.Will, player.AsheCards);
+                AddStatOverlay(go, daemon, player.Will, player.AsheCards, GameConstants.EnableMomentumFirstAttack && !player.Field.Any(d => d != null && d.HasAttacked));
                     if (GetDisplayedKillCooldownTurns(daemon) > 0)
                         AddKillCooldownBadge(go, daemon);
                     if (daemon.Masks.Count > 0)
@@ -5942,10 +7461,6 @@ namespace DualCraft.UI
                         if (group != null)
                             group.alpha = 0f;
                     }
-
-                    // Summoning sickness indicator
-                    if (!daemon.CanAttack && !daemon.Frozen && !daemon.Entangled)
-                        AddSummoningSicknessOverlay(go);
 
                     int idx = player.Field.FindIndex(d => d != null && d.InstanceId == daemon.InstanceId);
                     if (idx < 0)
@@ -6030,7 +7545,10 @@ namespace DualCraft.UI
                         // No special mode active — clicking inspects the daemon.
                         var btn = go.GetComponent<Button>() ?? go.AddComponent<Button>();
                         if (btn.onClick.GetPersistentEventCount() == 0)
-                            btn.onClick.AddListener(() => ShowFieldDaemonInspect(daemon));
+                        {
+                            int inspectIndex = idx;
+                            btn.onClick.AddListener(() => ShowFieldDaemonInspect(daemon, inspectIndex));
+                        }
                     }
                 }
             }
@@ -6156,11 +7674,15 @@ namespace DualCraft.UI
             cardRT.anchorMax = new Vector2(0.78f, 0.86f);
             cardRT.offsetMin = Vector2.zero;
             cardRT.offsetMax = Vector2.zero;
-            cardRT.localScale = Vector3.one;
+            cardRT.localScale = Vector3.one * 1.78f;
             var visual = cardGO.GetComponent<CardVisual>();
-            if (visual != null) visual.SetCard(top.Card);
+            if (visual != null)
+            {
+                visual.SetTextMode(CardTextMode.Inspect);
+                visual.SetCard(top.Card);
+            }
             var cardBtn = cardGO.GetComponent<Button>() ?? cardGO.AddComponent<Button>();
-            cardBtn.onClick.AddListener(() => { });
+            cardBtn.onClick.AddListener(() => CycleCardZoom(cardRT));
 
             // HP / Loyalty bar
             var statsGO = new GameObject("PillarStats");
@@ -6292,6 +7814,8 @@ namespace DualCraft.UI
                 + (selectedAttackerIndex + 5) * 17
                 + (selectedFusionPrimaryIndex + 7) * 29
                 + (player.AsheCards?.Count ?? 0) * 11;
+            if (summonSeatMode)
+                hash = hash * 31 + 997;
             for (int i = 0; i < player.Field.Count; i++)
             {
                 var d = player.Field[i];
@@ -6556,15 +8080,18 @@ namespace DualCraft.UI
                 new Vector2(70f, -27f), new Vector2(44f, 13f),
                 10f, new Color(0.56f, 0.80f, 0.92f), FontStyles.Bold, TextAlignmentOptions.Center);
 
+            int wardCount = WardCatalog.WardsEnabled && player.Wards != null
+                ? player.Wards.Count(w => w != null && !string.IsNullOrWhiteSpace(w.WardId))
+                : 0;
             EnsureInvokerBadgeImage(cardRect, "PillarIcon", "UI/icon-shield",
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(91f, 10f), new Vector2(14f, 14f),
-                Color.clear, false);
-            EnsureInvokerBadgeText(cardRect, "PillarValue", string.Empty,
+                wardCount > 0 ? new Color(0.78f, 0.62f, 1f, 0.95f) : Color.clear, false);
+            EnsureInvokerBadgeText(cardRect, "PillarValue", wardCount > 0 ? wardCount.ToString() : string.Empty,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(91f, -8f), new Vector2(26f, 14f),
                 12f, new Color(0.97f, 0.95f, 0.88f));
-            EnsureInvokerBadgeText(cardRect, "PillarLabel", string.Empty,
+            EnsureInvokerBadgeText(cardRect, "PillarLabel", wardCount > 0 ? "WARD" : string.Empty,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(91f, -23f), new Vector2(36f, 11f),
                 7.5f, new Color(0.88f, 0.80f, 0.62f), FontStyles.Bold, TextAlignmentOptions.Center);
@@ -6646,22 +8173,20 @@ namespace DualCraft.UI
             if (zone == null)
                 return;
 
-            var bg = zone.GetComponent<Image>() ?? zone.gameObject.AddComponent<Image>();
             bool isOpponent = playerIndex == AIPlayerIndex;
+            bool expanded = playerIndex == LocalPlayer ? _p1SourceExpanded : _p2SourceExpanded;
             bool exposedOpponentSources = isOpponent
                 && _waitingForTarget
                 && _selectedAttackerIndex >= 0
                 && player.Field.All(d => d == null || d.Stealthed);
-            bg.color = exposedOpponentSources
+            SkinRuntimePile(zone,
+                exposedOpponentSources
                 ? new Color(0.18f, 0.055f, 0.035f, 0.76f)
-                : new Color(0.055f, 0.048f, 0.060f, 0.62f);
-            bg.raycastTarget = false;
-
-            var outline = zone.GetComponent<Outline>() ?? zone.gameObject.AddComponent<Outline>();
-            outline.effectColor = exposedOpponentSources
+                : new Color(0.055f, 0.048f, 0.060f, 0.72f),
+                exposedOpponentSources
                 ? new Color(1f, 0.42f, 0.24f, 0.78f)
-                : new Color(0.92f, 0.74f, 0.36f, 0.38f);
-            outline.effectDistance = new Vector2(2f, -2f);
+                : new Color(0.92f, 0.74f, 0.36f, 0.38f));
+            ConfigureSourcePileHover(zone, playerIndex);
 
             RectTransform content = PreparePileContent(zone);
             ClearChildren(content);
@@ -6669,14 +8194,14 @@ namespace DualCraft.UI
             var sources = player?.AsheCards?
                 .Where(a => a?.Card != null && string.IsNullOrEmpty(a.AssignedDaemonInstanceId))
                 .ToList() ?? new List<AsheCardInstance>();
-            int income = sources.Where(s => s.SuppressedTurnsRemaining <= 0).Sum(s => Mathf.Max(1, s.Card.sePerTurn));
+            int income = sources.Count(s => s.SuppressedTurnsRemaining <= 0) * GameConstants.SourceSEPerTurn;
             int offline = sources.Count(s => s.SuppressedTurnsRemaining > 0);
             string subtitle = sources.Count == 0
                 ? "0"
                 : $"+{income} SE{(offline > 0 ? $"  {offline} raided" : string.Empty)}";
             ConfigurePileLabels(zone, playerIndex == LocalPlayer ? "SOURCES" : "ENEMY SRC", subtitle);
             EnsureSocketLabel(zone, "SourceHint",
-                exposedOpponentSources ? "RAID" : string.Empty,
+                exposedOpponentSources ? "RAIDABLE" : string.Empty,
                 new Vector2(6f, 18f), new Vector2(-6f, 32f), 8.2f, FontStyles.Bold,
                 exposedOpponentSources ? new Color(1f, 0.72f, 0.48f, 0.95f) : Color.clear,
                 TextAlignmentOptions.Bottom);
@@ -6687,8 +8212,9 @@ namespace DualCraft.UI
                 return;
             }
 
-            bool compactStack = zone.rect.height > zone.rect.width * 1.1f;
-            int visible = Mathf.Min(sources.Count, compactStack ? 3 : 5);
+            bool spreadOpen = expanded || exposedOpponentSources;
+            bool compactStack = !spreadOpen || zone.rect.height > zone.rect.width * 1.1f;
+            int visible = spreadOpen ? Mathf.Min(sources.Count, 5) : 1;
             float spacing = visible <= 1 ? 0f : Mathf.Min(78f, content.rect.width / Mathf.Max(1, visible - 1) * 0.82f);
             float startX = -spacing * (visible - 1) * 0.5f;
             for (int i = 0; i < visible; i++)
@@ -6702,7 +8228,10 @@ namespace DualCraft.UI
                 ApplySourceLineCard(go, cardPosition, source, compactStack);
                 var visual = go.GetComponent<CardVisual>();
                 if (visual != null)
+                {
+                    visual.SetTextMode(CardTextMode.Board);
                     visual.SetCard(source.Card);
+                }
 
                 AddSourceStatusBadge(go.transform as RectTransform, source);
                 var btn = go.GetComponent<Button>() ?? go.AddComponent<Button>();
@@ -6723,6 +8252,33 @@ namespace DualCraft.UI
                     Vector2.zero, Vector2.zero, 8f, FontStyles.Bold, Color.clear, TextAlignmentOptions.Center);
         }
 
+        private void ConfigureSourcePileHover(RectTransform zone, int playerIndex)
+        {
+            if (zone == null)
+                return;
+
+            var trigger = zone.GetComponent<EventTrigger>() ?? zone.gameObject.AddComponent<EventTrigger>();
+            trigger.triggers.Clear();
+
+            EventTrigger.Entry enter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            enter.callback.AddListener(_ =>
+            {
+                if (playerIndex == LocalPlayer) _p1SourceExpanded = true;
+                else _p2SourceExpanded = true;
+                if (_battle?.State != null) OnStateChanged(_battle.State);
+            });
+            trigger.triggers.Add(enter);
+
+            EventTrigger.Entry exit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
+            exit.callback.AddListener(_ =>
+            {
+                if (playerIndex == LocalPlayer) _p1SourceExpanded = false;
+                else _p2SourceExpanded = false;
+                if (_battle?.State != null) OnStateChanged(_battle.State);
+            });
+            trigger.triggers.Add(exit);
+        }
+
         private void ApplySourceLineCard(GameObject cardGO, Vector2 anchoredPosition, AsheCardInstance source, bool compactStack)
         {
             if (cardGO == null)
@@ -6735,7 +8291,7 @@ namespace DualCraft.UI
             rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 0.5f);
             rt.anchoredPosition = anchoredPosition;
-            rt.sizeDelta = compactStack ? new Vector2(92f, 130f) : new Vector2(72f, 102f);
+            rt.sizeDelta = compactStack ? new Vector2(82f, 116f) : new Vector2(72f, 102f);
             rt.localScale = compactStack ? Vector3.one * 0.78f : Vector3.one * 0.92f;
             rt.localRotation = compactStack
                 ? Quaternion.Euler(0f, 0f, Mathf.Clamp(anchoredPosition.x * 0.7f, -8f, 8f))
@@ -6758,18 +8314,17 @@ namespace DualCraft.UI
             if (parent == null || source?.Card == null)
                 return;
 
-            string text = source.SuppressedTurnsRemaining > 0
-                ? "RAIDED"
-                : $"+{Mathf.Max(1, source.Card.sePerTurn)} SE";
-            Color color = source.SuppressedTurnsRemaining > 0
-                ? new Color(0.82f, 0.16f, 0.10f, 0.94f)
-                : new Color(0.12f, 0.42f, 0.62f, 0.94f);
+            if (source.SuppressedTurnsRemaining <= 0)
+                return;
+
+            string text = "RAIDED";
+            Color color = new Color(0.82f, 0.16f, 0.10f, 0.88f);
 
             var badge = new GameObject("SourceStatus", typeof(RectTransform), typeof(Image));
             badge.transform.SetParent(parent, false);
             var rt = badge.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0.04f, 0.74f);
-            rt.anchorMax = new Vector2(0.96f, 0.98f);
+            rt.anchorMin = new Vector2(0.08f, 0.10f);
+            rt.anchorMax = new Vector2(0.92f, 0.25f);
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
             var img = badge.GetComponent<Image>();
@@ -6812,19 +8367,9 @@ namespace DualCraft.UI
             }
             ConfigurePileLabels(zone, "DOMAIN", label);
 
-            var bg = zone.GetComponent<Image>();
-            if (bg == null) bg = zone.gameObject.AddComponent<Image>();
-            bg.color = activeDomain?.Card != null
-                ? new Color(0.055f, 0.082f, 0.120f, 0.84f)
-                : new Color(0.046f, 0.060f, 0.086f, 0.72f);
-            bg.raycastTarget = false;
-
-            var ol = zone.GetComponent<Outline>();
-            if (ol == null) ol = zone.gameObject.AddComponent<Outline>();
-            ol.effectColor = activeDomain?.Card != null
-                ? new Color(0.54f, 0.72f, 1f, 0.62f)
-                : new Color(0.42f, 0.54f, 0.72f, 0.40f);
-            ol.effectDistance = new Vector2(2f, -2f);
+            SkinRuntimePile(zone,
+                activeDomain?.Card != null ? new Color(0.055f, 0.082f, 0.120f, 0.84f) : new Color(0.046f, 0.060f, 0.086f, 0.72f),
+                activeDomain?.Card != null ? new Color(0.54f, 0.72f, 1f, 0.62f) : new Color(0.42f, 0.54f, 0.72f, 0.40f));
             EnsureSocketLabel(zone, "DomainStatus",
                 activeDomain?.Card != null ? "WORLD EFFECT ACTIVE" : "NO ACTIVE DOMAIN",
                 new Vector2(4f, 14f), new Vector2(-4f, 30f), 8.5f, FontStyles.Bold,
@@ -6841,7 +8386,10 @@ namespace DualCraft.UI
             ApplyMiniPileCard(card, Vector2.zero, false);
             var visual = card.GetComponent<CardVisual>();
             if (visual != null)
+            {
+                visual.SetTextMode(CardTextMode.Board);
                 visual.SetCard(activeDomain.Card);
+            }
         }
 
         private static float GetBattlefieldLayoutT()
@@ -6851,7 +8399,7 @@ namespace DualCraft.UI
 
         private static float GetHandCardScale()
         {
-            return Mathf.Lerp(0.80f, 0.92f, GetBattlefieldLayoutT());
+            return Mathf.Lerp(0.90f, 1.02f, GetBattlefieldLayoutT());
         }
 
         private IEnumerator ReapplyHandCurveAfterDelay(Transform container, int cardCount, bool isOpponent, float delay)
@@ -6901,11 +8449,20 @@ namespace DualCraft.UI
                 if (daemon == null || string.IsNullOrEmpty(daemon.InstanceId))
                     continue;
 
+                if (daemon.LaneIndex >= 0
+                    && daemon.LaneIndex < GameConstants.MaxFieldDaemons
+                    && usedSlots.Add(daemon.LaneIndex))
+                {
+                    slotMap[daemon.InstanceId] = daemon.LaneIndex;
+                    continue;
+                }
+
                 if (slotMap.TryGetValue(daemon.InstanceId, out int mappedSlot)
                     && mappedSlot >= 0
                     && mappedSlot < GameConstants.MaxFieldDaemons
                     && usedSlots.Add(mappedSlot))
                 {
+                    daemon.LaneIndex = mappedSlot;
                     continue;
                 }
 
@@ -6914,6 +8471,7 @@ namespace DualCraft.UI
                     continue;
 
                 slotMap[daemon.InstanceId] = nextOpenSlot;
+                daemon.LaneIndex = nextOpenSlot;
                 usedSlots.Add(nextOpenSlot);
             }
         }
@@ -6931,7 +8489,9 @@ namespace DualCraft.UI
             foreach (string occupiedId in slotMap.Where(entry => entry.Value == slotIndex && entry.Key != newestDaemon.InstanceId).Select(entry => entry.Key).ToList())
                 slotMap.Remove(occupiedId);
 
-            slotMap[newestDaemon.InstanceId] = Mathf.Clamp(slotIndex, 0, GameConstants.MaxFieldDaemons - 1);
+            int clampedSlot = Mathf.Clamp(slotIndex, 0, GameConstants.MaxFieldDaemons - 1);
+            newestDaemon.LaneIndex = clampedSlot;
+            slotMap[newestDaemon.InstanceId] = clampedSlot;
             SyncFieldSlotMap(player, playerIndex);
         }
 
@@ -6985,10 +8545,30 @@ namespace DualCraft.UI
 
             if (!string.IsNullOrEmpty(card.cardId))
             {
-                Sprite loaded = Resources.Load<Sprite>($"CardArt/{card.cardId}");
+                Sprite loaded = Resources.Load<Sprite>($"CardArt/Clean/{card.cardId}");
+                if (loaded != null)
+                    return loaded;
+
+                loaded = Resources.Load<Sprite>($"CardArt/{card.cardId}");
                 if (loaded != null)
                     return loaded;
             }
+
+            return null;
+        }
+
+        private static Sprite ResolveSummonPoseArtwork(CardData card)
+        {
+            if (card == null || string.IsNullOrEmpty(card.cardId))
+                return null;
+
+            Sprite pose = Resources.Load<Sprite>($"CardArt/ActionPoses/{card.cardId}");
+            if (pose != null)
+                return pose;
+
+            Texture2D poseTexture = Resources.Load<Texture2D>($"CardArt/ActionPoses/{card.cardId}");
+            if (poseTexture != null)
+                return Sprite.Create(poseTexture, new Rect(0, 0, poseTexture.width, poseTexture.height), new Vector2(0.5f, 0.5f));
 
             return null;
         }
@@ -7003,6 +8583,10 @@ namespace DualCraft.UI
             RectTransform p2SourceZone = FindRootRect("P2SourceZone");
             RectTransform activeDomainZone = FindRootRect("ActiveDomainZone");
 
+            if (p2SourceZone != null)
+                p2SourceZone.SetAsLastSibling();
+            if (p1SourceZone != null)
+                p1SourceZone.SetAsLastSibling();
             if (p2HandContainer != null)
                 p2HandContainer.SetAsLastSibling();
             if (p1HandContainer != null)
@@ -7015,10 +8599,6 @@ namespace DualCraft.UI
                 p2SealZone.SetAsLastSibling();
             if (p1SealZone != null)
                 p1SealZone.SetAsLastSibling();
-            if (p2SourceZone != null)
-                p2SourceZone.SetAsLastSibling();
-            if (p1SourceZone != null)
-                p1SourceZone.SetAsLastSibling();
             if (activeDomainZone != null)
                 activeDomainZone.SetAsLastSibling();
             if (_cardPreviewOverlay != null)
@@ -7273,6 +8853,9 @@ namespace DualCraft.UI
             if (rt == null)
                 return;
             float layoutT = GetBattlefieldLayoutT();
+            var visual = cardGO.GetComponent<CardVisual>();
+            if (visual != null)
+                visual.SetTextMode(CardTextMode.Board);
 
             var layout = cardGO.GetComponent<LayoutElement>();
             if (layout != null)
@@ -7403,6 +8986,7 @@ namespace DualCraft.UI
             if (pile == null)
                 return;
 
+            SkinRuntimePile(pile, new Color(0.050f, 0.040f, 0.066f, 0.82f), new Color(0.78f, 0.64f, 0.36f, 0.34f));
             RectTransform content = PreparePileContent(pile);
             ClearChildren(content);
             ConfigurePileLabels(pile, title, count > 0 ? count.ToString() : string.Empty);
@@ -7430,15 +9014,7 @@ namespace DualCraft.UI
             if (pile == null)
                 return;
 
-            // Ensure void pile has a defined visual background
-            var pileBg = pile.GetComponent<Image>();
-            if (pileBg == null) pileBg = pile.gameObject.AddComponent<Image>();
-            pileBg.color = new Color(0.060f, 0.046f, 0.090f, 0.78f);
-            pileBg.raycastTarget = false;
-            var pileOutline = pile.GetComponent<Outline>();
-            if (pileOutline == null) pileOutline = pile.gameObject.AddComponent<Outline>();
-            pileOutline.effectColor = new Color(0.72f, 0.62f, 0.88f, 0.34f);
-            pileOutline.effectDistance = new Vector2(1.5f, -1.5f);
+            SkinRuntimePile(pile, new Color(0.060f, 0.046f, 0.090f, 0.78f), new Color(0.72f, 0.62f, 0.88f, 0.34f));
 
             RectTransform content = PreparePileContent(pile);
             ClearChildren(content);
@@ -7479,7 +9055,10 @@ namespace DualCraft.UI
                 ApplyMiniPileCard(go, Vector2.zero, false);
                 var visual = go.GetComponent<CardVisual>();
                 if (visual != null)
+                {
+                    visual.SetTextMode(CardTextMode.Board);
                     visual.SetCard(ashePile[count - 1].Card);
+                }
 
                 // Click pile to browse all discarded cards
                 var btn = pile.GetComponent<Button>();
@@ -7573,7 +9152,11 @@ namespace DualCraft.UI
             {
                 var go = Instantiate(cardPrefab, contentGo.transform);
                 var visual = go.GetComponent<CardVisual>();
-                if (visual != null) visual.SetCard(cards[i].Card);
+                if (visual != null)
+                {
+                    visual.SetTextMode(CardTextMode.Inspect);
+                    visual.SetCard(cards[i].Card);
+                }
                 var rt = go.GetComponent<RectTransform>();
                 if (rt != null) rt.localScale = Vector3.one * 0.9f;
             }
@@ -7584,15 +9167,7 @@ namespace DualCraft.UI
             if (pile == null)
                 return;
 
-            var bg = pile.GetComponent<Image>();
-            if (bg == null) bg = pile.gameObject.AddComponent<Image>();
-            bg.color = new Color(0.064f, 0.050f, 0.095f, 0.82f);
-            bg.raycastTarget = false;
-
-            var outline = pile.GetComponent<Outline>();
-            if (outline == null) outline = pile.gameObject.AddComponent<Outline>();
-            outline.effectColor = new Color(0.74f, 0.64f, 0.94f, 0.32f);
-            outline.effectDistance = new Vector2(2f, -2f);
+            SkinRuntimePile(pile, new Color(0.064f, 0.050f, 0.095f, 0.82f), new Color(0.74f, 0.64f, 0.94f, 0.32f));
 
             RectTransform content = PreparePileContent(pile);
             ClearChildren(content);
@@ -7657,6 +9232,22 @@ namespace DualCraft.UI
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             return rect;
+        }
+
+        private static void SkinRuntimePile(RectTransform pile, Color fill, Color outlineColor)
+        {
+            if (pile == null)
+                return;
+
+            var image = pile.GetComponent<Image>() ?? pile.gameObject.AddComponent<Image>();
+            image.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            image.type = image.sprite != null && image.sprite.border.sqrMagnitude > 0f ? Image.Type.Sliced : Image.Type.Simple;
+            image.color = fill;
+            image.raycastTarget = false;
+
+            var outline = pile.GetComponent<Outline>() ?? pile.gameObject.AddComponent<Outline>();
+            outline.effectColor = outlineColor;
+            outline.effectDistance = new Vector2(2f, -2f);
         }
 
         private void ConfigurePileLabels(RectTransform pile, string title, string subtitle)
@@ -7788,13 +9379,7 @@ namespace DualCraft.UI
 
         private bool IsAsheTargetSelectionActive(PlayerState player)
         {
-            if (player == null || _battle?.State == null) return false;
-            if (_battle.State.CurrentPlayer != LocalPlayer || _battle.State.Phase != GamePhase.Main) return false;
-            if (_pendingAsheHandIndex < 0 || _pendingAsheHandIndex >= player.Hand.Count) return false;
-            if (player.Field.Count <= 0) return false;
-            var card = player.Hand[_pendingAsheHandIndex].Card;
-            if (card is not AsheCardData ashe) return false;
-            return player.Field.Any(d => ashe.Matches(d.Card));
+            return false;
         }
 
         private void ConfirmAshePlayTarget(int targetDaemonIndex)
@@ -7851,6 +9436,7 @@ namespace DualCraft.UI
                 var visual = cardGO.GetComponent<CardVisual>();
                 if (visual != null)
                 {
+                    visual.SetTextMode(CardTextMode.Board);
                     visual.SetCard(ashe.Card);
                     visual.SetRuntimeMainStat(GetAsheRuntimeBadgeValue(ashe));
                 }
@@ -8022,7 +9608,7 @@ namespace DualCraft.UI
                 DomainCardData => true,
                 DispelCardData => true,
                 HexCardData => true,
-                AsheCardData => true,
+                AsheCardData => !player.SourcePlayedThisTurn,
                 _ => false,
             };
         }
@@ -8056,16 +9642,6 @@ namespace DualCraft.UI
                 Debug.Log($"[Battle] Summon seat clicked: hand={handIndex} slot={slotIndex} target={target.name}");
                 ConfirmDaemonPlay(handIndex, slotIndex);
             });
-
-            var trigger = target.GetComponent<EventTrigger>() ?? target.AddComponent<EventTrigger>();
-            trigger.triggers.RemoveAll(entry => entry.eventID == EventTriggerType.PointerClick);
-            var pointerEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
-            pointerEntry.callback.AddListener(_ =>
-            {
-                Debug.Log($"[Battle] Summon seat pointer click: hand={handIndex} slot={slotIndex} target={target.name}");
-                ConfirmDaemonPlay(handIndex, slotIndex);
-            });
-            trigger.triggers.Add(pointerEntry);
         }
 
         private int FindStrongestDaemon(PlayerState player)
@@ -8198,12 +9774,13 @@ namespace DualCraft.UI
             var image = outlineGO.GetComponent<Image>();
             image.sprite = Resources.Load<Sprite>("UI/panel-dark");
             image.type = image.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
-            image.color = new Color(outlineColor.r, outlineColor.g, outlineColor.b, 0.02f);
+            float fillAlpha = outlineColor.grayscale < 0.12f ? 0.20f : 0.08f;
+            image.color = new Color(outlineColor.r, outlineColor.g, outlineColor.b, fillAlpha);
             image.raycastTarget = false;
 
             var outline = outlineGO.GetComponent<Outline>();
-            outline.effectColor = new Color(outlineColor.r, outlineColor.g, outlineColor.b, 0.96f);
-            outline.effectDistance = new Vector2(5f, -5f);
+            outline.effectColor = new Color(outlineColor.r, outlineColor.g, outlineColor.b, 0.98f);
+            outline.effectDistance = outlineColor.grayscale < 0.12f ? new Vector2(7f, -7f) : new Vector2(5f, -5f);
             outline.useGraphicAlpha = false;
             outlineGO.SetActive(false);
 
@@ -8235,16 +9812,17 @@ namespace DualCraft.UI
             if (targetDaemon.Card is not DaemonCardData defenderCard)
                 return false;
 
-            float mult = Core.ElementSystem.GetElementMatchup(attackerCard.element, defenderCard.element);
+            float mult = Core.ElementSystem.GetElementMatchup(attackerCard.element, defenderCard.element)
+                * Core.ElementSystem.GetCreatureMatchup(attackerCard.creatureType, defenderCard.creatureType);
             if (mult > Core.GameConstants.NeutralMult + 0.05f)
             {
-                color = new Color(0.18f, 1f, 0.38f, 1f);
+                color = Color.white;
                 return true;
             }
 
             if (mult < Core.GameConstants.NeutralMult - 0.05f)
             {
-                color = new Color(1f, 0.16f, 0.14f, 1f);
+                color = new Color(0.015f, 0.012f, 0.030f, 1f);
                 return true;
             }
 
@@ -8266,19 +9844,7 @@ namespace DualCraft.UI
 
             if (card is AsheCardData ashe)
             {
-                string affinity = BuildAsheAffinityLabel(ashe);
-                int compatibleCount = localPlayer.Field?.Count(d => d != null && ashe.Matches(d.Card)) ?? 0;
-                AddHandBadge(root.transform, affinity, new Color(0.12f, 0.28f, 0.34f, 0.90f), new Vector2(0f, 0.50f), new Vector2(1f, 1f));
-                AddHandBadge(root.transform,
-                    compatibleCount > 0 ? $"BOND x{compatibleCount}" : "SOURCE MODE",
-                    compatibleCount > 0 ? new Color(0.18f, 0.58f, 0.32f, 0.92f) : new Color(0.12f, 0.42f, 0.62f, 0.92f),
-                    new Vector2(0f, 0f),
-                    new Vector2(0.50f, 0.46f));
-                AddHandBadge(root.transform,
-                    $"+{Mathf.Max(1, ashe.sePerTurn)} SE",
-                    new Color(0.18f, 0.38f, 0.74f, 0.92f),
-                    new Vector2(0.53f, 0f),
-                    new Vector2(1f, 0.46f));
+                Destroy(root);
                 return;
             }
 
@@ -8303,9 +9869,7 @@ namespace DualCraft.UI
         {
             if (ashe == null)
                 return "SOURCE";
-            string affinity = ashe.matchType == AsheMatchType.Element
-                ? ashe.targetElement.ToString().ToUpperInvariant()
-                : ashe.targetCreatureType.ToString().ToUpperInvariant();
+            string affinity = ashe.GetAffinityType().ToString().ToUpperInvariant();
             return $"{affinity} SOURCE";
         }
 
@@ -8313,9 +9877,7 @@ namespace DualCraft.UI
         {
             if (ashe == null)
                 return "Source";
-            string affinity = ashe.matchType == AsheMatchType.Element
-                ? ashe.targetElement.ToString()
-                : ashe.targetCreatureType.ToString();
+            string affinity = ashe.GetAffinityType().ToString();
             return $"{affinity} Source";
         }
 
@@ -8534,11 +10096,12 @@ namespace DualCraft.UI
             else if (_waitingForTarget && _selectedAttackerIndex >= 0 && _selectedAttackerIndex < localPlayer.Field.Count)
             {
                 var attacker = localPlayer.Field[_selectedAttackerIndex];
-                title = $"DAMAGE: {attacker.Attack}";
+                string pattern = GetAttackPatternLetter(attacker);
+                title = $"{pattern} ATTACK  DAMAGE: {attacker.Attack}";
                 body = GameConstants.EnableTacticsBoardMode
-                    ? IsTacticsRangedAttacker(attacker)
-                        ? "Ranged: choose any daemon. Cross-lane shots need accuracy. If no daemon defends, raid one Source or strike the Invoker."
-                        : "Melee: attack the daemon straight ahead. If that lane is open, raid one Source or strike the Invoker."
+                        ? IsTacticsRangedAttacker(attacker)
+                            ? "R: attack diagonal lanes with an accuracy check. If your lane is open, raid one Source or strike the Invoker."
+                            : $"{GetAttackPatternLetter(attacker)}: attack straight ahead. If that lane is open, raid one Source or strike the Invoker."
                     : "Choose an enemy daemon. If no daemons defend, raid one Source or strike the Invoker.";
                 accent = CombatHitTint;
             }
@@ -8710,16 +10273,16 @@ namespace DualCraft.UI
             _storyTutorialPanel = new GameObject("StoryTutorialPanel", typeof(RectTransform), typeof(Image));
             _storyTutorialPanel.transform.SetParent(canvasRoot, false);
             var rect = _storyTutorialPanel.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.020f, 0.70f);
-            rect.anchorMax = new Vector2(0.285f, 0.95f);
+            rect.anchorMin = new Vector2(0.020f, 0.66f);
+            rect.anchorMax = new Vector2(0.310f, 0.95f);
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
 
             var bg = _storyTutorialPanel.GetComponent<Image>();
             bg.sprite = Resources.Load<Sprite>("UI/panel-dark");
             bg.type = bg.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
-            bg.color = new Color(0.05f, 0.07f, 0.11f, 0.92f);
-            bg.raycastTarget = false;
+            bg.color = new Color(0.035f, 0.045f, 0.070f, 0.99f);
+            bg.raycastTarget = true;
 
             var accentGo = new GameObject("Accent", typeof(RectTransform), typeof(Image));
             accentGo.transform.SetParent(_storyTutorialPanel.transform, false);
@@ -8763,6 +10326,38 @@ namespace DualCraft.UI
                 TextAlignmentOptions.BottomLeft,
                 new Color(0.78f, 0.84f, 0.92f));
 
+            var closeGo = new GameObject("TutorialClose", typeof(RectTransform), typeof(Image), typeof(Button));
+            closeGo.transform.SetParent(_storyTutorialPanel.transform, false);
+            var closeRect = closeGo.GetComponent<RectTransform>();
+            closeRect.anchorMin = new Vector2(0.84f, 0.84f);
+            closeRect.anchorMax = new Vector2(0.97f, 0.97f);
+            closeRect.offsetMin = Vector2.zero;
+            closeRect.offsetMax = Vector2.zero;
+            var closeImage = closeGo.GetComponent<Image>();
+            closeImage.sprite = Resources.Load<Sprite>("UI/btn-red") ?? Resources.Load<Sprite>("UI/panel-dark");
+            closeImage.type = closeImage.sprite != null && closeImage.sprite.border.sqrMagnitude > 0f ? Image.Type.Sliced : Image.Type.Simple;
+            closeImage.color = new Color(0.32f, 0.12f, 0.10f, 0.98f);
+            var closeLabelGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+            closeLabelGo.transform.SetParent(closeGo.transform, false);
+            var closeLabelRect = closeLabelGo.GetComponent<RectTransform>();
+            closeLabelRect.anchorMin = Vector2.zero;
+            closeLabelRect.anchorMax = Vector2.one;
+            closeLabelRect.offsetMin = Vector2.zero;
+            closeLabelRect.offsetMax = Vector2.zero;
+            var closeLabel = closeLabelGo.GetComponent<TextMeshProUGUI>();
+            closeLabel.text = "X";
+            closeLabel.fontSize = 16f;
+            closeLabel.fontStyle = FontStyles.Bold;
+            closeLabel.alignment = TextAlignmentOptions.Center;
+            closeLabel.color = new Color(1f, 0.92f, 0.82f, 1f);
+            closeLabel.raycastTarget = false;
+            closeGo.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                _storyTutorialDismissed = true;
+                if (_storyTutorialPanel != null)
+                    _storyTutorialPanel.SetActive(false);
+            });
+
             _storyTutorialPanel.SetActive(false);
         }
 
@@ -8789,7 +10384,7 @@ namespace DualCraft.UI
         private void UpdateStoryTutorial(GameState state, bool isPlayerTurn)
         {
             bool tutorialActive = _storyBattleConfig != null && _storyBattleConfig.enableNoviceTutorial;
-            if (!tutorialActive || _storyTutorialPanel == null)
+            if (!tutorialActive || _storyTutorialDismissed || _storyTutorialPanel == null)
             {
                 if (_storyTutorialPanel != null && _storyTutorialPanel.activeSelf)
                     _storyTutorialPanel.SetActive(false);
@@ -8824,7 +10419,7 @@ namespace DualCraft.UI
             else if (!hasSourceInPlay && hasSourceInHand && state.Phase == GamePhase.Main)
             {
                 title = "SET A SOURCE";
-                body = "Sources are free. They make Spirit Energy every turn, which pays for daemon summons, attacks, Hexes, Relics, and Dispels.";
+                body = "Sources are free. They make Spirit Energy every turn. Card types are Daemon, Source, Relic, Domain, Hex, and Dispel.";
                 footer = "Look for the glowing Source card in your hand.";
                 accent = new Color(0.42f, 1f, 0.58f, 1f);
             }
@@ -8862,8 +10457,8 @@ namespace DualCraft.UI
                 {
                     title = "SET YOUR BOARD";
                     body = _storyTutorialEnemyTurnSeen
-                        ? "Fresh summons usually need a turn before attacking. You can play more cards now, or move ahead to combat when you're ready."
-                        : "Fresh summons usually cannot attack right away. Press BATTLE to move on, then END TURN so your daemon is ready on the next turn.";
+                        ? "Build your lane, keep Sources protected, then move to combat when a daemon can pressure the board."
+                        : "Sources make SE each turn. Daemons defend lanes, attack targets, and punish open lanes by striking the Invoker.";
                     footer = $"Field: {local.Field.Count} daemon{(local.Field.Count == 1 ? "" : "s")}  •  Stored SE: {local.Will}";
                     accent = new Color(0.95f, 0.82f, 0.38f, 1f);
                 }
@@ -8874,9 +10469,9 @@ namespace DualCraft.UI
                 {
                     title = "CHOOSE A TARGET";
                     body = GameConstants.EnableTacticsBoardMode
-                        ? "Melee daemons attack straight ahead. Ranged daemons can cross lanes. If no daemon defends, raid one Source or strike the Invoker."
+                        ? "D attacks straight ahead. R attacks diagonally. S splashes adjacent lanes. G protects neighboring lanes."
                         : "Pick an enemy daemon. If no daemon defends, raid one Source or strike the Invoker.";
-                    footer = "Super effective, resisted, damage, and shatter text appear at impact.";
+                    footer = "White glow means advantage. Black glow means disadvantage. Wards roll d6 when an Invoker is hit.";
                     accent = new Color(1f, 0.42f, 0.30f, 1f);
                 }
                 else if (readyAttacker)
@@ -8889,15 +10484,15 @@ namespace DualCraft.UI
                 else if (_storyTutorialAttackSeen)
                 {
                     title = "FIRST ATTACK LANDED";
-                    body = "You have seen the duel loop: Source makes SE, Daemon attacks, weakness changes damage, destroyed Daemons cost Invoker life.";
+                    body = "You have seen the duel loop: Source makes SE, Daemon attacks lanes, weakness changes damage, Wards react, and destroyed Daemons cost Invoker life.";
                     footer = "Press END TURN when your attacks are finished.";
                     accent = new Color(0.42f, 0.94f, 0.58f, 1f);
                 }
                 else
                 {
                     title = "END THE TURN";
-                    body = "No ready attackers remain in this combat step. Press END TURN to pass and let the turn cycle bring your daemon online next round.";
-                    footer = "Fresh summons become threatening on the following turn.";
+                    body = "No ready attackers remain in this combat step. Press END TURN to pass and watch how the opponent spends SE.";
+                    footer = "Open lanes make the Invoker vulnerable, but Wards can soften direct hits.";
                     accent = new Color(0.55f, 0.90f, 0.62f, 1f);
                 }
             }
@@ -9251,7 +10846,9 @@ namespace DualCraft.UI
 
         private static bool HasPlayableSourceInHand(PlayerState player)
         {
-            return player?.Hand != null && player.Hand.Any(card => card?.Card is AsheCardData);
+            return player?.Hand != null
+                && !player.SourcePlayedThisTurn
+                && player.Hand.Any(card => card?.Card is AsheCardData);
         }
 
         private static bool HasPlayableDaemonInHand(PlayerState player)
@@ -9300,10 +10897,14 @@ namespace DualCraft.UI
                 return $"Turn {state.TurnNumber} \u2022 Duel Complete";
             if (state.Phase == GamePhase.Setup)
                 return "Setting Up...";
+            string activeName = state.CurrentPlayer >= 0 && state.CurrentPlayer < state.Players.Length
+                ? state.Players[state.CurrentPlayer]?.Name
+                : null;
+            string actor = isPlayerTurn ? "Your turn" : string.IsNullOrWhiteSpace(activeName) ? "Opponent turn" : $"{activeName}'s turn";
             if (!isPlayerTurn)
-                return $"Turn {state.TurnNumber} \u2022 Opponent Resolving";
+                return $"Turn {state.TurnNumber} \u2022 {actor} \u2022 {PhaseDisplayName(state.Phase)}";
             if (state.Phase == GamePhase.Draw)
-                return $"Turn {state.TurnNumber} \u2022 Drawing...";
+                return $"Turn {state.TurnNumber} \u2022 Your turn \u2022 Draw a card";
             if (_waitingForTarget)
                 return $"Turn {state.TurnNumber} \u2022 Choose Attack Target";
             if (state.Phase == GamePhase.Main)
@@ -9372,6 +10973,9 @@ namespace DualCraft.UI
             if (rt == null)
                 return;
             float layoutT = GetBattlefieldLayoutT();
+            var visual = cardGO.GetComponent<CardVisual>();
+            if (visual != null)
+                visual.SetTextMode(zoneStyle == CardZoneStyle.Hand && !hidden ? CardTextMode.Hand : CardTextMode.Board);
 
             switch (zoneStyle)
             {
@@ -9656,31 +11260,20 @@ namespace DualCraft.UI
             }
         }
 
-        private void AddStatOverlay(GameObject cardGO, DaemonInstance daemon, int ownerStoredSe, List<AsheCardInstance> ownerAsheCards)
+        private void AddStatOverlay(GameObject cardGO, DaemonInstance daemon, int ownerStoredSe, List<AsheCardInstance> ownerAsheCards, bool firstAttackFree)
         {
             var overlay = new GameObject("Stats");
             overlay.transform.SetParent(cardGO.transform, false);
             var rt = overlay.AddComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0.04f, 0.01f);
-            rt.anchorMax = new Vector2(0.96f, 0.22f);
+            rt.anchorMin = new Vector2(0.04f, -0.20f);
+            rt.anchorMax = new Vector2(0.96f, -0.03f);
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
             var bg = overlay.AddComponent<Image>();
             bg.color = new Color(0f, 0f, 0f, 0.58f);
             bg.raycastTarget = false;
 
-            string statusIcons = "";
-            if (daemon.Frozen) statusIcons += " FRZ";
-            if (daemon.Entangled) statusIcons += " ENT";
-            if (daemon.Stealthed) statusIcons += " STL";
-            if (daemon.Poisoned) statusIcons += " PSN";
-            if (daemon.Burning) statusIcons += " BRN";
-            if (daemon.HasTaunt) statusIcons += " TNT";
-            if (GetDisplayedKillCooldownTurns(daemon) > 0) statusIcons += $" CD{GetDisplayedKillCooldownTurns(daemon)}";
-            if (daemon.ShieldAmount > 0) statusIcons += $" SH{daemon.ShieldAmount}";
-            if (daemon.NextAttackDouble) statusIcons += " x2";
-            if (daemon.Masks.Count > 0) statusIcons += $" RLC{daemon.Masks.Count}";
-            int attackCost = ResolveDisplayedAttackCost(daemon, ownerAsheCards);
+            int attackCost = ResolveDisplayedAttackCost(daemon, ownerAsheCards, firstAttackFree);
 
             var mainTextGo = new GameObject("MainStat");
             mainTextGo.transform.SetParent(overlay.transform, false);
@@ -9690,13 +11283,13 @@ namespace DualCraft.UI
             mainRt.offsetMin = new Vector2(6f, 0f);
             mainRt.offsetMax = new Vector2(0f, 0f);
             var mainTmp = mainTextGo.AddComponent<TextMeshProUGUI>();
-            mainTmp.text = $"{daemon.CurrentAshe}/{daemon.MaxAshe} LIFE";
-            mainTmp.fontSize = 10f;
+            mainTmp.text = $"{daemon.CurrentAshe}/{daemon.MaxAshe}";
+            mainTmp.fontSize = 13f;
             mainTmp.color = new Color(0.92f, 0.96f, 1f, 0.96f);
             mainTmp.alignment = TextAlignmentOptions.MidlineLeft;
             mainTmp.enableAutoSizing = true;
-            mainTmp.fontSizeMin = 7f;
-            mainTmp.fontSizeMax = 10f;
+            mainTmp.fontSizeMin = 9f;
+            mainTmp.fontSizeMax = 13f;
             mainTmp.raycastTarget = false;
 
             var costTextGo = new GameObject("CostStat");
@@ -9707,8 +11300,8 @@ namespace DualCraft.UI
             costRt.offsetMin = Vector2.zero;
             costRt.offsetMax = Vector2.zero;
             var costTmp = costTextGo.AddComponent<TextMeshProUGUI>();
-            costTmp.text = $"SE {attackCost}";
-            costTmp.fontSize = 8f;
+            costTmp.text = attackCost.ToString();
+            costTmp.fontSize = 11f;
             costTmp.color = attackCost <= 0
                 ? new Color(0.74f, 1f, 0.82f, 0.96f)
                 : ownerStoredSe < attackCost
@@ -9716,8 +11309,8 @@ namespace DualCraft.UI
                     : new Color(0.80f, 0.88f, 1f, 0.96f);
             costTmp.alignment = TextAlignmentOptions.Midline;
             costTmp.enableAutoSizing = true;
-            costTmp.fontSizeMin = 6f;
-            costTmp.fontSizeMax = 8f;
+            costTmp.fontSizeMin = 8f;
+            costTmp.fontSizeMax = 11f;
             costTmp.raycastTarget = false;
 
             var fallTextGo = new GameObject("FallStat");
@@ -9729,40 +11322,20 @@ namespace DualCraft.UI
             fallRt.offsetMax = new Vector2(-5f, 0f);
             var fallTmp = fallTextGo.AddComponent<TextMeshProUGUI>();
             int fallLifeLoss = GameConstants.GetInvokerLifeLossForRarity(daemon.Card.rarity);
-            fallTmp.text = $"FALL -{fallLifeLoss}";
-            fallTmp.fontSize = 7f;
+            fallTmp.text = $"-{fallLifeLoss}";
+            fallTmp.fontSize = 10f;
             fallTmp.color = new Color(1f, 0.62f, 0.52f, 0.94f);
             fallTmp.alignment = TextAlignmentOptions.MidlineRight;
             fallTmp.enableAutoSizing = true;
-            fallTmp.fontSizeMin = 5f;
-            fallTmp.fontSizeMax = 7f;
+            fallTmp.fontSizeMin = 7f;
+            fallTmp.fontSizeMax = 10f;
             fallTmp.raycastTarget = false;
-
-            if (!string.IsNullOrWhiteSpace(statusIcons))
-            {
-                var statusGO = new GameObject("StatusText");
-                statusGO.transform.SetParent(cardGO.transform, false);
-                var statusRt = statusGO.AddComponent<RectTransform>();
-                statusRt.anchorMin = new Vector2(0.08f, 0.18f);
-                statusRt.anchorMax = new Vector2(0.92f, 0.30f);
-                statusRt.offsetMin = Vector2.zero;
-                statusRt.offsetMax = Vector2.zero;
-                var statusTmp = statusGO.AddComponent<TextMeshProUGUI>();
-                statusTmp.text = statusIcons.Trim();
-                statusTmp.fontSize = 6f;
-                statusTmp.color = new Color(1f, 0.96f, 0.90f, 0.92f);
-                statusTmp.alignment = TextAlignmentOptions.Center;
-                statusTmp.enableAutoSizing = true;
-                statusTmp.fontSizeMin = 4f;
-                statusTmp.fontSizeMax = 6f;
-                statusTmp.raycastTarget = false;
-            }
 
             var atkBadge = new GameObject("AttackBadge");
             atkBadge.transform.SetParent(cardGO.transform, false);
             var badgeRt = atkBadge.AddComponent<RectTransform>();
-            badgeRt.anchorMin = new Vector2(0.76f, 0.01f);
-            badgeRt.anchorMax = new Vector2(0.99f, 0.18f);
+            badgeRt.anchorMin = new Vector2(0.76f, -0.20f);
+            badgeRt.anchorMax = new Vector2(0.99f, -0.03f);
             badgeRt.offsetMin = Vector2.zero;
             badgeRt.offsetMax = Vector2.zero;
             var badgeBg = atkBadge.AddComponent<Image>();
@@ -9789,7 +11362,7 @@ namespace DualCraft.UI
             elemTextRt.offsetMin = Vector2.zero;
             elemTextRt.offsetMax = Vector2.zero;
             var elemTmp = elemTextGo.AddComponent<TextMeshProUGUI>();
-            elemTmp.text = daemon.Card.element.ToString().Substring(0, 1).ToUpperInvariant();
+            elemTmp.text = GetAttackPatternLetter(daemon);
             elemTmp.fontSize = 9f;
             elemTmp.fontStyle = FontStyles.Bold;
             elemTmp.color = new Color(0.08f, 0.08f, 0.08f, 0.95f);
@@ -9818,19 +11391,54 @@ namespace DualCraft.UI
             atkTmp.raycastTarget = false;
         }
 
-        private static int ResolveDisplayedAttackCost(DaemonInstance daemon, List<AsheCardInstance> ownerAsheCards)
+        private static int ResolveDisplayedAttackCost(DaemonInstance daemon, List<AsheCardInstance> ownerAsheCards, bool firstAttackFree)
         {
             if (daemon == null)
                 return 0;
 
-            bool hasElementalAshe = ownerAsheCards != null
-                && ownerAsheCards.Any(ashe =>
-                    ashe != null
-                    && ashe.AssignedDaemonInstanceId == daemon.InstanceId
-                    && ashe.Card != null
-                    && ashe.Card.GetAffinityType() == CreatureType.Elemental);
+            return firstAttackFree ? 0 : Mathf.Max(1, daemon.AsheCost);
+        }
 
-            return hasElementalAshe ? 0 : Mathf.Max(0, daemon.AsheCost);
+        private static string GetAttackPatternLetter(DaemonInstance daemon)
+        {
+            if (daemon?.Card == null)
+                return "D";
+
+            return GetEffectiveAttackPattern(daemon) switch
+            {
+                DaemonAttackPattern.Ranged => "R",
+                DaemonAttackPattern.Sweep => "S",
+                DaemonAttackPattern.Guard => "G",
+                _ => "D",
+            };
+        }
+
+        private static bool HasRangedAttackBadge(DaemonInstance daemon)
+        {
+            if (daemon?.Card == null)
+                return false;
+
+            return GetEffectiveAttackPattern(daemon) == DaemonAttackPattern.Ranged;
+        }
+
+        private static DaemonAttackPattern GetEffectiveAttackPattern(DaemonInstance daemon)
+        {
+            if (daemon?.Card == null)
+                return DaemonAttackPattern.Direct;
+
+            if (daemon.Masks != null)
+            {
+                var patternMask = daemon.Masks.LastOrDefault(mask =>
+                    mask?.Card != null && (mask.Card.grantsRangedAttacks || mask.Card.overridesAttackPattern));
+                if (patternMask?.Card != null)
+                {
+                    if (patternMask.Card.grantsRangedAttacks)
+                        return DaemonAttackPattern.Ranged;
+                    return patternMask.Card.grantedAttackPattern;
+                }
+            }
+
+            return daemon.Card.rangedAttack ? DaemonAttackPattern.Ranged : daemon.Card.attackPattern;
         }
 
         private static int GetDisplayedKillCooldownTurns(DaemonInstance daemon)
@@ -10119,7 +11727,6 @@ namespace DualCraft.UI
         {
             SpawnImpactBurst(worldPos, tint, 1.5f * scale);
             SpawnAetherSheetImpactFX(worldPos, kind, tint, scale);
-            SpawnFloatingCombatText(worldPos + Vector3.up * 34f, label, new Color(tint.r, tint.g, tint.b, 0.96f), 0.78f);
         }
 
         private bool TryDispatchGeneralMoveVfx(LogEntry entry, string lower, Vector3 center)
@@ -10201,7 +11808,6 @@ namespace DualCraft.UI
         private bool SpawnMoveVfx(Vector3 center, BattleEffectAssetKind kind, string label, Color tint, float scale, Audio.SfxCue cue)
         {
             SpawnCompactMoveSheetVfx(center, kind, tint, scale);
-            SpawnFloatingCombatText(center + Vector3.up * 24f, label, new Color(tint.r, tint.g, tint.b, 0.9f), 0.56f);
             Audio.SfxManager.EnsureInstance().Play(cue, 0.20f, 1f);
             return true;
         }
@@ -10453,7 +12059,7 @@ namespace DualCraft.UI
                 if (_combatFlashOverlay != null)
                     yield return UIAnimUtils.ScreenFlash(_combatFlashOverlay, new Color(tint.r, tint.g, tint.b, 0.86f), 0.24f);
 
-                StartCoroutine(UIAnimUtils.ScreenShake(transform, 5f, 0.22f));
+                StartSafeScreenShake(transform, 5f, 0.22f);
                 Audio.SfxManager.EnsureInstance().Play(Audio.SfxCue.DomainPulse, 0.36f, 0.96f);
                 SpawnAetherSheetImpactFX(GetRectWorldPoint(_combatFxLayer), effectKind, tint, 1.34f);
                 HopFieldCards(p1FieldContainer, 12f);
@@ -10630,26 +12236,46 @@ namespace DualCraft.UI
             StopAllCoroutines();
             if (_forfeitButton) _forfeitButton.gameObject.SetActive(false);
 
-            if (_storyBattleConfig != null && winner == LocalPlayer)
+            ProgressionAwardResult progression = null;
+            PlayerProfile profile = null;
+            if (winner == LocalPlayer)
             {
-                var profile = ProfileManager.Load();
-                if (_storyBattleConfig.storyWinChapter > 0)
-                    profile.storyChapter = Mathf.Max(profile.storyChapter, _storyBattleConfig.storyWinChapter);
-                else
-                    profile.storyChapter = Mathf.Max(profile.storyChapter, 2);
+                profile = ProfileManager.Load();
+                profile.totalWins++;
+                profile.totalGamesPlayed++;
 
-                if (_storyBattleConfig.marksTrialComplete)
-                    profile.storyTrialComplete = true;
-
-                if (!string.IsNullOrWhiteSpace(_storyBattleConfig.defeatedInvokerId)
-                    && !profile.defeatedInvokerIds.Contains(_storyBattleConfig.defeatedInvokerId))
+                if (_storyBattleConfig != null)
                 {
-                    profile.defeatedInvokerIds.Add(_storyBattleConfig.defeatedInvokerId);
+                    if (_storyBattleConfig.storyWinChapter > 0)
+                        profile.storyChapter = Mathf.Max(profile.storyChapter, _storyBattleConfig.storyWinChapter);
+                    else
+                        profile.storyChapter = Mathf.Max(profile.storyChapter, 2);
+
+                    if (_storyBattleConfig.marksTrialComplete)
+                        profile.storyTrialComplete = true;
+
+                    if (!string.IsNullOrWhiteSpace(_storyBattleConfig.defeatedInvokerId)
+                        && !profile.defeatedInvokerIds.Contains(_storyBattleConfig.defeatedInvokerId))
+                    {
+                        profile.defeatedInvokerIds.Add(_storyBattleConfig.defeatedInvokerId);
+                    }
+
+                    if (_storyBattleConfig.isWildDaemonEncounter && _storyBattleConfig.bindWildDaemonOnWin)
+                        BindWildDaemonReward(profile);
                 }
 
-                if (_storyBattleConfig.isWildDaemonEncounter && _storyBattleConfig.bindWildDaemonOnWin)
-                    BindWildDaemonReward(profile);
-
+                if (!_progressionAwardedThisMatch)
+                {
+                    progression = InvokerProgression.AwardVictory(profile);
+                    _progressionAwardedThisMatch = true;
+                }
+                ProfileManager.Save(profile);
+            }
+            else
+            {
+                profile = ProfileManager.Load();
+                profile.totalLosses++;
+                profile.totalGamesPlayed++;
                 ProfileManager.Save(profile);
             }
 
@@ -10658,6 +12284,12 @@ namespace DualCraft.UI
                 sfx.Play(Audio.SfxCue.Victory, 0.92f, 1f);
             else
                 sfx.Play(Audio.SfxCue.Defeat, 0.88f, 0.95f);
+
+            if (_storyBattleConfig != null)
+            {
+                ShowStoryBattleResult(winner == LocalPlayer, reason, profile, progression);
+                return;
+            }
 
             if (gameOverPanel)
             {
@@ -10669,6 +12301,10 @@ namespace DualCraft.UI
                 if (cg == null) cg = gameOverPanel.AddComponent<CanvasGroup>();
                 StartCoroutine(UIAnimUtils.FadeIn(cg, 0.4f));
                 EnsureGameOverButtons(gameOverPanel.transform);
+                if (winner == LocalPlayer && progression != null)
+                    EnsureVictoryCelebration(gameOverPanel.transform, profile, progression);
+                else if (winner != LocalPlayer)
+                    EnsureDefeatScene(gameOverPanel.transform, profile, reason);
             }
             if (gameOverText)
             {
@@ -10678,8 +12314,349 @@ namespace DualCraft.UI
                     && _storyBattleConfig.bindWildDaemonOnWin
                     ? "\nDaemon captured and added to your Grimware."
                     : string.Empty;
-                gameOverText.text = $"{_battle.State.Players[winner].Name} Wins!\n{reason}{wildBindLine}";
+                string xpLine = winner == LocalPlayer && progression != null
+                    ? $"\n+{progression.XpGained} XP  •  Invoker Lv. {progression.NewLevel}"
+                    : string.Empty;
+                gameOverText.text = $"{_battle.State.Players[winner].Name} Wins!\n{reason}{wildBindLine}{xpLine}";
             }
+        }
+
+        private void EnsureDefeatScene(Transform panel, PlayerProfile profile, string reason)
+        {
+            if (panel == null)
+                return;
+
+            Transform existing = panel.Find("DefeatScene");
+            if (existing != null)
+                Destroy(existing.gameObject);
+
+            var root = new GameObject("DefeatScene", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+            root.transform.SetParent(panel, false);
+            root.transform.SetAsFirstSibling();
+
+            var rt = root.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.08f, 0.24f);
+            rt.anchorMax = new Vector2(0.92f, 0.86f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+
+            var bg = root.GetComponent<Image>();
+            bg.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            bg.type = bg.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            bg.color = new Color(0.035f, 0.030f, 0.045f, 0.96f);
+
+            var cg = root.GetComponent<CanvasGroup>();
+            cg.alpha = 0f;
+            StartCoroutine(UIAnimUtils.FadeIn(cg, 0.35f));
+            StartCoroutine(UIAnimUtils.PopScale(root.transform, 0.42f, 1.035f));
+
+            Sprite portrait = ResolveInvokerProgressionPortrait(profile);
+            var portraitGo = new GameObject("InvokerPortrait", typeof(RectTransform), typeof(Image), typeof(Outline));
+            portraitGo.transform.SetParent(root.transform, false);
+            var prt = portraitGo.GetComponent<RectTransform>();
+            prt.anchorMin = new Vector2(0.06f, 0.18f);
+            prt.anchorMax = new Vector2(0.30f, 0.82f);
+            prt.offsetMin = Vector2.zero;
+            prt.offsetMax = Vector2.zero;
+            var portraitImg = portraitGo.GetComponent<Image>();
+            portraitImg.sprite = portrait;
+            portraitImg.preserveAspect = true;
+            portraitImg.color = portrait != null ? new Color(0.78f, 0.78f, 0.86f, 1f) : new Color(0.30f, 0.24f, 0.36f, 0.95f);
+            var outline = portraitGo.GetComponent<Outline>();
+            outline.effectColor = new Color(0.42f, 0.55f, 0.95f, 0.78f);
+            outline.effectDistance = new Vector2(3f, -3f);
+
+            string cleanReason = string.IsNullOrWhiteSpace(reason) ? "Your bond faltered." : reason;
+            AddCelebrationText(root.transform, "Title", "BOND BROKEN",
+                30, FontStyles.Bold, new Color(0.72f, 0.82f, 1f, 1f), new Vector2(0.34f, 0.70f), new Vector2(0.95f, 0.88f), TextAlignmentOptions.Left);
+            AddCelebrationText(root.transform, "Body",
+                $"{cleanReason}\nYour Grimware records the loss. Study the board, adjust your deck, and return with a cleaner Source curve.",
+                17, FontStyles.Normal, new Color(0.90f, 0.88f, 0.96f, 0.98f), new Vector2(0.34f, 0.38f), new Vector2(0.95f, 0.68f), TextAlignmentOptions.Left);
+            AddCelebrationText(root.transform, "Footer", "Retry the duel or return to the Grimoire.",
+                14, FontStyles.Bold, new Color(0.72f, 0.82f, 1f, 1f), new Vector2(0.34f, 0.22f), new Vector2(0.95f, 0.33f), TextAlignmentOptions.Left);
+        }
+
+        private void ShowStoryBattleResult(bool playerWon, string reason, PlayerProfile profile, ProgressionAwardResult progression)
+        {
+            _storyResultAwaitingReturn = false;
+            if (gameOverPanel != null)
+                gameOverPanel.SetActive(false);
+
+            Audio.MusicManager music = Audio.MusicManager.EnsureInstance();
+            if (playerWon)
+                music.PlayRewardMusic();
+
+            Transform parent = transform;
+            var canvasRoot = transform as RectTransform;
+            if (canvasRoot != null)
+                parent = canvasRoot;
+
+            if (_storyResultPanel != null)
+                Destroy(_storyResultPanel);
+
+            _storyResultPanel = new GameObject("StoryBattleResult", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+            _storyResultPanel.transform.SetParent(parent, false);
+            _storyResultPanel.transform.SetAsLastSibling();
+
+            var rootRt = _storyResultPanel.GetComponent<RectTransform>();
+            rootRt.anchorMin = Vector2.zero;
+            rootRt.anchorMax = Vector2.one;
+            rootRt.offsetMin = Vector2.zero;
+            rootRt.offsetMax = Vector2.zero;
+
+            var shade = _storyResultPanel.GetComponent<Image>();
+            shade.color = playerWon
+                ? new Color(0.02f, 0.015f, 0.025f, 0.84f)
+                : new Color(0.025f, 0.020f, 0.035f, 0.88f);
+            var group = _storyResultPanel.GetComponent<CanvasGroup>();
+            group.alpha = 0f;
+
+            var panel = new GameObject("ResultPlate", typeof(RectTransform), typeof(Image), typeof(Outline));
+            panel.transform.SetParent(_storyResultPanel.transform, false);
+            var prt = panel.GetComponent<RectTransform>();
+            prt.anchorMin = new Vector2(0.18f, 0.22f);
+            prt.anchorMax = new Vector2(0.82f, 0.80f);
+            prt.offsetMin = Vector2.zero;
+            prt.offsetMax = Vector2.zero;
+
+            var bg = panel.GetComponent<Image>();
+            bg.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            bg.type = bg.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            bg.color = playerWon
+                ? new Color(0.075f, 0.045f, 0.085f, 0.96f)
+                : new Color(0.045f, 0.040f, 0.060f, 0.96f);
+            var outline = panel.GetComponent<Outline>();
+            outline.effectColor = playerWon
+                ? new Color(1f, 0.76f, 0.28f, 0.90f)
+                : new Color(0.48f, 0.60f, 1f, 0.78f);
+            outline.effectDistance = new Vector2(4f, -4f);
+
+            Sprite portrait = ResolveInvokerProgressionPortrait(profile);
+            var portraitGo = new GameObject("InvokerPortrait", typeof(RectTransform), typeof(Image));
+            portraitGo.transform.SetParent(panel.transform, false);
+            var portraitRt = portraitGo.GetComponent<RectTransform>();
+            portraitRt.anchorMin = new Vector2(0.055f, 0.17f);
+            portraitRt.anchorMax = new Vector2(0.30f, 0.84f);
+            portraitRt.offsetMin = Vector2.zero;
+            portraitRt.offsetMax = Vector2.zero;
+            var portraitImg = portraitGo.GetComponent<Image>();
+            portraitImg.sprite = portrait;
+            portraitImg.preserveAspect = true;
+            portraitImg.color = portrait != null ? Color.white : new Color(0.38f, 0.30f, 0.50f, 0.95f);
+
+            string title = playerWon ? "YOU WON" : "YOU LOST";
+            string rewardLine = string.Empty;
+            if (playerWon && progression != null)
+            {
+                rewardLine = progression.Rewards.Count > 0
+                    ? $"Reward: {string.Join(", ", progression.Rewards)}"
+                    : $"Next reward: {InvokerProgression.RewardPreviewForLevel(progression.NewLevel + 1)}";
+            }
+
+            AddCelebrationText(panel.transform, "Title", title,
+                40, FontStyles.Bold, playerWon ? new Color(1f, 0.86f, 0.42f) : new Color(0.74f, 0.84f, 1f),
+                new Vector2(0.35f, 0.72f), new Vector2(0.94f, 0.88f), TextAlignmentOptions.Left);
+            AddCelebrationText(panel.transform, "Reason", string.IsNullOrWhiteSpace(reason) ? "The duel is over." : reason,
+                20, FontStyles.Normal, new Color(0.94f, 0.90f, 0.82f, 0.98f),
+                new Vector2(0.35f, 0.50f), new Vector2(0.94f, 0.70f), TextAlignmentOptions.Left);
+
+            RectTransform fillRect = null;
+            if (playerWon)
+            {
+                int level = progression?.NewLevel ?? Mathf.Max(1, profile?.rank ?? 1);
+                int oldLevel = progression?.OldLevel ?? level;
+                int oldXp = progression?.OldXp ?? Mathf.Max(0, profile?.xp ?? 0);
+                int newXp = progression?.NewXp ?? Mathf.Max(0, profile?.xp ?? 0);
+                int oldNeed = InvokerProgression.XpRequiredForLevel(oldLevel);
+                int newNeed = InvokerProgression.XpRequiredForLevel(level);
+                float startRatio = Mathf.Clamp01(oldXp / (float)Mathf.Max(1, oldNeed));
+                float endRatio = Mathf.Clamp01(newXp / (float)Mathf.Max(1, newNeed));
+                if (progression != null && progression.LeveledUp)
+                    startRatio = 0f;
+
+                AddCelebrationText(panel.transform, "ProgressText",
+                    progression != null
+                        ? $"+{progression.XpGained} XP  •  Invoker Lv. {level}"
+                        : $"Invoker Lv. {level}",
+                    18, FontStyles.Bold, new Color(0.70f, 0.92f, 1f),
+                    new Vector2(0.35f, 0.39f), new Vector2(0.94f, 0.48f), TextAlignmentOptions.Left);
+
+                var barBg = new GameObject("XpBarBg", typeof(RectTransform), typeof(Image));
+                barBg.transform.SetParent(panel.transform, false);
+                var brt = barBg.GetComponent<RectTransform>();
+                brt.anchorMin = new Vector2(0.35f, 0.29f);
+                brt.anchorMax = new Vector2(0.94f, 0.37f);
+                brt.offsetMin = Vector2.zero;
+                brt.offsetMax = Vector2.zero;
+                barBg.GetComponent<Image>().color = new Color(0.08f, 0.065f, 0.095f, 0.96f);
+
+                var fill = new GameObject("XpBarFill", typeof(RectTransform), typeof(Image));
+                fill.transform.SetParent(barBg.transform, false);
+                fillRect = fill.GetComponent<RectTransform>();
+                fillRect.anchorMin = Vector2.zero;
+                fillRect.anchorMax = new Vector2(startRatio, 1f);
+                fillRect.offsetMin = new Vector2(3f, 3f);
+                fillRect.offsetMax = new Vector2(-3f, -3f);
+                fill.GetComponent<Image>().color = new Color(0.44f, 0.86f, 1f, 0.98f);
+
+                AddCelebrationText(panel.transform, "RewardText", rewardLine,
+                    16, FontStyles.Bold, new Color(1f, 0.82f, 0.42f),
+                    new Vector2(0.35f, 0.19f), new Vector2(0.94f, 0.27f), TextAlignmentOptions.Left);
+            }
+
+            AddCelebrationText(panel.transform, "ContinuePrompt", "Press A / Enter to return to the overworld",
+                17, FontStyles.Bold, new Color(0.95f, 0.88f, 0.66f),
+                new Vector2(0.35f, 0.08f), new Vector2(0.94f, 0.16f), TextAlignmentOptions.Left);
+
+            StartCoroutine(PlayStoryResultSequence(group, panel.transform, fillRect, playerWon, progression, profile));
+        }
+
+        private IEnumerator PlayStoryResultSequence(CanvasGroup group, Transform panel, RectTransform xpFill, bool playerWon, ProgressionAwardResult progression, PlayerProfile profile)
+        {
+            if (group != null)
+                yield return UIAnimUtils.FadeIn(group, 0.24f);
+            if (panel != null)
+                StartCoroutine(UIAnimUtils.PopScale(panel, 0.34f, 1.045f));
+
+            yield return new WaitForSecondsRealtime(0.34f);
+            if (playerWon && xpFill != null)
+            {
+                int level = progression?.NewLevel ?? Mathf.Max(1, profile?.rank ?? 1);
+                int xp = progression?.NewXp ?? Mathf.Max(0, profile?.xp ?? 0);
+                int newNeed = InvokerProgression.XpRequiredForLevel(level);
+                float endRatio = Mathf.Clamp01(xp / (float)Mathf.Max(1, newNeed));
+                if (progression != null && progression.LeveledUp)
+                {
+                    yield return DOTween.To(() => xpFill.anchorMax.x, value => xpFill.anchorMax = new Vector2(value, 1f), 1f, 0.62f)
+                        .SetEase(Ease.OutQuad)
+                        .SetUpdate(true)
+                        .WaitForCompletion();
+                    xpFill.anchorMax = new Vector2(0f, 1f);
+                    yield return new WaitForSecondsRealtime(0.12f);
+                }
+
+                yield return DOTween.To(() => xpFill.anchorMax.x, value => xpFill.anchorMax = new Vector2(value, 1f), endRatio, 1.05f)
+                    .SetEase(Ease.OutCubic)
+                    .SetUpdate(true)
+                    .WaitForCompletion();
+            }
+
+            _storyResultAwaitingReturn = true;
+        }
+
+        private void ReturnToStoryFromResult()
+        {
+            _storyResultAwaitingReturn = false;
+            Audio.SfxManager.EnsureInstance().Play(Audio.SfxCue.ButtonPress, 0.75f, 1.08f);
+            RuntimeAssetLocator.TryLoadScene("Story", this);
+        }
+
+        private void EnsureVictoryCelebration(Transform panel, PlayerProfile profile, ProgressionAwardResult progression)
+        {
+            if (panel == null || profile == null || progression == null)
+                return;
+
+            Transform existing = panel.Find("VictoryCelebration");
+            if (existing != null)
+                Destroy(existing.gameObject);
+
+            var root = new GameObject("VictoryCelebration", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+            root.transform.SetParent(panel, false);
+            root.transform.SetAsFirstSibling();
+
+            var rt = root.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.08f, 0.24f);
+            rt.anchorMax = new Vector2(0.92f, 0.86f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+
+            var bg = root.GetComponent<Image>();
+            bg.sprite = Resources.Load<Sprite>("UI/panel-dark");
+            bg.type = bg.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            bg.color = new Color(0.045f, 0.028f, 0.055f, 0.94f);
+
+            var cg = root.GetComponent<CanvasGroup>();
+            cg.alpha = 0f;
+            StartCoroutine(UIAnimUtils.FadeIn(cg, 0.35f));
+            StartCoroutine(UIAnimUtils.PopScale(root.transform, 0.42f, 1.04f));
+
+            Sprite portrait = ResolveInvokerProgressionPortrait(profile);
+            var portraitGo = new GameObject("InvokerPortrait", typeof(RectTransform), typeof(Image), typeof(Outline));
+            portraitGo.transform.SetParent(root.transform, false);
+            var prt = portraitGo.GetComponent<RectTransform>();
+            prt.anchorMin = new Vector2(0.05f, 0.18f);
+            prt.anchorMax = new Vector2(0.30f, 0.82f);
+            prt.offsetMin = Vector2.zero;
+            prt.offsetMax = Vector2.zero;
+            var portraitImg = portraitGo.GetComponent<Image>();
+            portraitImg.sprite = portrait;
+            portraitImg.preserveAspect = true;
+            portraitImg.color = portrait != null ? Color.white : new Color(0.38f, 0.22f, 0.48f, 0.92f);
+            var outline = portraitGo.GetComponent<Outline>();
+            outline.effectColor = new Color(0.94f, 0.72f, 0.28f, 0.86f);
+            outline.effectDistance = new Vector2(3f, -3f);
+
+            AddCelebrationText(root.transform, "Title", progression.LeveledUp ? "INVOKER EVOLVED" : "VICTORY BONDED",
+                28, FontStyles.Bold, new Color(1f, 0.86f, 0.42f, 1f), new Vector2(0.34f, 0.70f), new Vector2(0.95f, 0.88f), TextAlignmentOptions.Left);
+
+            string rewardLine = progression.Rewards.Count > 0
+                ? $"Reward: {string.Join(", ", progression.Rewards)}"
+                : $"Next reward: {InvokerProgression.RewardPreviewForLevel(progression.NewLevel + 1)}";
+            AddCelebrationText(root.transform, "Body",
+                $"Your power grows. +{progression.XpGained} XP\nLevel {progression.OldLevel} -> {progression.NewLevel}\n{rewardLine}",
+                16, FontStyles.Normal, new Color(0.92f, 0.86f, 0.76f, 0.98f), new Vector2(0.34f, 0.42f), new Vector2(0.95f, 0.69f), TextAlignmentOptions.Left);
+
+            var barBg = new GameObject("XpBarBg", typeof(RectTransform), typeof(Image));
+            barBg.transform.SetParent(root.transform, false);
+            var brt = barBg.GetComponent<RectTransform>();
+            brt.anchorMin = new Vector2(0.34f, 0.28f);
+            brt.anchorMax = new Vector2(0.95f, 0.36f);
+            brt.offsetMin = Vector2.zero;
+            brt.offsetMax = Vector2.zero;
+            barBg.GetComponent<Image>().color = new Color(0.10f, 0.08f, 0.12f, 0.95f);
+
+            var fill = new GameObject("XpBarFill", typeof(RectTransform), typeof(Image));
+            fill.transform.SetParent(barBg.transform, false);
+            var frt = fill.GetComponent<RectTransform>();
+            frt.anchorMin = Vector2.zero;
+            frt.anchorMax = new Vector2(Mathf.Clamp01(progression.NewXp / (float)Mathf.Max(1, progression.XpToNext)), 1f);
+            frt.offsetMin = Vector2.zero;
+            frt.offsetMax = Vector2.zero;
+            fill.GetComponent<Image>().color = new Color(0.44f, 0.86f, 1f, 0.95f);
+
+            AddCelebrationText(root.transform, "XpText",
+                $"{progression.NewXp}/{progression.XpToNext} XP to Level {progression.NewLevel + 1}",
+                13, FontStyles.Bold, new Color(0.82f, 0.94f, 1f, 1f), new Vector2(0.34f, 0.18f), new Vector2(0.95f, 0.27f), TextAlignmentOptions.Left);
+        }
+
+        private static Sprite ResolveInvokerProgressionPortrait(PlayerProfile profile)
+        {
+            string id = string.IsNullOrWhiteSpace(profile?.activeInvokerDesign) ? "arcane" : profile.activeInvokerDesign;
+            return Resources.Load<Sprite>($"UI/invoker-design-{id}") ?? Resources.Load<Sprite>("UI/frame-invoker");
+        }
+
+        private static TextMeshProUGUI AddCelebrationText(Transform parent, string name, string value, int size,
+            FontStyles style, Color color, Vector2 anchorMin, Vector2 anchorMax, TextAlignmentOptions alignment)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
+            go.transform.SetParent(parent, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            var tmp = go.GetComponent<TextMeshProUGUI>();
+            tmp.text = value;
+            tmp.fontSize = size;
+            tmp.fontStyle = style;
+            tmp.color = color;
+            tmp.alignment = alignment;
+            tmp.textWrappingMode = TextWrappingModes.Normal;
+            tmp.enableAutoSizing = true;
+            tmp.fontSizeMin = Mathf.Max(8, size - 6);
+            tmp.fontSizeMax = size;
+            tmp.raycastTarget = false;
+            return tmp;
         }
 
         private void BindWildDaemonReward(PlayerProfile profile)
@@ -10761,6 +12738,16 @@ namespace DualCraft.UI
             if (_storyEncounterMode)
             {
                 HandleStoryEncounterEnd(false, "Player forfeited.", false);
+                return;
+            }
+
+            if (_onlineBattle)
+            {
+                ShowTargetingHint("Forfeit sent. Waiting for opponent update...");
+                if (_relayHost != null)
+                    _relayHost.SubmitHostForfeit();
+                else if (_relayClient != null)
+                    _relayClient.Forfeit();
                 return;
             }
 
@@ -10993,7 +12980,10 @@ namespace DualCraft.UI
             }
 
             if (_relayHost != null)
+            {
                 _relayHost.OnLocalMessage -= HandleRelayHostMessage;
+                _relayHost.OnGuestSyncStatusChanged -= HandleRelayGuestSyncStatus;
+            }
 
             if (_relayClient != null)
             {

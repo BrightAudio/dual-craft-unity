@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>DualMon Phone Duel</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main id="app">
+    <section id="lobby" class="screen">
+      <h1>DualMon</h1>
+      <p class="sub">Phone multiplayer test build</p>
+      <input id="name" maxlength="18" placeholder="Invoker name">
+      <div class="row">
+        <button id="host">Host</button>
+        <input id="code" maxlength="4" placeholder="CODE">
+        <button id="join">Join</button>
+      </div>
+      <p id="roomLine" class="room"></p>
+      <p class="note">Use one phone to Host, then enter the code on the other phone.</p>
+    </section>
+
+    <section id="battle" class="screen hidden">
+      <header>
+        <div>
+          <strong id="roomCode"></strong>
+          <span id="turn"></span>
+        </div>
+        <button id="endTurn">End</button>
+      </header>
+      <div id="enemy" class="player"></div>
+      <div class="board">
+        <div id="enemyField" class="field"></div>
+        <div class="laneLabel">tap your daemon, then a target</div>
+        <div id="yourField" class="field"></div>
+      </div>
+      <div id="you" class="player"></div>
+      <div id="hand" class="hand"></div>
+      <div id="log" class="log"></div>
+    </section>
+  </main>
+  <div id="toast"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

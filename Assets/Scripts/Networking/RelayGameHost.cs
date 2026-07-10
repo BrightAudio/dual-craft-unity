@@ -12,6 +12,8 @@
 // ═══════════════════════════════════════════════════════
 
 using System;
+using System.Collections;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 
@@ -20,6 +22,7 @@ namespace DualCraft.Networking
     using Battle;
     using Cards;
     using Core;
+    using Data;
 
     /// <summary>
     /// Runs on the HOST player's machine. Manages the
@@ -34,6 +37,14 @@ namespace DualCraft.Networking
         private DeckData _guestDeck;
         private string _hostPlayerId;
         private bool _gameStarted;
+        private Coroutine _startSnapshotBurst;
+        private Coroutine _stateHeartbeat;
+        private Coroutine _gameOverBurst;
+        private Coroutine _guestSyncWatchdog;
+        private NetEnvelope _lastGuestStateEnvelope;
+        private int _lastGuestStateSequence = -1;
+        private int _lastGuestAppliedSequence = -1;
+        private float _lastGuestResendAt = -999f;
 
         /// <summary>The room being hosted.</summary>
         public AuthoritativeRoom Room => _room;
@@ -42,6 +53,11 @@ namespace DualCraft.Networking
         public event Action OnGuestJoined;
         public event Action OnGameStarted;
         public event Action<int, string> OnGameEnded;
+        public event Action<SyncStatus> OnGuestSyncStatusChanged;
+
+        public int LastGuestStateSequence => _lastGuestStateSequence;
+        public int LastGuestAppliedSequence => _lastGuestAppliedSequence;
+        public bool GuestSynced => _lastGuestStateSequence >= 0 && _lastGuestAppliedSequence >= _lastGuestStateSequence;
 
         /// <summary>
         /// Initialize the host with game data.
@@ -87,6 +103,9 @@ namespace DualCraft.Networking
                 _relay.OnDataReceived -= HandleIncomingData;
                 _relay.OnClientDisconnected -= HandleGuestDisconnected;
             }
+
+            if (_guestSyncWatchdog != null)
+                StopCoroutine(_guestSyncWatchdog);
         }
 
         // ═════════════════════════════════════════════════
@@ -133,8 +152,16 @@ namespace DualCraft.Networking
                     HandleLeaveRequest();
                     break;
 
+                case nameof(ForfeitRequest):
+                    HandleForfeitRequest();
+                    break;
+
                 case nameof(PingMessage):
                     HandlePing(envelope);
+                    break;
+
+                case nameof(StateAppliedAck):
+                    HandleStateAppliedAck(envelope);
                     break;
 
                 default:
@@ -146,14 +173,38 @@ namespace DualCraft.Networking
         private void HandleJoinRequest(NetEnvelope envelope)
         {
             var req = JsonUtility.FromJson<JoinRoomRequest>(envelope.Payload);
+            if (req == null)
+            {
+                Debug.LogWarning("[RelayGameHost] Empty join request.");
+                return;
+            }
+
+            if (_gameStarted)
+            {
+                Debug.Log("[RelayGameHost] Duplicate join request after game start; resending guest snapshot.");
+                _room.PlayerReconnected(1);
+                return;
+            }
+
+            if (_room.Players[1] != null)
+            {
+                Debug.Log("[RelayGameHost] Duplicate join request before start; starting or refreshing room.");
+                StartGame();
+                return;
+            }
 
             // Add guest as seat 1
-            _room.AddPlayer(new PlayerSession
+            int seat = _room.AddPlayer(new PlayerSession
             {
                 PlayerId = req.PlayerId,
                 PlayerName = req.PlayerName,
                 DeckId = req.DeckId,
             });
+            if (seat != 1)
+            {
+                Debug.LogWarning($"[RelayGameHost] Could not seat guest. Seat result: {seat}");
+                return;
+            }
 
             // Reconstruct the guest's deck from the card IDs they sent
             _guestDeck = ReconstructDeck(req);
@@ -172,6 +223,10 @@ namespace DualCraft.Networking
         /// </summary>
         private DeckData ReconstructDeck(JoinRoomRequest req)
         {
+            DeckData selectedDeck = ResolveDeckBySelectionId(req.DeckId);
+            if (selectedDeck != null)
+                return selectedDeck;
+
             if (req.MainDeck == null || req.MainDeck.Length == 0)
                 return null;
 
@@ -202,8 +257,29 @@ namespace DualCraft.Networking
                 }
                 deck.pillars = pillarEntries.ToArray();
             }
+            deck.wardIds = req.WardIds;
 
             return deck;
+        }
+
+        private DeckData ResolveDeckBySelectionId(string deckId)
+        {
+            if (string.IsNullOrWhiteSpace(deckId))
+                return null;
+
+            if (deckId.StartsWith("prebuilt:", StringComparison.OrdinalIgnoreCase))
+            {
+                string deckName = deckId.Substring("prebuilt:".Length);
+                return Resources.LoadAll<DeckData>("CardData/Decks")
+                    .FirstOrDefault(deck => deck != null && deck.deckName == deckName);
+            }
+
+            PlayerProfile profile = ProfileManager.Load();
+            SavedDeck saved = profile?.customDecks?.FirstOrDefault(deck => deck.id == deckId);
+            if (saved != null)
+                return DeckConverter.ToRuntimeDeck(saved, _cardDb);
+
+            return null;
         }
 
         private void HandleActionRequest(NetEnvelope envelope)
@@ -220,6 +296,12 @@ namespace DualCraft.Networking
             _room.PlayerDisconnected(1);
         }
 
+        private void HandleForfeitRequest()
+        {
+            if (!_gameStarted) return;
+            _room.ForfeitPlayer(1);
+        }
+
         private void HandlePing(NetEnvelope envelope)
         {
             var ping = JsonUtility.FromJson<PingMessage>(envelope.Payload);
@@ -228,6 +310,28 @@ namespace DualCraft.Networking
                 ServerTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 ClientTime = ping.ClientTime,
             }, "host");
+        }
+
+        private void HandleStateAppliedAck(NetEnvelope envelope)
+        {
+            var ack = JsonUtility.FromJson<StateAppliedAck>(envelope.Payload);
+            if (ack == null || ack.PlayerIndex != 1)
+                return;
+
+            if (ack.ServerSequence > _lastGuestAppliedSequence)
+                _lastGuestAppliedSequence = ack.ServerSequence;
+
+            bool synced = GuestSynced;
+            bool receivedOnly = !string.IsNullOrWhiteSpace(ack.StateKind)
+                && ack.StateKind.StartsWith("Received", StringComparison.OrdinalIgnoreCase);
+            string message = synced
+                ? receivedOnly
+                    ? $"Guest received state #{ack.ServerSequence}; waiting for battle view."
+                    : $"Guest synced state #{ack.ServerSequence}."
+                : $"Guest applied state #{ack.ServerSequence}; waiting for #{_lastGuestStateSequence}.";
+
+            Debug.Log($"[RelayGameHost] {message}");
+            PublishGuestSyncStatus(message);
         }
 
         /// <summary>
@@ -244,9 +348,14 @@ namespace DualCraft.Networking
             else
             {
                 // Remote: send to the guest via Relay
-                string json = JsonUtility.ToJson(envelope);
-                byte[] bytes = Encoding.UTF8.GetBytes(json);
-                _relay.SendData(bytes);
+                SendRemoteEnvelope(envelope);
+                TrackGuestStateEnvelope(envelope);
+                if (envelope.Type == nameof(GameOver))
+                {
+                    if (_gameOverBurst != null)
+                        StopCoroutine(_gameOverBurst);
+                    _gameOverBurst = StartCoroutine(ResendRemoteEnvelopeBurst(envelope, 5, 0.45f));
+                }
             }
         }
 
@@ -268,6 +377,45 @@ namespace DualCraft.Networking
 
             OnGameStarted?.Invoke();
             Debug.Log("[RelayGameHost] Game started!");
+
+            if (_startSnapshotBurst != null)
+                StopCoroutine(_startSnapshotBurst);
+            _startSnapshotBurst = StartCoroutine(ResendStartSnapshotBurst());
+
+            if (_stateHeartbeat != null)
+                StopCoroutine(_stateHeartbeat);
+            _stateHeartbeat = StartCoroutine(SendStateHeartbeat());
+
+            if (_guestSyncWatchdog != null)
+                StopCoroutine(_guestSyncWatchdog);
+            _guestSyncWatchdog = StartCoroutine(WatchGuestSync());
+        }
+
+        private IEnumerator ResendStartSnapshotBurst()
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                yield return new WaitForSecondsRealtime(0.6f);
+                if (!_gameStarted || _room == null || _room.Finished)
+                    yield break;
+
+                Debug.Log($"[RelayGameHost] Resending guest start snapshot ({i + 1}/10).");
+                _room.PlayerReconnected(1);
+            }
+
+            _startSnapshotBurst = null;
+        }
+
+        private IEnumerator SendStateHeartbeat()
+        {
+            while (_gameStarted && _room != null && !_room.Finished)
+            {
+                yield return new WaitForSecondsRealtime(1.25f);
+                if (_gameStarted && _room != null && !_room.Finished)
+                    _room.SendStateSnapshot(1);
+            }
+
+            _stateHeartbeat = null;
         }
 
         // ═════════════════════════════════════════════════
@@ -286,6 +434,12 @@ namespace DualCraft.Networking
             _room.ProcessAction(0, sa, sequenceNum);
         }
 
+        public void SubmitHostForfeit()
+        {
+            if (!_gameStarted) return;
+            _room.ForfeitPlayer(0);
+        }
+
         // ═════════════════════════════════════════════════
         //  LOCAL MESSAGE PROCESSING
         // ═════════════════════════════════════════════════
@@ -296,6 +450,97 @@ namespace DualCraft.Networking
         private void ProcessLocalMessage(NetEnvelope envelope)
         {
             OnLocalMessage?.Invoke(envelope);
+        }
+
+        private void SendRemoteEnvelope(NetEnvelope envelope)
+        {
+            if (envelope == null || _relay == null)
+                return;
+
+            string json = JsonUtility.ToJson(envelope);
+            byte[] bytes = Encoding.UTF8.GetBytes(json);
+            _relay.SendData(bytes);
+        }
+
+        private void TrackGuestStateEnvelope(NetEnvelope envelope)
+        {
+            int sequence = ExtractServerSequence(envelope);
+            if (sequence < 0)
+                return;
+
+            _lastGuestStateEnvelope = envelope;
+            bool wasSynced = GuestSynced;
+            int previousSequence = _lastGuestStateSequence;
+            _lastGuestStateSequence = sequence;
+            if (previousSequence != sequence || wasSynced != GuestSynced)
+            {
+                PublishGuestSyncStatus(GuestSynced
+                    ? $"Guest synced state #{sequence}."
+                    : $"Sent state #{sequence}; waiting for guest sync.");
+            }
+        }
+
+        private static int ExtractServerSequence(NetEnvelope envelope)
+        {
+            if (envelope == null || string.IsNullOrWhiteSpace(envelope.Payload))
+                return -1;
+
+            switch (envelope.Type)
+            {
+                case nameof(GameStateSnapshot):
+                    return JsonUtility.FromJson<GameStateSnapshot>(envelope.Payload)?.ServerSequence ?? -1;
+                case nameof(ActionConfirmed):
+                    return JsonUtility.FromJson<ActionConfirmed>(envelope.Payload)?.ServerSequence ?? -1;
+                case nameof(GameOver):
+                    return JsonUtility.FromJson<GameOver>(envelope.Payload)?.ServerSequence ?? -1;
+                default:
+                    return -1;
+            }
+        }
+
+        private IEnumerator WatchGuestSync()
+        {
+            while (_gameStarted && _room != null && !_room.Finished)
+            {
+                yield return new WaitForSecondsRealtime(1f);
+                if (_lastGuestStateEnvelope == null || GuestSynced)
+                    continue;
+
+                if (Time.unscaledTime - _lastGuestResendAt < 1.5f)
+                    continue;
+
+                _lastGuestResendAt = Time.unscaledTime;
+                string message = $"Guest has not confirmed state #{_lastGuestStateSequence}; resending.";
+                Debug.LogWarning($"[RelayGameHost] {message}");
+                PublishGuestSyncStatus(message);
+                SendRemoteEnvelope(_lastGuestStateEnvelope);
+            }
+
+            _guestSyncWatchdog = null;
+        }
+
+        private void PublishGuestSyncStatus(string message)
+        {
+            OnGuestSyncStatusChanged?.Invoke(new SyncStatus
+            {
+                PlayerIndex = 1,
+                LastSentServerSequence = _lastGuestStateSequence,
+                LastAppliedServerSequence = _lastGuestAppliedSequence,
+                Synced = GuestSynced,
+                Message = message,
+            });
+        }
+
+        private IEnumerator ResendRemoteEnvelopeBurst(NetEnvelope envelope, int count, float interval)
+        {
+            if (envelope == null)
+                yield break;
+
+            for (int i = 0; i < count; i++)
+            {
+                yield return new WaitForSecondsRealtime(interval);
+                SendRemoteEnvelope(envelope);
+            }
         }
     }
 }

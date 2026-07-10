@@ -133,6 +133,21 @@ namespace DualCraft.Networking
             }
         }
 
+        /// <summary>Send the current authoritative state to one player without changing connection status.</summary>
+        public void SendStateSnapshot(int seatIndex)
+        {
+            if (!Started || Finished) return;
+            if (seatIndex < 0 || seatIndex > 1 || Players[seatIndex] == null) return;
+
+            SendToPlayer(seatIndex, new GameStateSnapshot
+            {
+                RoomId = RoomId,
+                YourPlayerIndex = seatIndex,
+                State = BuildStateForPlayer(seatIndex),
+                ServerSequence = _serverSequence,
+            });
+        }
+
         // ═════════════════════════════════════════════════
         //  GAME LIFECYCLE
         // ═════════════════════════════════════════════════
@@ -155,6 +170,7 @@ namespace DualCraft.Networking
             Core = new GameCore(engine);
             Core.OnGameOver += HandleGameOver;
             Started = true;
+            Core.Engine.CompleteSetup();
 
             _replay.Begin(
                 Players[0].PlayerName, Players[1].PlayerName,
@@ -212,6 +228,7 @@ namespace DualCraft.Networking
                     SendToPlayer(i, new ActionConfirmed
                     {
                         SequenceNum = i == seatIndex ? clientSeq : -1,
+                        ServerSequence = _serverSequence,
                         Success = true,
                         Reason = "",
                         Action = sa,
@@ -228,6 +245,31 @@ namespace DualCraft.Networking
                     Reason = result.Reason,
                 });
             }
+        }
+
+        /// <summary>Resolve a voluntary concession as an authoritative game over.</summary>
+        public void ForfeitPlayer(int seatIndex)
+        {
+            if (!Started || Finished) return;
+            if (seatIndex < 0 || seatIndex > 1) return;
+
+            int winner = 1 - seatIndex;
+            string playerName = Players[seatIndex]?.PlayerName ?? $"Player {seatIndex + 1}";
+            _serverSequence++;
+            var state = Core.Engine.State;
+            state.Winner = winner;
+            state.GameOver = true;
+            string reason = $"{playerName} forfeited.";
+            state.LastAction = reason;
+            state.Log.Add(new LogEntry
+            {
+                Turn = state.TurnNumber,
+                Player = seatIndex,
+                Message = reason,
+                Type = LogEntryType.System,
+            });
+
+            HandleGameOver(winner, reason);
         }
 
         // ═════════════════════════════════════════════════
@@ -250,7 +292,7 @@ namespace DualCraft.Networking
                 TurnNumber = gs.TurnNumber,
                 GameOver = gs.GameOver,
                 Winner = gs.Winner ?? -1,
-                ActiveDomainId = gs.ActiveDomain?.Card?.cardName ?? "",
+                ActiveDomainId = gs.ActiveDomain?.Card?.cardId ?? "",
                 ActiveDomainOwner = gs.ActiveDomain?.Owner ?? -1,
                 Players = new SerializablePlayerState[2],
                 RecentLog = new List<SerializableLogEntry>(),
@@ -263,8 +305,8 @@ namespace DualCraft.Networking
                 {
                     Id = ps.Id,
                     Name = ps.Name,
-                    ConjurorHp = ps.Conjuror.Hp,
-                    ConjurorMaxHp = ps.Conjuror.MaxHp,
+                    InvokerHp = ps.Invoker.Hp,
+                    InvokerMaxHp = ps.Invoker.MaxHp,
                     Will = ps.Will,
                     MaxWill = ps.MaxWill,
                     HandCount = ps.Hand.Count,
@@ -275,8 +317,14 @@ namespace DualCraft.Networking
                     HandCardIds = i == viewerIndex
                         ? BuildHandIds(ps)
                         : null,
+                    HandCards = i == viewerIndex
+                        ? BuildHandSpecs(ps)
+                        : null,
                     Field = BuildField(ps),
                     Pillars = BuildPillars(ps),
+                    AsheCards = BuildAsheCards(ps),
+                    SourcePlayedThisTurn = ps.SourcePlayedThisTurn,
+                    SourceRaidUsedThisTurn = ps.SourceRaidUsedThisTurn,
                 };
                 sgs.Players[i] = sps;
             }
@@ -285,12 +333,13 @@ namespace DualCraft.Networking
             int logStart = Math.Max(0, gs.Log.Count - 10);
             for (int i = logStart; i < gs.Log.Count; i++)
             {
+                var entry = gs.Log[i];
                 sgs.RecentLog.Add(new SerializableLogEntry
                 {
-                    Turn = gs.TurnNumber,
-                    Player = gs.CurrentPlayer,
-                    Message = gs.Log[i].Message,
-                    Type = gs.Log[i].Type.ToString(),
+                    Turn = entry.Turn,
+                    Player = entry.Player,
+                    Message = entry.Message,
+                    Type = entry.Type.ToString(),
                 });
             }
 
@@ -301,8 +350,16 @@ namespace DualCraft.Networking
         {
             var ids = new string[ps.Hand.Count];
             for (int i = 0; i < ps.Hand.Count; i++)
-                ids[i] = ps.Hand[i].Card?.cardName ?? ps.Hand[i].InstanceId;
+                ids[i] = ps.Hand[i].Card?.cardId ?? ps.Hand[i].InstanceId;
             return ids;
+        }
+
+        private static SerializableCardSpec[] BuildHandSpecs(PlayerState ps)
+        {
+            var specs = new SerializableCardSpec[ps.Hand.Count];
+            for (int i = 0; i < ps.Hand.Count; i++)
+                specs[i] = BuildCardSpec(ps.Hand[i].Card);
+            return specs;
         }
 
         private static SerializableDaemon[] BuildField(PlayerState ps)
@@ -313,15 +370,18 @@ namespace DualCraft.Networking
                 var d = ps.Field[i];
                 var maskIds = new string[d.Masks.Count];
                 for (int m = 0; m < d.Masks.Count; m++)
-                    maskIds[m] = d.Masks[m].Card?.cardName ?? "";
+                    maskIds[m] = d.Masks[m].Card?.cardId ?? "";
 
                 arr[i] = new SerializableDaemon
                 {
                     InstanceId = d.InstanceId,
-                    CardId = d.Card?.cardName ?? "",
+                    CardId = d.Card?.cardId ?? "",
+                    Card = BuildCardSpec(d.Card),
                     CurrentAshe = d.CurrentAshe,
                     MaxAshe = d.MaxAshe,
                     Attack = d.Attack,
+                    AsheCost = d.AsheCost,
+                    LaneIndex = d.LaneIndex,
                     CanAttack = d.CanAttack,
                     HasAttacked = d.HasAttacked,
                     Frozen = d.Frozen,
@@ -331,6 +391,26 @@ namespace DualCraft.Networking
                     ShieldAmount = d.ShieldAmount,
                     ThornsDamage = d.ThornsDamage,
                     Silenced = d.Silenced,
+                    SilencedTurns = d.SilencedTurns,
+                    Marked = d.Marked,
+                    MarkedBonusDamage = d.MarkedBonusDamage,
+                    MarkedTurns = d.MarkedTurns,
+                    Fractured = d.Fractured,
+                    FracturedTurns = d.FracturedTurns,
+                    Haunted = d.Haunted,
+                    HauntedLifeLoss = d.HauntedLifeLoss,
+                    HauntedTurns = d.HauntedTurns,
+                    Corrupted = d.Corrupted,
+                    CorruptedTurns = d.CorruptedTurns,
+                    Overloaded = d.Overloaded,
+                    OverloadAttackBonus = d.OverloadAttackBonus,
+                    OverloadBacklash = d.OverloadBacklash,
+                    OverloadedTurns = d.OverloadedTurns,
+                    Taxed = d.Taxed,
+                    TaxedExtraCost = d.TaxedExtraCost,
+                    TaxedTurns = d.TaxedTurns,
+                    Sundered = d.Sundered,
+                    SunderedTurns = d.SunderedTurns,
                     MaskIds = maskIds,
                 };
             }
@@ -346,7 +426,8 @@ namespace DualCraft.Networking
                 arr[i] = new SerializablePillar
                 {
                     InstanceId = p.InstanceId,
-                    CardId = p.Card?.cardName ?? "",
+                    CardId = p.Card?.cardId ?? "",
+                    Card = BuildCardSpec(p.Card),
                     CurrentHp = p.CurrentHp,
                     MaxHp = p.MaxHp,
                     Loyalty = p.Loyalty,
@@ -355,6 +436,73 @@ namespace DualCraft.Networking
                 };
             }
             return arr;
+        }
+
+        private static SerializableAsheCard[] BuildAsheCards(PlayerState ps)
+        {
+            var arr = new SerializableAsheCard[ps.AsheCards.Count];
+            for (int i = 0; i < ps.AsheCards.Count; i++)
+            {
+                var a = ps.AsheCards[i];
+                arr[i] = new SerializableAsheCard
+                {
+                    InstanceId = a.InstanceId,
+                    CardId = a.Card?.cardId ?? "",
+                    Card = BuildCardSpec(a.Card),
+                    AssignedDaemonInstanceId = a.AssignedDaemonInstanceId,
+                    ShieldRemaining = a.ShieldRemaining,
+                    BuffTurnsRemaining = a.BuffTurnsRemaining,
+                    SuppressedTurnsRemaining = a.SuppressedTurnsRemaining,
+                };
+            }
+            return arr;
+        }
+
+        private static SerializableCardSpec BuildCardSpec(CardData card)
+        {
+            if (card == null)
+                return null;
+
+            var spec = new SerializableCardSpec
+            {
+                CardId = card.cardId,
+                Name = card.cardName,
+                Category = card.category.ToString(),
+                Rarity = card.rarity.ToString(),
+                Description = card.description,
+                FlavorText = card.flavorText,
+                Cost = card.GetWillCost(),
+            };
+
+            switch (card)
+            {
+                case DaemonCardData daemon:
+                    spec.Element = daemon.element.ToString();
+                    spec.CreatureType = daemon.creatureType.ToString();
+                    spec.Attack = daemon.attack;
+                    spec.Life = daemon.ashe;
+                    spec.AttackCost = daemon.asheCost;
+                    spec.Ranged = daemon.rangedAttack;
+                    spec.AttackPattern = daemon.attackPattern.ToString();
+                    break;
+                case AsheCardData source:
+                    spec.Element = source.matchType == AsheMatchType.Element ? source.targetElement.ToString() : "";
+                    spec.CreatureType = source.GetAffinityType().ToString();
+                    spec.SourceSePerTurn = source.sePerTurn;
+                    break;
+                case HexCardData hex:
+                    spec.Element = hex.effectElement.ToString();
+                    break;
+                case DispelCardData dispel:
+                    spec.Element = dispel.responseElement.ToString();
+                    spec.CreatureType = dispel.responseCreatureType.ToString();
+                    break;
+                case DomainCardData domain:
+                    spec.Element = domain.effectElement.ToString();
+                    break;
+            }
+
+            return spec;
         }
 
         // ═════════════════════════════════════════════════
@@ -370,6 +518,7 @@ namespace DualCraft.Networking
             {
                 SendToPlayer(i, new GameOver
                 {
+                    ServerSequence = _serverSequence,
                     WinnerIndex = winner,
                     WinReason = reason,
                     FinalState = BuildStateForPlayer(i),

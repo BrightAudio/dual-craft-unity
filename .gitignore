@@ -56,6 +56,9 @@ Thumbs.db
 *.opendb
 *.VC.db
 
+# Web app dependencies
+node_modules/
+
 # Gradle
 /[Ee]xport[Ee]d[Pp]roject/
 

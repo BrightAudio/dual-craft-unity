@@ -83,6 +83,7 @@ namespace DualCraft.Networking
         public string AuthToken;    // JWT or session token
         public SerializableDeckEntry[] MainDeck;   // card IDs + counts
         public SerializableDeckEntry[] PillarDeck; // pillar IDs + counts
+        public string[] WardIds;                   // equipped invoker Ward glyphs
     }
 
     /// <summary>One entry in a serialized deck: cardId + count.</summary>
@@ -125,6 +126,14 @@ namespace DualCraft.Networking
     /// <summary>Player leaves a game.</summary>
     [Serializable]
     public class LeaveRequest
+    {
+        public string PlayerId;
+        public string RoomId;
+    }
+
+    /// <summary>Player concedes the active match. This is different from disconnecting.</summary>
+    [Serializable]
+    public class ForfeitRequest
     {
         public string PlayerId;
         public string RoomId;
@@ -180,6 +189,7 @@ namespace DualCraft.Networking
     public class ActionConfirmed
     {
         public int SequenceNum;
+        public int ServerSequence;
         public bool Success;
         public string Reason;       // empty if success
         public SerializableAction Action;
@@ -199,10 +209,36 @@ namespace DualCraft.Networking
     [Serializable]
     public class GameOver
     {
+        public int ServerSequence;
         public int WinnerIndex;
         public string WinReason;
         public SerializableGameState FinalState;
         public ReplayData Replay;
+    }
+
+    /// <summary>
+    /// Sent by the remote battle scene after a state has been applied to the UI.
+    /// This lets the host distinguish "packet arrived" from "guest is actually in sync."
+    /// </summary>
+    [Serializable]
+    public class StateAppliedAck
+    {
+        public string PlayerId;
+        public string RoomId;
+        public int PlayerIndex;
+        public int ServerSequence;
+        public string StateKind;
+    }
+
+    /// <summary>Host-side sync status surfaced to the UI/log.</summary>
+    [Serializable]
+    public class SyncStatus
+    {
+        public int PlayerIndex;
+        public int LastSentServerSequence;
+        public int LastAppliedServerSequence;
+        public bool Synced;
+        public string Message;
     }
 
     /// <summary>Opponent disconnected.</summary>
@@ -261,10 +297,15 @@ namespace DualCraft.Networking
         public int HandIndex;
         public int FieldIndex;
         public int TargetIndex;
+        public int TargetLane = -1;
         public int PillarIndex;
         public int AbilityIndex;
         public int ConsumeIndex;
-        public string TargetType;   // "Daemon", "Pillar", "Conjuror"
+        public int TargetDaemonFieldIndex;
+        public int AsheCardBoardIndex;
+        public int AttackerFieldIndex;
+        public int ResponseDispelHandIndex = -1;
+        public string TargetType;   // "Daemon", "Pillar", "Invoker"
         public string DispelTarget; // "Domain", "Mask", "Seal", "Any"
 
         /// <summary>Convert to a GameAction for the engine.</summary>
@@ -273,9 +314,10 @@ namespace DualCraft.Networking
             return ActionType switch
             {
                 "DrawCard" => new DrawCardAction(),
-                "PlayDaemon" => new PlayDaemonAction { HandIndex = HandIndex },
+                "PlayDaemon" => new PlayDaemonAction { HandIndex = HandIndex, TargetLane = TargetLane },
                 "PlayDomain" => new PlayDomainAction { HandIndex = HandIndex },
                 "PlayMask" => new PlayMaskAction { HandIndex = HandIndex, TargetDaemonIndex = TargetIndex },
+                "PlayHex" => new PlayHexAction { HandIndex = HandIndex },
                 "SetSeal" => new SetSealAction { HandIndex = HandIndex },
                 "PlayDispel" => new PlayDispelAction
                 {
@@ -284,13 +326,20 @@ namespace DualCraft.Networking
                     TargetIndex = TargetIndex,
                 },
                 "Evolve" => new EvolveAction { FieldIndex = FieldIndex, ConsumeIndex = ConsumeIndex },
+                "FuseDaemons" => new FuseDaemonsAction { PrimaryIndex = FieldIndex, SecondaryIndex = ConsumeIndex },
+                "PlayAsheCard" => new PlayAsheCardAction { HandIndex = HandIndex, TargetDaemonFieldIndex = TargetDaemonFieldIndex },
+                "AssignAsheCard" => new AssignAsheCardAction { AsheCardBoardIndex = AsheCardBoardIndex, TargetDaemonFieldIndex = TargetDaemonFieldIndex },
+                "AttackAsheCard" => new AttackAsheCardAction { AttackerFieldIndex = AttackerFieldIndex, AsheCardBoardIndex = AsheCardBoardIndex },
+                "SwitchLane" => new SwitchLaneAction { FieldIndex = FieldIndex, TargetLane = TargetLane },
                 "Attack" => new AttackAction
                 {
                     AttackerIndex = FieldIndex,
                     Target = ParseEnum<TargetType>(TargetType),
                     TargetIndex = TargetIndex,
+                    ResponseDispelHandIndex = ResponseDispelHandIndex,
                 },
                 "ActivatePillar" => new ActivatePillarAction { PillarIndex = PillarIndex, AbilityIndex = AbilityIndex },
+                "ActivateInvoker" => new ActivateInvokerAction(),
                 "NextPhase" => new NextPhaseAction(),
                 "EndTurn" => new EndTurnAction(),
                 _ => null,
@@ -303,13 +352,19 @@ namespace DualCraft.Networking
             var sa = new SerializableAction { ActionType = action.Type.ToString() };
             switch (action)
             {
-                case PlayDaemonAction pda: sa.HandIndex = pda.HandIndex; break;
+                case PlayDaemonAction pda: sa.HandIndex = pda.HandIndex; sa.TargetLane = pda.TargetLane; break;
                 case PlayDomainAction pdo: sa.HandIndex = pdo.HandIndex; break;
                 case PlayMaskAction pma: sa.HandIndex = pma.HandIndex; sa.TargetIndex = pma.TargetDaemonIndex; break;
+                case PlayHexAction pha: sa.HandIndex = pha.HandIndex; break;
                 case SetSealAction ssa: sa.HandIndex = ssa.HandIndex; break;
                 case PlayDispelAction pdi: sa.HandIndex = pdi.HandIndex; sa.TargetIndex = pdi.TargetIndex; sa.DispelTarget = pdi.TargetType.ToString(); break;
                 case EvolveAction ea: sa.FieldIndex = ea.FieldIndex; sa.ConsumeIndex = ea.ConsumeIndex; break;
-                case AttackAction aa: sa.FieldIndex = aa.AttackerIndex; sa.TargetIndex = aa.TargetIndex; sa.TargetType = aa.Target.ToString(); break;
+                case FuseDaemonsAction fda: sa.FieldIndex = fda.PrimaryIndex; sa.ConsumeIndex = fda.SecondaryIndex; break;
+                case PlayAsheCardAction pac: sa.HandIndex = pac.HandIndex; sa.TargetDaemonFieldIndex = pac.TargetDaemonFieldIndex; break;
+                case AssignAsheCardAction aac: sa.AsheCardBoardIndex = aac.AsheCardBoardIndex; sa.TargetDaemonFieldIndex = aac.TargetDaemonFieldIndex; break;
+                case AttackAsheCardAction atk: sa.AttackerFieldIndex = atk.AttackerFieldIndex; sa.AsheCardBoardIndex = atk.AsheCardBoardIndex; break;
+                case SwitchLaneAction switchLane: sa.FieldIndex = switchLane.FieldIndex; sa.TargetLane = switchLane.TargetLane; break;
+                case AttackAction aa: sa.FieldIndex = aa.AttackerIndex; sa.TargetIndex = aa.TargetIndex; sa.TargetType = aa.Target.ToString(); sa.ResponseDispelHandIndex = aa.ResponseDispelHandIndex; break;
                 case ActivatePillarAction apa: sa.PillarIndex = apa.PillarIndex; sa.AbilityIndex = apa.AbilityIndex; break;
             }
             return sa;
@@ -348,17 +403,41 @@ namespace DualCraft.Networking
     {
         public string Id;
         public string Name;
-        public int ConjurorHp;
-        public int ConjurorMaxHp;
+        public int InvokerHp;
+        public int InvokerMaxHp;
         public int Will;
         public int MaxWill;
         public int HandCount;       // opponent sees count, not cards
         public int DeckCount;
         public string[] HandCardIds; // only sent to the owning player
+        public SerializableCardSpec[] HandCards; // only sent to the owning player; includes fallback data for stale builds
         public SerializableDaemon[] Field;
         public SerializablePillar[] Pillars;
+        public SerializableAsheCard[] AsheCards;
         public int SealCount;       // opponent sees count
         public int AshePileCount;
+        public bool SourcePlayedThisTurn;
+        public bool SourceRaidUsedThisTurn;
+    }
+
+    [Serializable]
+    public class SerializableCardSpec
+    {
+        public string CardId;
+        public string Name;
+        public string Category;
+        public string Rarity;
+        public string Element;
+        public string CreatureType;
+        public string Description;
+        public string FlavorText;
+        public int Cost;
+        public int Attack;
+        public int Life;
+        public int AttackCost;
+        public bool Ranged;
+        public string AttackPattern;
+        public int SourceSePerTurn;
     }
 
     [Serializable]
@@ -366,9 +445,12 @@ namespace DualCraft.Networking
     {
         public string InstanceId;
         public string CardId;
+        public SerializableCardSpec Card;
         public int CurrentAshe;
         public int MaxAshe;
         public int Attack;
+        public int AsheCost;
+        public int LaneIndex;
         public bool CanAttack;
         public bool HasAttacked;
         public bool Frozen;
@@ -378,6 +460,26 @@ namespace DualCraft.Networking
         public int ShieldAmount;
         public int ThornsDamage;
         public bool Silenced;
+        public int SilencedTurns;
+        public bool Marked;
+        public int MarkedBonusDamage;
+        public int MarkedTurns;
+        public bool Fractured;
+        public int FracturedTurns;
+        public bool Haunted;
+        public int HauntedLifeLoss;
+        public int HauntedTurns;
+        public bool Corrupted;
+        public int CorruptedTurns;
+        public bool Overloaded;
+        public int OverloadAttackBonus;
+        public int OverloadBacklash;
+        public int OverloadedTurns;
+        public bool Taxed;
+        public int TaxedExtraCost;
+        public int TaxedTurns;
+        public bool Sundered;
+        public int SunderedTurns;
         public string[] MaskIds;
     }
 
@@ -386,11 +488,24 @@ namespace DualCraft.Networking
     {
         public string InstanceId;
         public string CardId;
+        public SerializableCardSpec Card;
         public int CurrentHp;
         public int MaxHp;
         public int Loyalty;
         public bool Destroyed;
         public bool Revealed;
+    }
+
+    [Serializable]
+    public class SerializableAsheCard
+    {
+        public string InstanceId;
+        public string CardId;
+        public SerializableCardSpec Card;
+        public string AssignedDaemonInstanceId;
+        public int ShieldRemaining;
+        public int BuffTurnsRemaining;
+        public int SuppressedTurnsRemaining;
     }
 
     [Serializable]
