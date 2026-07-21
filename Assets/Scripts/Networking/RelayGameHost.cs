@@ -43,6 +43,7 @@ namespace DualCraft.Networking
         private Coroutine _guestSyncWatchdog;
         private NetEnvelope _lastGuestStateEnvelope;
         private int _lastGuestStateSequence = -1;
+        private int _lastGuestReceivedSequence = -1;
         private int _lastGuestAppliedSequence = -1;
         private float _lastGuestResendAt = -999f;
 
@@ -57,7 +58,8 @@ namespace DualCraft.Networking
 
         public int LastGuestStateSequence => _lastGuestStateSequence;
         public int LastGuestAppliedSequence => _lastGuestAppliedSequence;
-        public bool GuestSynced => _lastGuestStateSequence >= 0 && _lastGuestAppliedSequence >= _lastGuestStateSequence;
+        public bool GuestSynced => _lastGuestStateSequence >= 0
+            && Math.Max(_lastGuestReceivedSequence, _lastGuestAppliedSequence) >= _lastGuestStateSequence;
 
         /// <summary>
         /// Initialize the host with game data.
@@ -223,12 +225,13 @@ namespace DualCraft.Networking
         /// </summary>
         private DeckData ReconstructDeck(JoinRoomRequest req)
         {
-            DeckData selectedDeck = ResolveDeckBySelectionId(req.DeckId);
-            if (selectedDeck != null)
-                return selectedDeck;
-
+            // Prefer the exact list sent by the guest. This keeps cross-platform
+            // rooms deterministic even when one install has older prebuilt assets.
             if (req.MainDeck == null || req.MainDeck.Length == 0)
-                return null;
+            {
+                DeckData selectedDeck = ResolveDeckBySelectionId(req.DeckId);
+                return selectedDeck?.CreatePlayableRuntimeCopy();
+            }
 
             var deck = ScriptableObject.CreateInstance<DeckData>();
             deck.deckName = $"{req.PlayerName}'s Deck";
@@ -259,7 +262,14 @@ namespace DualCraft.Networking
             }
             deck.wardIds = req.WardIds;
 
-            return deck;
+            DeckData playable = deck.CreatePlayableRuntimeCopy();
+            if (!playable.IsValid)
+            {
+                Debug.LogWarning($"[RelayGameHost] Rejected {req.PlayerName}'s incomplete {playable.TotalMainCards}/{GameConstants.DeckSize} card deck.");
+                return null;
+            }
+
+            return playable;
         }
 
         private DeckData ResolveDeckBySelectionId(string deckId)
@@ -318,12 +328,19 @@ namespace DualCraft.Networking
             if (ack == null || ack.PlayerIndex != 1)
                 return;
 
-            if (ack.ServerSequence > _lastGuestAppliedSequence)
-                _lastGuestAppliedSequence = ack.ServerSequence;
-
-            bool synced = GuestSynced;
             bool receivedOnly = !string.IsNullOrWhiteSpace(ack.StateKind)
                 && ack.StateKind.StartsWith("Received", StringComparison.OrdinalIgnoreCase);
+            if (receivedOnly)
+            {
+                if (ack.ServerSequence > _lastGuestReceivedSequence)
+                    _lastGuestReceivedSequence = ack.ServerSequence;
+            }
+            else if (ack.ServerSequence > _lastGuestAppliedSequence)
+            {
+                _lastGuestAppliedSequence = ack.ServerSequence;
+            }
+
+            bool synced = GuestSynced;
             string message = synced
                 ? receivedOnly
                     ? $"Guest received state #{ack.ServerSequence}; waiting for battle view."
@@ -384,7 +401,7 @@ namespace DualCraft.Networking
 
             if (_stateHeartbeat != null)
                 StopCoroutine(_stateHeartbeat);
-            _stateHeartbeat = StartCoroutine(SendStateHeartbeat());
+            _stateHeartbeat = null;
 
             if (_guestSyncWatchdog != null)
                 StopCoroutine(_guestSyncWatchdog);
@@ -398,24 +415,14 @@ namespace DualCraft.Networking
                 yield return new WaitForSecondsRealtime(0.6f);
                 if (!_gameStarted || _room == null || _room.Finished)
                     yield break;
+                if (GuestSynced)
+                    break;
 
                 Debug.Log($"[RelayGameHost] Resending guest start snapshot ({i + 1}/10).");
                 _room.PlayerReconnected(1);
             }
 
             _startSnapshotBurst = null;
-        }
-
-        private IEnumerator SendStateHeartbeat()
-        {
-            while (_gameStarted && _room != null && !_room.Finished)
-            {
-                yield return new WaitForSecondsRealtime(1.25f);
-                if (_gameStarted && _room != null && !_room.Finished)
-                    _room.SendStateSnapshot(1);
-            }
-
-            _stateHeartbeat = null;
         }
 
         // ═════════════════════════════════════════════════

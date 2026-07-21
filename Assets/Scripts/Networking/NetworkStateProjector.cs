@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace DualCraft.Networking
@@ -21,6 +22,7 @@ namespace DualCraft.Networking
             if (source == null || source.Players == null || source.Players.Length < 2)
                 return null;
 
+            localSeat = ResolveCardOwningSeat(source, localSeat);
             int remoteSeat = localSeat == 0 ? 1 : 0;
             var state = new GameState
             {
@@ -51,6 +53,33 @@ namespace DualCraft.Networking
             return state;
         }
 
+        /// <summary>
+        /// A player's private hand is the authoritative seat marker. This repairs a
+        /// mislabeled snapshot instead of rendering the joining player's hand as the
+        /// opponent's hidden-card placeholders.
+        /// </summary>
+        public static int ResolveCardOwningSeat(SerializableGameState source, int requestedSeat)
+        {
+            if (source?.Players == null || source.Players.Length < 2)
+                return Mathf.Clamp(requestedSeat, 0, 1);
+
+            int seat = Mathf.Clamp(requestedSeat, 0, 1);
+            int other = 1 - seat;
+            if (!HasPrivateHandData(source.Players[seat]) && HasPrivateHandData(source.Players[other]))
+            {
+                Debug.LogWarning($"[NetworkStateProjector] Snapshot labeled seat {seat}, but private card data belongs to seat {other}. Correcting local seat.");
+                return other;
+            }
+
+            return seat;
+        }
+
+        private static bool HasPrivateHandData(SerializablePlayerState player)
+        {
+            return player != null && ((player.HandCards != null && player.HandCards.Length > 0)
+                || (player.HandCardIds != null && player.HandCardIds.Length > 0));
+        }
+
         private static PlayerState BuildPlayer(SerializablePlayerState source, bool isLocal, CardDatabase db)
         {
             var player = new PlayerState
@@ -66,6 +95,7 @@ namespace DualCraft.Networking
                 Hand = BuildHand(source, isLocal, db),
                 Deck = BuildPlaceholders(source.DeckCount),
                 SealZone = BuildSealPlaceholders(source.SealCount),
+                Wards = BuildWardPlaceholders(source.WardCount),
                 AshePile = BuildPlaceholders(source.AshePileCount),
                 SourcePlayedThisTurn = source.SourcePlayedThisTurn,
                 SourceRaidUsedThisTurn = source.SourceRaidUsedThisTurn,
@@ -96,7 +126,7 @@ namespace DualCraft.Networking
                     hand.Add(new CardInstance
                     {
                         InstanceId = $"hand-{i}",
-                        Card = db.GetCard(source.HandCardIds[i]),
+                        Card = ResolveCard(db, source.HandCardIds[i], null),
                     });
                 }
             }
@@ -156,6 +186,10 @@ namespace DualCraft.Networking
                     TaxedTurns = daemon.TaxedTurns,
                     Sundered = daemon.Sundered,
                     SunderedTurns = daemon.SunderedTurns,
+                    IsSecondFormBound = daemon.IsSecondFormBound,
+                    BoundAnchorInstanceIds = daemon.BoundAnchorInstanceIds != null ? new List<string>(daemon.BoundAnchorInstanceIds) : new List<string>(),
+                    IsBindAnchor = daemon.IsBindAnchor,
+                    BoundSecondFormInstanceId = daemon.BoundSecondFormInstanceId,
                     Masks = BuildMasks(daemon.MaskIds, db),
                 };
                 field.Add(instance);
@@ -229,8 +263,68 @@ namespace DualCraft.Networking
             if (!string.IsNullOrWhiteSpace(cardId))
                 resolved = db.GetCard(cardId);
             if (resolved != null)
+            {
+                HydrateArtwork(resolved, cardId);
                 return resolved;
-            return CreateFallbackCard(spec, cardId);
+            }
+
+            CardData fallback = CreateFallbackCard(spec, cardId);
+            HydrateArtwork(fallback, spec?.CardId ?? cardId);
+            return fallback;
+        }
+
+        /// <summary>
+        /// Sprite references are intentionally not serialized over the network. Rebind
+        /// them from the receiving build so projected cards render in every UI path,
+        /// including paths that read CardData.artwork directly instead of CardVisual's
+        /// Resources fallback.
+        /// </summary>
+        private static void HydrateArtwork(CardData card, string networkCardId)
+        {
+            if (card == null || card.artwork != null || card.fullArt != null)
+                return;
+
+            string cardId = !string.IsNullOrWhiteSpace(card.cardId)
+                ? card.cardId.Trim()
+                : networkCardId?.Trim();
+            if (string.IsNullOrEmpty(cardId))
+                return;
+
+            Sprite art = LoadArtworkSprite(cardId);
+            string transmittedId = networkCardId?.Trim();
+            if (art == null && !string.IsNullOrEmpty(transmittedId)
+                && !string.Equals(cardId, transmittedId, StringComparison.Ordinal))
+            {
+                art = LoadArtworkSprite(transmittedId);
+            }
+
+            if (art == null)
+                return;
+
+            card.artwork = art;
+            card.fullArt = art;
+        }
+
+        private static Sprite LoadArtworkSprite(string cardId)
+        {
+            if (string.IsNullOrWhiteSpace(cardId))
+                return null;
+
+            string id = cardId.Trim();
+            Sprite sprite = Resources.Load<Sprite>($"CardArt/Clean/{id}")
+                ?? Resources.Load<Sprite>($"CardArt/{id}")
+                ?? Resources.Load<Sprite>($"Meshy/{id}")
+                ?? Resources.Load<Sprite>($"CardArt/Meshy/{id}");
+            if (sprite != null)
+                return sprite;
+
+            Texture2D texture = Resources.Load<Texture2D>($"CardArt/Clean/{id}")
+                ?? Resources.Load<Texture2D>($"CardArt/{id}")
+                ?? Resources.Load<Texture2D>($"Meshy/{id}")
+                ?? Resources.Load<Texture2D>($"CardArt/Meshy/{id}");
+            return texture != null
+                ? Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f))
+                : null;
         }
 
         private static CardData CreateFallbackCard(SerializableCardSpec spec, string cardId)
@@ -293,6 +387,9 @@ namespace DualCraft.Networking
             var card = ScriptableObject.CreateInstance<DispelCardData>();
             card.responseElement = ParseEnum(spec?.Element, Element.Light);
             card.responseCreatureType = ParseEnum(spec?.CreatureType, CreatureType.Spirit);
+            card.canCounterAttack = spec?.CanCounterAttack ?? false;
+            card.canCounterHex = spec?.CanCounterHex ?? false;
+            card.canCounterDomain = spec?.CanCounterDomain ?? false;
             return card;
         }
 
@@ -329,6 +426,18 @@ namespace DualCraft.Networking
             for (int i = 0; i < count; i++)
                 seals.Add(new SealInstance { InstanceId = $"seal-{i}" });
             return seals;
+        }
+
+        private static List<WardInstance> BuildWardPlaceholders(int count)
+        {
+            var wards = new List<WardInstance>();
+            var ids = WardCatalog.StarterWardIds.ToArray();
+            for (int i = 0; i < count; i++)
+            {
+                string id = ids.Length > 0 ? ids[Mathf.Clamp(i, 0, ids.Length - 1)] : "ward-aegis";
+                wards.Add(new WardInstance { WardId = id });
+            }
+            return wards;
         }
 
         private static List<LogEntry> BuildLog(SerializableGameState source, int localSeat)

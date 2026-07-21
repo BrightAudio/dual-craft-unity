@@ -46,6 +46,8 @@ namespace DualCraft.Networking
 
         private const string ChunkMagic = "DUALMON_CHUNK_V1";
         private const int ReliableFragmentPayloadCapacity = 64 * 1024;
+        private const int DirectPayloadLimit = 24 * 1024;
+        private const int ChunkPayloadSize = 8 * 1024;
 
         // ── Events ──────────────────────────────────────
         public event Action<string> OnJoinCodeCreated;  // host gets this to share
@@ -364,7 +366,90 @@ namespace DualCraft.Networking
             if (data == null || data.Length == 0)
                 return;
 
-            SendRawPacket(data);
+            IReadOnlyList<byte[]> packets = BuildTransportPackets(data);
+            for (int i = 0; i < packets.Count; i++)
+                SendRawPacket(packets[i]);
+
+            if (packets.Count > 1)
+                Debug.Log($"[RelayManager] Sent {data.Length} byte Relay message in {packets.Count} chunks.");
+        }
+
+        /// <summary>
+        /// Splits large serialized game states into packets that remain comfortably
+        /// below Unity Transport's fragmentation ceiling after Base64/JSON overhead.
+        /// Public so the exact wire path can be verified by cross-platform tests.
+        /// </summary>
+        public static IReadOnlyList<byte[]> BuildTransportPackets(byte[] data)
+        {
+            if (data == null || data.Length == 0)
+                return Array.Empty<byte[]>();
+            if (data.Length <= DirectPayloadLimit)
+                return new[] { data };
+
+            int total = (data.Length + ChunkPayloadSize - 1) / ChunkPayloadSize;
+            string messageId = Guid.NewGuid().ToString("N");
+            var packets = new List<byte[]>(total);
+            for (int index = 0; index < total; index++)
+            {
+                int offset = index * ChunkPayloadSize;
+                int length = Math.Min(ChunkPayloadSize, data.Length - offset);
+                byte[] payload = new byte[length];
+                Buffer.BlockCopy(data, offset, payload, 0, length);
+                var chunk = new RelayChunk
+                {
+                    Magic = ChunkMagic,
+                    MessageId = messageId,
+                    Index = index,
+                    Total = total,
+                    Payload = Convert.ToBase64String(payload),
+                };
+                packets.Add(Encoding.UTF8.GetBytes(JsonUtility.ToJson(chunk)));
+            }
+
+            return packets;
+        }
+
+        /// <summary>Rebuilds packetized data for deterministic transport verification.</summary>
+        public static byte[] ReassembleTransportPackets(IReadOnlyList<byte[]> packets)
+        {
+            if (packets == null || packets.Count == 0)
+                return Array.Empty<byte>();
+            if (packets.Count == 1)
+                return packets[0];
+
+            var chunks = new RelayChunk[packets.Count];
+            string messageId = null;
+            for (int i = 0; i < packets.Count; i++)
+            {
+                RelayChunk chunk = JsonUtility.FromJson<RelayChunk>(Encoding.UTF8.GetString(packets[i]));
+                if (chunk == null || chunk.Magic != ChunkMagic || chunk.Total != packets.Count
+                    || chunk.Index < 0 || chunk.Index >= packets.Count)
+                    throw new InvalidOperationException("Invalid DualMon Relay chunk packet.");
+                if (messageId == null)
+                    messageId = chunk.MessageId;
+                else if (!string.Equals(messageId, chunk.MessageId, StringComparison.Ordinal))
+                    throw new InvalidOperationException("Relay chunks belong to different messages.");
+                chunks[chunk.Index] = chunk;
+            }
+
+            int totalLength = 0;
+            var decoded = new byte[chunks.Length][];
+            for (int i = 0; i < chunks.Length; i++)
+            {
+                if (chunks[i] == null)
+                    throw new InvalidOperationException("Relay message is missing a chunk.");
+                decoded[i] = Convert.FromBase64String(chunks[i].Payload);
+                totalLength += decoded[i].Length;
+            }
+
+            byte[] full = new byte[totalLength];
+            int destinationOffset = 0;
+            for (int i = 0; i < decoded.Length; i++)
+            {
+                Buffer.BlockCopy(decoded[i], 0, full, destinationOffset, decoded[i].Length);
+                destinationOffset += decoded[i].Length;
+            }
+            return full;
         }
 
         private void SendRawPacket(byte[] data)

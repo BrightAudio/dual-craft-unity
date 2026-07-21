@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -29,6 +30,8 @@ namespace DualCraft.Tests.PlayMode
         public void AuthoritativeSnapshots_ProjectForBothSeats_WithPlayableCards()
         {
             var decks = Resources.LoadAll<DeckData>("CardData/Decks")
+                .Where(deck => deck != null)
+                .Select(deck => deck.CreatePlayableRuntimeCopy())
                 .Where(deck => deck != null && deck.IsValid)
                 .Take(2)
                 .ToArray();
@@ -52,6 +55,8 @@ namespace DualCraft.Tests.PlayMode
             var guestView = Net.NetworkStateProjector.ToLocalGameState(guestSnapshot.State, guestSnapshot.YourPlayerIndex, _db);
             AssertPlayableProjectedView(hostView, "host");
             AssertPlayableProjectedView(guestView, "guest");
+            AssertProjectedCardsHaveArtwork(hostView, "host");
+            AssertProjectedCardsHaveArtwork(guestView, "guest");
 
             messages.Clear();
             room.ProcessAction(0, Net.SerializableAction.FromGameAction(new DrawCardAction()), 1);
@@ -129,6 +134,110 @@ namespace DualCraft.Tests.PlayMode
             Assert.AreEqual("Fallback daemon from network snapshot.", projected.Players[0].Hand[0].Card.description);
         }
 
+        [Test]
+        public void Projector_ResolvesNetworkCardIds_CaseInsensitively_WithArtwork()
+        {
+            CardData expected = _db.GetAllCards().First(card => card != null && card.artwork != null);
+            string networkId = $"  {expected.cardId.ToUpperInvariant()}  ";
+            var sourceState = CreateStateWithLocalHandId(networkId);
+
+            var projected = Net.NetworkStateProjector.ToLocalGameState(sourceState, 0, _db);
+
+            CardData actual = projected.Players[0].Hand.Single().Card;
+            Assert.AreSame(expected, actual, "Network ID should resolve to the local card asset despite casing/whitespace.");
+            Assert.IsTrue(actual.artwork != null || actual.fullArt != null, "Resolved multiplayer card should retain local artwork.");
+        }
+
+        [Test]
+        public void GuestSnapshot_SurvivesActualRelayPacketization_WithCompleteCardData()
+        {
+            var decks = Resources.LoadAll<DeckData>("CardData/Decks")
+                .Where(deck => deck != null)
+                .Select(deck => deck.CreatePlayableRuntimeCopy())
+                .Where(deck => deck != null && deck.IsValid)
+                .Take(2)
+                .ToArray();
+            Assert.GreaterOrEqual(decks.Length, 2, "Need two valid decks for Relay packet verification.");
+
+            var messages = new List<(int Seat, Net.NetEnvelope Envelope)>();
+            var room = new Net.AuthoritativeRoom("relay-packet-card-data", new Net.RoomSettings { GameMode = "standard" });
+            room.OnSendToPlayer += (seat, envelope) => messages.Add((seat, envelope));
+            room.AddPlayer(new Net.PlayerSession { PlayerId = "mac-host", PlayerName = "Mac Host", DeckId = decks[0].deckName });
+            room.AddPlayer(new Net.PlayerSession { PlayerId = "win-guest", PlayerName = "Windows Guest", DeckId = decks[1].deckName });
+            room.StartGame(_db, decks[0], decks[1]);
+
+            Net.GameStateSnapshot guestSnapshot = LastSnapshotFor(messages, 1);
+            Assert.IsNotNull(guestSnapshot?.State, "Guest snapshot missing before transport.");
+            var envelope = Net.NetEnvelope.Create(guestSnapshot, "server");
+            byte[] serialized = Encoding.UTF8.GetBytes(UnityEngine.JsonUtility.ToJson(envelope));
+            IReadOnlyList<byte[]> packets = Net.RelayManager.BuildTransportPackets(serialized);
+            byte[] rebuilt = Net.RelayManager.ReassembleTransportPackets(packets);
+
+            CollectionAssert.AreEqual(serialized, rebuilt, "Relay packetization changed the guest snapshot payload.");
+            var receivedEnvelope = UnityEngine.JsonUtility.FromJson<Net.NetEnvelope>(Encoding.UTF8.GetString(rebuilt));
+            var receivedSnapshot = Net.JsonUtility.FromJson<Net.GameStateSnapshot>(receivedEnvelope.Payload);
+            Net.SerializablePlayerState guestWireState = receivedSnapshot.State.Players[receivedSnapshot.YourPlayerIndex];
+            Assert.AreEqual(guestWireState.HandCount, guestWireState.HandCards.Length, "Guest wire hand lost card specs.");
+            Assert.IsTrue(guestWireState.HandCards.All(card => card != null
+                && !string.IsNullOrWhiteSpace(card.CardId)
+                && !string.IsNullOrWhiteSpace(card.Name)
+                && !string.IsNullOrWhiteSpace(card.Category)), "Guest wire hand contains blank card data.");
+
+            GameState projected = Net.NetworkStateProjector.ToLocalGameState(receivedSnapshot.State, receivedSnapshot.YourPlayerIndex, _db);
+            AssertPlayableProjectedView(projected, "packetized guest");
+            AssertProjectedCardsHaveArtwork(projected, "packetized guest");
+        }
+
+        [Test]
+        public void Projector_RepairsMislabeledGuestSeat_InsteadOfShowingHiddenPlaceholders()
+        {
+            CardData expected = _db.GetAllCards().First(card => card != null && card.artwork != null);
+            var sourceState = CreateStateWithLocalHandId(expected.cardId);
+
+            // Simulate the failure seen in the live join: seat metadata says 1 while
+            // the private hand payload clearly belongs to seat 0.
+            GameState projected = Net.NetworkStateProjector.ToLocalGameState(sourceState, 1, _db);
+
+            Assert.AreEqual(1, projected.Players[0].Hand.Count);
+            Assert.IsNotNull(projected.Players[0].Hand[0].Card, "Guest hand must not become a hidden placeholder.");
+            Assert.AreEqual(expected.cardId, projected.Players[0].Hand[0].Card.cardId);
+            Assert.IsTrue(projected.Players[0].Hand[0].Card.artwork != null || projected.Players[0].Hand[0].Card.fullArt != null);
+        }
+
+        private static Net.SerializableGameState CreateStateWithLocalHandId(string cardId)
+        {
+            return new Net.SerializableGameState
+            {
+                CurrentPlayer = 0,
+                Phase = GamePhase.Main.ToString(),
+                Winner = -1,
+                Players = new[]
+                {
+                    new Net.SerializablePlayerState
+                    {
+                        Name = "Local",
+                        InvokerHp = GameConstants.InvokerMaxHp,
+                        InvokerMaxHp = GameConstants.InvokerMaxHp,
+                        HandCount = 1,
+                        HandCardIds = new[] { cardId },
+                        Field = System.Array.Empty<Net.SerializableDaemon>(),
+                        Pillars = System.Array.Empty<Net.SerializablePillar>(),
+                        AsheCards = System.Array.Empty<Net.SerializableAsheCard>(),
+                    },
+                    new Net.SerializablePlayerState
+                    {
+                        Name = "Remote",
+                        InvokerHp = GameConstants.InvokerMaxHp,
+                        InvokerMaxHp = GameConstants.InvokerMaxHp,
+                        Field = System.Array.Empty<Net.SerializableDaemon>(),
+                        Pillars = System.Array.Empty<Net.SerializablePillar>(),
+                        AsheCards = System.Array.Empty<Net.SerializableAsheCard>(),
+                    },
+                },
+                RecentLog = new List<Net.SerializableLogEntry>(),
+            };
+        }
+
         private static Net.GameStateSnapshot LastSnapshotFor(List<(int Seat, Net.NetEnvelope Envelope)> messages, int seat)
         {
             var envelope = messages.LastOrDefault(m => m.Seat == seat && m.Envelope.Type == nameof(Net.GameStateSnapshot)).Envelope;
@@ -152,6 +261,16 @@ namespace DualCraft.Tests.PlayMode
             Assert.IsTrue(view.Players[1].Field.All(daemon => daemon.Card != null), $"{label} opponent field has blank daemons.");
             Assert.GreaterOrEqual(view.Players[0].Invoker.Hp, 0, $"{label} local invoker HP invalid.");
             Assert.GreaterOrEqual(view.Players[1].Invoker.Hp, 0, $"{label} opponent invoker HP invalid.");
+        }
+
+        private static void AssertProjectedCardsHaveArtwork(GameState view, string label)
+        {
+            IEnumerable<CardData> visibleCards = view.Players[0].Hand.Select(card => card.Card)
+                .Concat(view.Players[0].Field.Select(daemon => daemon.Card))
+                .Concat(view.Players[1].Field.Select(daemon => daemon.Card));
+            Assert.IsTrue(visibleCards.Where(card => card != null)
+                .All(card => card.artwork != null || card.fullArt != null),
+                $"{label} projected cards should have local artwork references.");
         }
     }
 }
