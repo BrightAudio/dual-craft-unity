@@ -14,15 +14,18 @@ namespace DualCraft.Editor
         [MenuItem("Dual Craft/Build macOS")]
         public static void BuildMacOS()
         {
-            string buildPath = "Builds/DualCraft.app";
+            string buildPath = System.IO.Directory.Exists("/Volumes/Seagate")
+                ? "/Volumes/Seagate/DualMonBuilds/Mac/Dual5Mon.app"
+                : "Builds/Dual5Mon.app";
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(buildPath));
 
             // Force Mono scripting backend (IL2CPP may not be installed)
-            PlayerSettings.SetScriptingBackend(BuildTargetGroup.Standalone, ScriptingImplementation.Mono2x);
+            PlayerSettings.SetScriptingBackend(UnityEditor.Build.NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
 
             var scenes = new[]
             {
-                "Assets/Scenes/MainMenu.unity",
                 "Assets/Scenes/Battle.unity",
+                "Assets/Scenes/MainMenu.unity",
                 "Assets/Scenes/Collection.unity",
                 "Assets/Scenes/DeckBuilder.unity",
             };
