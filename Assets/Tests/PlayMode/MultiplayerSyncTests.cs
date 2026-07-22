@@ -50,6 +50,7 @@ namespace DualCraft.Tests.PlayMode
             Assert.IsNotNull(hostSnapshot?.State, "Host should receive initial state.");
             Assert.IsNotNull(guestSnapshot?.State, "Guest should receive initial state.");
             Assert.AreEqual(hostSnapshot.ServerSequence, guestSnapshot.ServerSequence, "Initial sequence should match for both seats.");
+            AssertOwnerPrivatePayload(guestSnapshot.State, 1, "initial guest snapshot");
 
             var hostView = Net.NetworkStateProjector.ToLocalGameState(hostSnapshot.State, hostSnapshot.YourPlayerIndex, _db);
             var guestView = Net.NetworkStateProjector.ToLocalGameState(guestSnapshot.State, guestSnapshot.YourPlayerIndex, _db);
@@ -64,6 +65,7 @@ namespace DualCraft.Tests.PlayMode
             var guestConfirm = LastConfirmedFor(messages, 1);
             Assert.IsNotNull(guestConfirm?.State, "Guest should receive state after host action.");
             Assert.Greater(guestConfirm.ServerSequence, guestSnapshot.ServerSequence, "Confirmed action should advance server sequence.");
+            AssertOwnerPrivatePayload(guestConfirm.State, 1, "guest action confirmation");
             var guestAfterAction = Net.NetworkStateProjector.ToLocalGameState(guestConfirm.State, 1, _db);
             AssertPlayableProjectedView(guestAfterAction, "guest after host draw");
             Assert.IsTrue(guestAfterAction.Log.Any(entry => entry.Message.Contains("draws") || entry.Message.Contains("turn", System.StringComparison.OrdinalIgnoreCase)),
@@ -177,6 +179,7 @@ namespace DualCraft.Tests.PlayMode
             var receivedEnvelope = UnityEngine.JsonUtility.FromJson<Net.NetEnvelope>(Encoding.UTF8.GetString(rebuilt));
             var receivedSnapshot = Net.JsonUtility.FromJson<Net.GameStateSnapshot>(receivedEnvelope.Payload);
             Net.SerializablePlayerState guestWireState = receivedSnapshot.State.Players[receivedSnapshot.YourPlayerIndex];
+            AssertOwnerPrivatePayload(receivedSnapshot.State, receivedSnapshot.YourPlayerIndex, "packetized guest snapshot");
             Assert.AreEqual(guestWireState.HandCount, guestWireState.HandCards.Length, "Guest wire hand lost card specs.");
             Assert.IsTrue(guestWireState.HandCards.All(card => card != null
                 && !string.IsNullOrWhiteSpace(card.CardId)
@@ -202,6 +205,37 @@ namespace DualCraft.Tests.PlayMode
             Assert.IsNotNull(projected.Players[0].Hand[0].Card, "Guest hand must not become a hidden placeholder.");
             Assert.AreEqual(expected.cardId, projected.Players[0].Hand[0].Card.cardId);
             Assert.IsTrue(projected.Players[0].Hand[0].Card.artwork != null || projected.Players[0].Hand[0].Card.fullArt != null);
+        }
+
+        [Test]
+        public void Projector_RejectsJoinedState_WhenOwnerCardIdentitiesAreMissing()
+        {
+            var sourceState = new Net.SerializableGameState
+            {
+                ProtocolVersion = Net.SerializableGameState.CurrentProtocolVersion,
+                HasViewerPrivateState = true,
+                ViewerPlayerIndex = 1,
+                ViewerHandCardIds = System.Array.Empty<string>(),
+                ViewerHandCards = System.Array.Empty<Net.SerializableCardSpec>(),
+                CurrentPlayer = 0,
+                Phase = GamePhase.Main.ToString(),
+                Winner = -1,
+                Players = new[]
+                {
+                    new Net.SerializablePlayerState { Name = "Host", HandCount = 5 },
+                    new Net.SerializablePlayerState { Name = "Guest", HandCount = 5 },
+                },
+                RecentLog = new List<Net.SerializableLogEntry>(),
+            };
+
+            bool valid = Net.NetworkStateProjector.TryResolvePrivateHand(sourceState, 1, out _, out string error);
+            LogAssert.Expect(LogType.Error,
+                "[NetworkStateProjector] Refusing incomplete private state: owner hand identities are incomplete (expected 5, ids 0, specs 0)");
+            GameState projected = Net.NetworkStateProjector.ToLocalGameState(sourceState, 1, _db);
+
+            Assert.IsFalse(valid, "A joined snapshot without private hand identities must not be accepted.");
+            StringAssert.Contains("expected 5", error);
+            Assert.IsNull(projected, "Incomplete private state must not become blank placeholder cards.");
         }
 
         private static Net.SerializableGameState CreateStateWithLocalHandId(string cardId)
@@ -271,6 +305,19 @@ namespace DualCraft.Tests.PlayMode
             Assert.IsTrue(visibleCards.Where(card => card != null)
                 .All(card => card.artwork != null || card.fullArt != null),
                 $"{label} projected cards should have local artwork references.");
+        }
+
+        private static void AssertOwnerPrivatePayload(Net.SerializableGameState state, int expectedSeat, string label)
+        {
+            Assert.IsNotNull(state, $"{label} state missing.");
+            Assert.IsTrue(state.HasViewerPrivateState, $"{label} lacks explicit owner-private payload.");
+            Assert.AreEqual(expectedSeat, state.ViewerPlayerIndex, $"{label} viewer seat mismatch.");
+            int expectedCards = state.Players[expectedSeat].HandCount;
+            Assert.AreEqual(expectedCards, state.ViewerHandCardIds?.Length ?? 0, $"{label} private ID count mismatch.");
+            Assert.AreEqual(expectedCards, state.ViewerHandCards?.Length ?? 0, $"{label} private spec count mismatch.");
+            Assert.IsTrue(state.ViewerHandCardIds.All(id => !string.IsNullOrWhiteSpace(id)), $"{label} contains blank private card IDs.");
+            Assert.IsTrue(state.ViewerHandCards.All(spec => spec != null && !string.IsNullOrWhiteSpace(spec.CardId)),
+                $"{label} contains blank private card specs.");
         }
     }
 }

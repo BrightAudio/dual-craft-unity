@@ -166,6 +166,10 @@ namespace DualCraft.Networking
                     HandleStateAppliedAck(envelope);
                     break;
 
+                case nameof(PrivateStateRequest):
+                    HandlePrivateStateRequest(envelope);
+                    break;
+
                 default:
                     Debug.LogWarning($"[RelayGameHost] Unknown message: {envelope.Type}");
                     break;
@@ -349,6 +353,16 @@ namespace DualCraft.Networking
 
             Debug.Log($"[RelayGameHost] {message}");
             PublishGuestSyncStatus(message);
+        }
+
+        private void HandlePrivateStateRequest(NetEnvelope envelope)
+        {
+            var request = JsonUtility.FromJson<PrivateStateRequest>(envelope.Payload);
+            if (!_gameStarted || request == null || request.PlayerIndex != 1)
+                return;
+
+            Debug.LogWarning($"[RelayGameHost] Guest requested owner-private resync: {request.Reason}");
+            _room.SendStateSnapshot(1);
         }
 
         /// <summary>

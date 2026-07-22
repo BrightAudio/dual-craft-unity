@@ -230,6 +230,17 @@ namespace DualCraft.Networking
         public string StateKind;
     }
 
+    /// <summary>Requests a fresh owner-private snapshot when hand identities are incomplete.</summary>
+    [Serializable]
+    public class PrivateStateRequest
+    {
+        public string PlayerId;
+        public string RoomId;
+        public int PlayerIndex;
+        public int LastServerSequence;
+        public string Reason;
+    }
+
     /// <summary>Host-side sync status surfaced to the UI/log.</summary>
     [Serializable]
     public class SyncStatus
@@ -315,9 +326,9 @@ namespace DualCraft.Networking
             {
                 "DrawCard" => new DrawCardAction(),
                 "PlayDaemon" => new PlayDaemonAction { HandIndex = HandIndex, TargetLane = TargetLane },
-                "PlayDomain" => new PlayDomainAction { HandIndex = HandIndex },
+                "PlayDomain" => new PlayDomainAction { HandIndex = HandIndex, ResponseDispelHandIndex = ResponseDispelHandIndex },
                 "PlayMask" => new PlayMaskAction { HandIndex = HandIndex, TargetDaemonIndex = TargetIndex },
-                "PlayHex" => new PlayHexAction { HandIndex = HandIndex },
+                "PlayHex" => new PlayHexAction { HandIndex = HandIndex, TargetDaemonIndex = TargetIndex, ResponseDispelHandIndex = ResponseDispelHandIndex },
                 "SetSeal" => new SetSealAction { HandIndex = HandIndex },
                 "PlayDispel" => new PlayDispelAction
                 {
@@ -353,9 +364,9 @@ namespace DualCraft.Networking
             switch (action)
             {
                 case PlayDaemonAction pda: sa.HandIndex = pda.HandIndex; sa.TargetLane = pda.TargetLane; break;
-                case PlayDomainAction pdo: sa.HandIndex = pdo.HandIndex; break;
+                case PlayDomainAction pdo: sa.HandIndex = pdo.HandIndex; sa.ResponseDispelHandIndex = pdo.ResponseDispelHandIndex; break;
                 case PlayMaskAction pma: sa.HandIndex = pma.HandIndex; sa.TargetIndex = pma.TargetDaemonIndex; break;
-                case PlayHexAction pha: sa.HandIndex = pha.HandIndex; break;
+                case PlayHexAction pha: sa.HandIndex = pha.HandIndex; sa.TargetIndex = pha.TargetDaemonIndex; sa.ResponseDispelHandIndex = pha.ResponseDispelHandIndex; break;
                 case SetSealAction ssa: sa.HandIndex = ssa.HandIndex; break;
                 case PlayDispelAction pdi: sa.HandIndex = pdi.HandIndex; sa.TargetIndex = pdi.TargetIndex; sa.DispelTarget = pdi.TargetType.ToString(); break;
                 case EvolveAction ea: sa.FieldIndex = ea.FieldIndex; sa.ConsumeIndex = ea.ConsumeIndex; break;
@@ -386,6 +397,9 @@ namespace DualCraft.Networking
     [Serializable]
     public class SerializableGameState
     {
+        public const int CurrentProtocolVersion = 2;
+
+        public int ProtocolVersion;
         public string RoomId;
         public int CurrentPlayer;
         public string Phase;
@@ -393,6 +407,12 @@ namespace DualCraft.Networking
         public bool GameOver;
         public int Winner;
         public SerializablePlayerState[] Players;
+        // Explicit owner-private payload. Keeping this outside Players prevents
+        // viewer-seat filtering mistakes from turning the local hand into hidden cards.
+        public bool HasViewerPrivateState;
+        public int ViewerPlayerIndex;
+        public string[] ViewerHandCardIds;
+        public SerializableCardSpec[] ViewerHandCards;
         public string ActiveDomainId;
         public int ActiveDomainOwner;
         public List<SerializableLogEntry> RecentLog;
@@ -415,6 +435,7 @@ namespace DualCraft.Networking
         public SerializablePillar[] Pillars;
         public SerializableAsheCard[] AsheCards;
         public int SealCount;       // opponent sees count
+        public int WardCount;       // remaining invoker ward glyphs
         public int AshePileCount;
         public bool SourcePlayedThisTurn;
         public bool SourceRaidUsedThisTurn;
@@ -438,6 +459,9 @@ namespace DualCraft.Networking
         public bool Ranged;
         public string AttackPattern;
         public int SourceSePerTurn;
+        public bool CanCounterAttack;
+        public bool CanCounterHex;
+        public bool CanCounterDomain;
     }
 
     [Serializable]
@@ -480,6 +504,10 @@ namespace DualCraft.Networking
         public int TaxedTurns;
         public bool Sundered;
         public int SunderedTurns;
+        public bool IsSecondFormBound;
+        public string[] BoundAnchorInstanceIds;
+        public bool IsBindAnchor;
+        public string BoundSecondFormInstanceId;
         public string[] MaskIds;
     }
 

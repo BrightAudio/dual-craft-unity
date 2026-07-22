@@ -34,7 +34,9 @@ namespace DualCraft.Networking
         private bool _joinAccepted;
         private float _lastJoinRequestSentAt = -999f;
         private int _joinRequestAttempts;
+        private int _lastReceivedServerSequence = -1;
         private int _lastAppliedServerSequence = -1;
+        private float _lastPrivateStateRequestAt = -999f;
 
         public GameStateSnapshot LatestSnapshot { get; private set; }
         public int LastAppliedServerSequence => _lastAppliedServerSequence;
@@ -65,6 +67,9 @@ namespace DualCraft.Networking
             _joinAccepted = false;
             _lastJoinRequestSentAt = -999f;
             _joinRequestAttempts = 0;
+            _lastReceivedServerSequence = -1;
+            _lastAppliedServerSequence = -1;
+            _lastPrivateStateRequestAt = -999f;
 
             if (_relay != null)
             {
@@ -203,17 +208,32 @@ namespace DualCraft.Networking
             {
                 case nameof(GameStateSnapshot):
                     var snap = JsonUtility.FromJson<GameStateSnapshot>(envelope.Payload);
+                    if (snap == null)
+                        break;
+                    if (!ValidatePrivateState(snap.State, snap.YourPlayerIndex, snap.ServerSequence, "snapshot", out int snapshotSeat))
+                        break;
+                    snap.YourPlayerIndex = snapshotSeat;
+                    if (HandleDuplicateState(snap.ServerSequence, "Snapshot"))
+                        break;
                     LatestSnapshot = snap;
                     _joinAccepted = true;
+                    _lastReceivedServerSequence = snap.ServerSequence;
                     AcknowledgeReceivedState(snap.ServerSequence, "ReceivedSnapshot");
                     OnGameStateReceived?.Invoke(snap);
                     break;
 
                 case nameof(ActionConfirmed):
                     var confirmed = JsonUtility.FromJson<ActionConfirmed>(envelope.Payload);
+                    if (confirmed == null)
+                        break;
+                    if (!ValidatePrivateState(confirmed.State, 1, confirmed.ServerSequence, "action confirmation", out _))
+                        break;
+                    if (HandleDuplicateState(confirmed.ServerSequence, "ActionConfirmed"))
+                        break;
                     if (confirmed.State != null)
                     {
                         _joinAccepted = true;
+                        _lastReceivedServerSequence = confirmed.ServerSequence;
                         LatestSnapshot = new GameStateSnapshot
                     {
                         RoomId = confirmed.State.RoomId,
@@ -233,9 +253,16 @@ namespace DualCraft.Networking
 
                 case nameof(GameOver):
                     var over = JsonUtility.FromJson<GameOver>(envelope.Payload);
+                    if (over == null)
+                        break;
+                    if (!ValidatePrivateState(over.FinalState, 1, over.ServerSequence, "game over", out _))
+                        break;
+                    if (HandleDuplicateState(over.ServerSequence, "GameOver"))
+                        break;
                     if (over.FinalState != null)
                     {
                         _joinAccepted = true;
+                        _lastReceivedServerSequence = over.ServerSequence;
                         LatestSnapshot = new GameStateSnapshot
                     {
                         RoomId = over.FinalState.RoomId,
@@ -268,6 +295,35 @@ namespace DualCraft.Networking
             }
         }
 
+        private bool ValidatePrivateState(SerializableGameState state, int expectedSeat, int serverSequence,
+            string stateKind, out int resolvedSeat)
+        {
+            if (NetworkStateProjector.TryResolvePrivateHand(state, expectedSeat, out resolvedSeat, out string error))
+                return true;
+
+            string message = $"Joined-player card data missing from {stateKind}: {error}. Requesting resync.";
+            Debug.LogError($"[RelayGameClient] {message}");
+            OnError?.Invoke(message);
+            RequestPrivateState(serverSequence, message);
+            return false;
+        }
+
+        private void RequestPrivateState(int serverSequence, string reason)
+        {
+            if (!IsConnected || Time.unscaledTime - _lastPrivateStateRequestAt < 0.75f)
+                return;
+
+            _lastPrivateStateRequestAt = Time.unscaledTime;
+            _relay.SendMessage(new PrivateStateRequest
+            {
+                PlayerId = _playerId,
+                RoomId = _relay.JoinCode,
+                PlayerIndex = 1,
+                LastServerSequence = serverSequence,
+                Reason = reason,
+            }, _playerId);
+        }
+
         // ═════════════════════════════════════════════════
         //  SEND ACTIONS TO HOST
         // ═════════════════════════════════════════════════
@@ -292,6 +348,10 @@ namespace DualCraft.Networking
         /// </summary>
         public void AcknowledgeAppliedState(int serverSequence, string stateKind)
         {
+            if (serverSequence < _lastAppliedServerSequence)
+                return;
+
+            _lastAppliedServerSequence = serverSequence;
             SendStateAck(serverSequence, stateKind ?? "AppliedState", "Applied");
         }
 
@@ -300,15 +360,28 @@ namespace DualCraft.Networking
             SendStateAck(serverSequence, stateKind ?? "ReceivedState", "Received");
         }
 
+        private bool HandleDuplicateState(int serverSequence, string stateKind)
+        {
+            if (serverSequence <= _lastAppliedServerSequence)
+            {
+                SendStateAck(serverSequence, stateKind, "Reconfirmed");
+                return true;
+            }
+
+            if (serverSequence <= _lastReceivedServerSequence)
+            {
+                SendStateAck(serverSequence, $"Received{stateKind}", "Reconfirmed received");
+                return true;
+            }
+
+            return false;
+        }
+
         private void SendStateAck(int serverSequence, string stateKind, string logVerb)
         {
             if (!_gameActive || !IsConnected || serverSequence < 0)
                 return;
 
-            if (serverSequence < _lastAppliedServerSequence)
-                return;
-
-            _lastAppliedServerSequence = serverSequence;
             _relay.SendMessage(new StateAppliedAck
             {
                 PlayerId = _playerId,

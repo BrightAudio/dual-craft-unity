@@ -22,7 +22,12 @@ namespace DualCraft.Networking
             if (source == null || source.Players == null || source.Players.Length < 2)
                 return null;
 
-            localSeat = ResolveCardOwningSeat(source, localSeat);
+            if (!TryResolvePrivateHand(source, localSeat, out localSeat, out string validationError))
+            {
+                Debug.LogError($"[NetworkStateProjector] Refusing incomplete private state: {validationError}");
+                return null;
+            }
+
             int remoteSeat = localSeat == 0 ? 1 : 0;
             var state = new GameState
             {
@@ -37,8 +42,10 @@ namespace DualCraft.Networking
                 Log = BuildLog(source, localSeat),
             };
 
-            state.Players[0] = BuildPlayer(source.Players[localSeat], true, db);
-            state.Players[1] = BuildPlayer(source.Players[remoteSeat], false, db);
+            SerializableCardSpec[] privateSpecs = source.HasViewerPrivateState ? source.ViewerHandCards : null;
+            string[] privateIds = source.HasViewerPrivateState ? source.ViewerHandCardIds : null;
+            state.Players[0] = BuildPlayer(source.Players[localSeat], true, db, privateIds, privateSpecs);
+            state.Players[1] = BuildPlayer(source.Players[remoteSeat], false, db, null, null);
 
             if (!string.IsNullOrEmpty(source.ActiveDomainId) && db.GetCard(source.ActiveDomainId) is DomainCardData domain)
             {
@@ -60,18 +67,59 @@ namespace DualCraft.Networking
         /// </summary>
         public static int ResolveCardOwningSeat(SerializableGameState source, int requestedSeat)
         {
-            if (source?.Players == null || source.Players.Length < 2)
-                return Mathf.Clamp(requestedSeat, 0, 1);
+            return TryResolvePrivateHand(source, requestedSeat, out int seat, out _) ? seat : Mathf.Clamp(requestedSeat, 0, 1);
+        }
 
-            int seat = Mathf.Clamp(requestedSeat, 0, 1);
-            int other = 1 - seat;
-            if (!HasPrivateHandData(source.Players[seat]) && HasPrivateHandData(source.Players[other]))
+        public static bool TryResolvePrivateHand(SerializableGameState source, int requestedSeat, out int resolvedSeat, out string error)
+        {
+            resolvedSeat = Mathf.Clamp(requestedSeat, 0, 1);
+            error = null;
+            if (source?.Players == null || source.Players.Length < 2)
             {
-                Debug.LogWarning($"[NetworkStateProjector] Snapshot labeled seat {seat}, but private card data belongs to seat {other}. Correcting local seat.");
-                return other;
+                error = "snapshot has no two-player state";
+                return false;
             }
 
-            return seat;
+            if (source.HasViewerPrivateState)
+            {
+                if (source.ViewerPlayerIndex < 0 || source.ViewerPlayerIndex >= source.Players.Length)
+                {
+                    error = $"invalid viewer seat {source.ViewerPlayerIndex}";
+                    return false;
+                }
+
+                resolvedSeat = source.ViewerPlayerIndex;
+                return ValidatePrivateHandCount(source.Players[resolvedSeat], source.ViewerHandCardIds, source.ViewerHandCards, out error);
+            }
+
+            int other = 1 - resolvedSeat;
+            bool requestedHasData = HasPrivateHandData(source.Players[resolvedSeat]);
+            bool otherHasData = HasPrivateHandData(source.Players[other]);
+            if (!requestedHasData && otherHasData)
+            {
+                Debug.LogWarning($"[NetworkStateProjector] Legacy snapshot labeled seat {resolvedSeat}, but private card data belongs to seat {other}. Correcting local seat.");
+                resolvedSeat = other;
+            }
+
+            SerializablePlayerState owner = source.Players[resolvedSeat];
+            return ValidatePrivateHandCount(owner, owner?.HandCardIds, owner?.HandCards, out error);
+        }
+
+        private static bool ValidatePrivateHandCount(SerializablePlayerState owner, string[] ids, SerializableCardSpec[] specs, out string error)
+        {
+            int expected = owner?.HandCount ?? -1;
+            int idCount = ids?.Length ?? 0;
+            int specCount = specs?.Length ?? 0;
+            bool idsComplete = idCount == expected && (expected == 0 || ids.All(id => !string.IsNullOrWhiteSpace(id)));
+            bool specsComplete = specCount == expected && (expected == 0 || specs.All(spec => spec != null && !string.IsNullOrWhiteSpace(spec.CardId)));
+            if (expected >= 0 && (idsComplete || specsComplete))
+            {
+                error = null;
+                return true;
+            }
+
+            error = $"owner hand identities are incomplete (expected {expected}, ids {idCount}, specs {specCount})";
+            return false;
         }
 
         private static bool HasPrivateHandData(SerializablePlayerState player)
@@ -80,7 +128,8 @@ namespace DualCraft.Networking
                 || (player.HandCardIds != null && player.HandCardIds.Length > 0));
         }
 
-        private static PlayerState BuildPlayer(SerializablePlayerState source, bool isLocal, CardDatabase db)
+        private static PlayerState BuildPlayer(SerializablePlayerState source, bool isLocal, CardDatabase db,
+            string[] privateIds, SerializableCardSpec[] privateSpecs)
         {
             var player = new PlayerState
             {
@@ -92,7 +141,7 @@ namespace DualCraft.Networking
                 Field = BuildField(source.Field, db),
                 Pillars = BuildPillars(source.Pillars, db),
                 AsheCards = BuildAsheCards(source.AsheCards, db),
-                Hand = BuildHand(source, isLocal, db),
+                Hand = BuildHand(source, isLocal, db, privateIds, privateSpecs),
                 Deck = BuildPlaceholders(source.DeckCount),
                 SealZone = BuildSealPlaceholders(source.SealCount),
                 Wards = BuildWardPlaceholders(source.WardCount),
@@ -104,14 +153,17 @@ namespace DualCraft.Networking
             return player;
         }
 
-        private static List<CardInstance> BuildHand(SerializablePlayerState source, bool isLocal, CardDatabase db)
+        private static List<CardInstance> BuildHand(SerializablePlayerState source, bool isLocal, CardDatabase db,
+            string[] privateIds, SerializableCardSpec[] privateSpecs)
         {
             var hand = new List<CardInstance>();
-            if (isLocal && source.HandCards != null && source.HandCards.Length > 0)
+            SerializableCardSpec[] specs = privateSpecs ?? source.HandCards;
+            string[] ids = privateIds ?? source.HandCardIds;
+            if (isLocal && specs != null && specs.Length > 0)
             {
-                for (int i = 0; i < source.HandCards.Length; i++)
+                for (int i = 0; i < specs.Length; i++)
                 {
-                    var spec = source.HandCards[i];
+                    var spec = specs[i];
                     hand.Add(new CardInstance
                     {
                         InstanceId = $"hand-{i}",
@@ -119,14 +171,14 @@ namespace DualCraft.Networking
                     });
                 }
             }
-            else if (isLocal && source.HandCardIds != null)
+            else if (isLocal && ids != null)
             {
-                for (int i = 0; i < source.HandCardIds.Length; i++)
+                for (int i = 0; i < ids.Length; i++)
                 {
                     hand.Add(new CardInstance
                     {
                         InstanceId = $"hand-{i}",
-                        Card = ResolveCard(db, source.HandCardIds[i], null),
+                        Card = ResolveCard(db, ids[i], null),
                     });
                 }
             }

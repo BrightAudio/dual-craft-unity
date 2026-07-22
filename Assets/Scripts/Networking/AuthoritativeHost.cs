@@ -13,6 +13,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace DualCraft.Networking
 {
@@ -286,6 +287,7 @@ namespace DualCraft.Networking
             var gs = Core.State;
             var sgs = new SerializableGameState
             {
+                ProtocolVersion = SerializableGameState.CurrentProtocolVersion,
                 RoomId = RoomId,
                 CurrentPlayer = gs.CurrentPlayer,
                 Phase = gs.Phase.ToString(),
@@ -295,6 +297,10 @@ namespace DualCraft.Networking
                 ActiveDomainId = gs.ActiveDomain?.Card?.cardId ?? "",
                 ActiveDomainOwner = gs.ActiveDomain?.Owner ?? -1,
                 Players = new SerializablePlayerState[2],
+                HasViewerPrivateState = true,
+                ViewerPlayerIndex = viewerIndex,
+                ViewerHandCardIds = BuildHandIds(gs.Players[viewerIndex]),
+                ViewerHandCards = BuildHandSpecs(gs.Players[viewerIndex]),
                 RecentLog = new List<SerializableLogEntry>(),
             };
 
@@ -313,6 +319,7 @@ namespace DualCraft.Networking
                     DeckCount = ps.Deck.Count,
                     AshePileCount = ps.AshePile.Count,
                     SealCount = ps.SealZone.Count,
+                    WardCount = ps.Wards?.Count(w => w != null && !string.IsNullOrWhiteSpace(w.WardId)) ?? 0,
                     // Only show hand cards to the owning player
                     HandCardIds = i == viewerIndex
                         ? BuildHandIds(ps)
@@ -411,6 +418,10 @@ namespace DualCraft.Networking
                     TaxedTurns = d.TaxedTurns,
                     Sundered = d.Sundered,
                     SunderedTurns = d.SunderedTurns,
+                    IsSecondFormBound = d.IsSecondFormBound,
+                    BoundAnchorInstanceIds = d.BoundAnchorInstanceIds?.ToArray(),
+                    IsBindAnchor = d.IsBindAnchor,
+                    BoundSecondFormInstanceId = d.BoundSecondFormInstanceId,
                     MaskIds = maskIds,
                 };
             }
@@ -496,6 +507,9 @@ namespace DualCraft.Networking
                 case DispelCardData dispel:
                     spec.Element = dispel.responseElement.ToString();
                     spec.CreatureType = dispel.responseCreatureType.ToString();
+                    spec.CanCounterAttack = dispel.canCounterAttack;
+                    spec.CanCounterHex = dispel.canCounterHex;
+                    spec.CanCounterDomain = dispel.canCounterDomain;
                     break;
                 case DomainCardData domain:
                     spec.Element = domain.effectElement.ToString();
