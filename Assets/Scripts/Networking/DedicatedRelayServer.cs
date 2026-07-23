@@ -15,6 +15,7 @@ using UnityEngine;
 
 namespace DualCraft.Networking
 {
+    using Battle;
     using Cards;
     using Core;
 
@@ -364,7 +365,37 @@ namespace DualCraft.Networking
                 return;
 
             // The connection owns the seat. Never trust PlayerIndex from the client.
+            string actionSummary = DescribeAction(client.Seat, request.Action);
+            Debug.Log($"[DedicatedServer] Seat {client.Seat} requests #{request.SequenceNum}: {actionSummary}.");
             _room.ProcessAction(client.Seat, request.Action, request.SequenceNum);
+            string result = _room?.Core?.State?.LastAction;
+            Debug.Log($"[DedicatedServer] Seat {client.Seat} resolved #{request.SequenceNum}: "
+                + $"{(string.IsNullOrWhiteSpace(result) ? "no state change (rejected)" : result)}.");
+        }
+
+        private string DescribeAction(int seat, SerializableAction action)
+        {
+            if (action == null)
+                return "null action";
+
+            if (!string.Equals(action.ActionType, "Attack", StringComparison.Ordinal))
+                return action.ActionType ?? "unknown action";
+
+            PlayerState player = seat >= 0 && seat <= 1 && _room?.Core?.State?.Players != null
+                ? _room.Core.State.Players[seat]
+                : null;
+            DaemonInstance attacker = player?.Field != null
+                && action.FieldIndex >= 0 && action.FieldIndex < player.Field.Count
+                    ? player.Field[action.FieldIndex]
+                    : null;
+            string pattern = attacker?.Card != null
+                ? (attacker.Card.rangedAttack ? DaemonAttackPattern.Ranged : attacker.Card.attackPattern).ToString()
+                : "unknown";
+            int lane = attacker != null
+                ? (attacker.LaneIndex >= 0 ? attacker.LaneIndex : action.FieldIndex)
+                : -1;
+            return $"Attack {attacker?.Card?.cardName ?? "unknown"} [{pattern}] lane {lane + 1} "
+                + $"to {action.TargetType ?? "unknown"} index {action.TargetIndex}";
         }
 
         private void PumpStateRecovery()
