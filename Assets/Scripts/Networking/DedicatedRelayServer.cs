@@ -30,6 +30,9 @@ namespace DualCraft.Networking
             public NetworkConnection Connection;
             public int Seat = -1;
             public string PlayerId;
+            public bool RenderConfirmed;
+            public float NextStateRecoveryAt;
+            public int StateRecoveryAttempts;
             public readonly Dictionary<string, ChunkAccumulator> Chunks = new();
         }
 
@@ -163,6 +166,8 @@ namespace DualCraft.Networking
 
             for (int i = _clients.Count - 1; i >= 0; i--)
                 PumpClient(_clients[i], i);
+
+            PumpStateRecovery();
         }
 
         private void PumpClient(ClientSlot client, int listIndex)
@@ -212,7 +217,7 @@ namespace DualCraft.Networking
                     break;
                 case nameof(PrivateStateRequest):
                     if (client.Seat >= 0)
-                        _room?.SendStateSnapshot(client.Seat);
+                        SendFreshState(client, "private-state request");
                     break;
                 case nameof(ForfeitRequest):
                     if (client.Seat >= 0)
@@ -233,7 +238,18 @@ namespace DualCraft.Networking
                 case nameof(StateAppliedAck):
                     var ack = JsonUtility.FromJson<StateAppliedAck>(envelope.Payload);
                     if (ack != null)
-                        Debug.Log($"[DedicatedServer] Seat {client.Seat} rendered state #{ack.ServerSequence}: {ack.RenderedNamedCardCount}/{ack.RenderedHandCount} named.");
+                    {
+                        int expected = GetExpectedHandCount(client.Seat);
+                        client.RenderConfirmed = expected >= 0
+                            && ack.RenderedHandCount == expected
+                            && ack.RenderedNamedCardCount == expected;
+                        if (!client.RenderConfirmed && _room?.Started == true && _room.Finished == false)
+                            client.NextStateRecoveryAt = Mathf.Min(client.NextStateRecoveryAt, Time.unscaledTime + 0.75f);
+
+                        Debug.Log($"[DedicatedServer] Seat {client.Seat} rendered state #{ack.ServerSequence}: "
+                            + $"{ack.RenderedNamedCardCount}/{ack.RenderedHandCount} named, expected {expected}, "
+                            + $"kind={ack.StateKind ?? "unknown"}, confirmed={client.RenderConfirmed}.");
+                    }
                     break;
             }
         }
@@ -303,6 +319,12 @@ namespace DualCraft.Networking
             if (_room.ConnectedCount == 2)
             {
                 _room.StartGame(_cardDb, _decks[0], _decks[1]);
+                foreach (ClientSlot joinedClient in _clients.Where(item => item.Seat >= 0))
+                {
+                    joinedClient.RenderConfirmed = false;
+                    joinedClient.StateRecoveryAttempts = 0;
+                    joinedClient.NextStateRecoveryAt = Time.unscaledTime + 1.25f;
+                }
                 Debug.Log("[DedicatedServer] Authoritative match started.");
             }
             else
@@ -338,6 +360,42 @@ namespace DualCraft.Networking
 
             // The connection owns the seat. Never trust PlayerIndex from the client.
             _room.ProcessAction(client.Seat, request.Action, request.SequenceNum);
+        }
+
+        private void PumpStateRecovery()
+        {
+            if (_room?.Started != true || _room.Finished)
+                return;
+
+            float now = Time.unscaledTime;
+            foreach (ClientSlot client in _clients)
+            {
+                if (client.Seat < 0 || client.RenderConfirmed || now < client.NextStateRecoveryAt)
+                    continue;
+
+                SendFreshState(client, "render confirmation timeout");
+            }
+        }
+
+        private void SendFreshState(ClientSlot client, string reason)
+        {
+            if (client == null || client.Seat < 0 || _room?.Started != true || _room.Finished)
+                return;
+
+            client.StateRecoveryAttempts++;
+            client.NextStateRecoveryAt = Time.unscaledTime + Mathf.Min(3f, 0.75f + client.StateRecoveryAttempts * 0.25f);
+            _room.SendFreshStateSnapshot(client.Seat);
+            Debug.LogWarning($"[DedicatedServer] Resent fresh private state to seat {client.Seat} "
+                + $"(attempt {client.StateRecoveryAttempts}, reason: {reason}).");
+        }
+
+        private int GetExpectedHandCount(int seat)
+        {
+            if (seat < 0 || seat > 1 || _room?.Core?.State?.Players == null
+                || seat >= _room.Core.State.Players.Length)
+                return -1;
+
+            return _room.Core.State.Players[seat]?.Hand?.Count ?? -1;
         }
 
         private DeckData ReconstructDeck(JoinRoomRequest request)

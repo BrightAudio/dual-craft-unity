@@ -149,6 +149,25 @@ namespace DualCraft.Networking
             });
         }
 
+        /// <summary>
+        /// Sends a new ordered snapshot when a client received the initial state before
+        /// its battle scene was ready to render private card data.
+        /// </summary>
+        public void SendFreshStateSnapshot(int seatIndex)
+        {
+            if (!Started || Finished) return;
+            if (seatIndex < 0 || seatIndex > 1 || Players[seatIndex] == null) return;
+
+            _serverSequence++;
+            SendToPlayer(seatIndex, new GameStateSnapshot
+            {
+                RoomId = RoomId,
+                YourPlayerIndex = seatIndex,
+                State = BuildStateForPlayer(seatIndex),
+                ServerSequence = _serverSequence,
+            });
+        }
+
         // ═════════════════════════════════════════════════
         //  GAME LIFECYCLE
         // ═════════════════════════════════════════════════
