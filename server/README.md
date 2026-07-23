@@ -15,13 +15,18 @@ From Unity, run `Build > Build Linux Dedicated Server`, or use:
   -executeMethod BuildScript.BuildLinuxDedicatedServer
 ```
 
-Set `DUALMON_SERVER_BUILD_PATH` to override the output path. For the container,
-place the Linux build contents under `server/build/`, then build the image:
+Set `DUALMON_SERVER_BUILD_PATH` to override the output path. The checked-in
+Dockerfile downloads the pinned, checksummed protocol-v4 Linux build from the
+GitHub release, so it can deploy directly from this repository:
 
 ```sh
 docker build -t dualmon-server server
 docker run --rm dualmon-server
 ```
+
+The release archive and SHA-256 checksum are published at
+`cloud-authority-v4-20260722`. To test a different server artifact, pass its URL
+as `--build-arg SERVER_ARCHIVE_URL=...`.
 
 The process logs a line like:
 
