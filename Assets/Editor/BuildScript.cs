@@ -43,6 +43,7 @@ public static class BuildScript
             scenes = Scenes,
             locationPathName = outputPath,
             target = BuildTarget.StandaloneOSX,
+            subtarget = (int)StandaloneBuildSubtarget.Player,
             options = BuildOptions.None,
         };
 
@@ -74,6 +75,7 @@ public static class BuildScript
             scenes = Scenes,
             locationPathName = outputPath,
             target = BuildTarget.StandaloneWindows64,
+            subtarget = (int)StandaloneBuildSubtarget.Player,
             options = BuildOptions.None,
         };
 

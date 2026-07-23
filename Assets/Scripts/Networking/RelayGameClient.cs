@@ -294,8 +294,14 @@ namespace DualCraft.Networking
                     if (joined != null && joined.PlayerIndex >= 0 && joined.PlayerIndex <= 1)
                     {
                         _serverSeatIndex = joined.PlayerIndex;
+                        _joinAccepted = true;
                         Debug.Log($"[RelayGameClient] Server assigned seat {_serverSeatIndex}.");
                     }
+                    break;
+
+                case nameof(WaitingForOpponent):
+                    _joinAccepted = true;
+                    Debug.Log("[RelayGameClient] Joined cloud room; waiting for opponent.");
                     break;
 
                 case nameof(OpponentDisconnected):

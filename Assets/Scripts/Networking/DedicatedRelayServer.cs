@@ -25,8 +25,6 @@ namespace DualCraft.Networking
     public sealed class DedicatedRelayServer : MonoBehaviour
     {
         private const string ChunkMagic = "DUALMON_CHUNK_V1";
-        private const int ReliableFragmentPayloadCapacity = 64 * 1024;
-
         private sealed class ClientSlot
         {
             public NetworkConnection Connection;
@@ -117,10 +115,9 @@ namespace DualCraft.Networking
                 var relayData = new RelayServerData(allocation, "dtls");
                 var settings = new NetworkSettings();
                 settings.WithRelayParameters(ref relayData);
-                settings.WithFragmentationStageParameters(ReliableFragmentPayloadCapacity);
                 settings.WithReliableStageParameters(windowSize: 64, minimumResendTime: 64, maximumResendTime: 500);
                 _driver = NetworkDriver.Create(settings);
-                _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage));
+                _reliablePipeline = _driver.CreatePipeline(typeof(ReliableSequencedPipelineStage));
                 if (_driver.Bind(NetworkEndpoint.AnyIpv4) != 0)
                 {
                     Fail("Could not bind the dedicated Relay driver.");

@@ -19,8 +19,8 @@ namespace DualCraft.Networking
 
     public static class MultiplayerProtocol
     {
-        public const int CurrentVersion = 4;
-        public const string BuildId = "cloud-authority-v4-20260722";
+        public const int CurrentVersion = 5;
+        public const string BuildId = "cloud-authority-v5-20260722";
     }
 
     // ─── Envelope ────────────────────────────────────────

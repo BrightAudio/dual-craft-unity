@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 
-ARG SERVER_ARCHIVE_URL="https://github.com/BrightAudio/dual-craft-unity/releases/download/cloud-authority-v4-20260722/DualMonCloudServer-v4-linux-x64.tar.gz"
-ARG SERVER_ARCHIVE_SHA256="fd594b633b112c4a2a0ef5bb67914c149996163f1fcf97198dd603f04df32145"
+ARG SERVER_ARCHIVE_URL="https://github.com/BrightAudio/dual-craft-unity/releases/download/cloud-authority-v5-20260722/DualMonCloudServer-v5-linux-x64.tar.gz"
+ARG SERVER_ARCHIVE_SHA256="4a7d1cbab4834d0b23cac5ddfa0df1cf5cf820f8b575bbc677ec6c73cce07845"
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
