@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 
-ARG SERVER_ARCHIVE_URL="https://github.com/BrightAudio/dual-craft-unity/releases/download/cloud-authority-v5-server-sync4/DualMonCloudServer-v5-sync1-linux-x64.tar.gz"
-ARG SERVER_ARCHIVE_SHA256="2857b8a1fe62379afbff836f9cd519f3369ae002a0a9d893d5e91020ce7de6d5"
+ARG SERVER_ARCHIVE_URL="https://github.com/BrightAudio/dual-craft-unity/releases/download/cloud-authority-v5-server-sync5/DualMon-bindfix-server-linux-x64-root.tar.gz"
+ARG SERVER_ARCHIVE_SHA256="b15d161abdc3b8a5c7977f04c83426745f005dc451ab66ff337f5a4b329972e1"
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \

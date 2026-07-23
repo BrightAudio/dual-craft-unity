@@ -328,6 +328,7 @@ namespace DualCraft.Networking
         public int PillarIndex;
         public int AbilityIndex;
         public int ConsumeIndex;
+        public int[] AnchorFieldIndices;
         public int TargetDaemonFieldIndex;
         public int AsheCardBoardIndex;
         public int AttackerFieldIndex;
@@ -352,7 +353,12 @@ namespace DualCraft.Networking
                     TargetType = ParseEnum<DispelTarget>(DispelTarget),
                     TargetIndex = TargetIndex,
                 },
-                "Evolve" => new EvolveAction { FieldIndex = FieldIndex, ConsumeIndex = ConsumeIndex },
+                "Evolve" => new EvolveAction
+                {
+                    FieldIndex = FieldIndex,
+                    ConsumeIndex = ConsumeIndex,
+                    AnchorFieldIndices = AnchorFieldIndices ?? Array.Empty<int>(),
+                },
                 "FuseDaemons" => new FuseDaemonsAction { PrimaryIndex = FieldIndex, SecondaryIndex = ConsumeIndex },
                 "PlayAsheCard" => new PlayAsheCardAction { HandIndex = HandIndex, TargetDaemonFieldIndex = TargetDaemonFieldIndex },
                 "AssignAsheCard" => new AssignAsheCardAction { AsheCardBoardIndex = AsheCardBoardIndex, TargetDaemonFieldIndex = TargetDaemonFieldIndex },
@@ -385,7 +391,11 @@ namespace DualCraft.Networking
                 case PlayHexAction pha: sa.HandIndex = pha.HandIndex; sa.TargetIndex = pha.TargetDaemonIndex; sa.ResponseDispelHandIndex = pha.ResponseDispelHandIndex; break;
                 case SetSealAction ssa: sa.HandIndex = ssa.HandIndex; break;
                 case PlayDispelAction pdi: sa.HandIndex = pdi.HandIndex; sa.TargetIndex = pdi.TargetIndex; sa.DispelTarget = pdi.TargetType.ToString(); break;
-                case EvolveAction ea: sa.FieldIndex = ea.FieldIndex; sa.ConsumeIndex = ea.ConsumeIndex; break;
+                case EvolveAction ea:
+                    sa.FieldIndex = ea.FieldIndex;
+                    sa.ConsumeIndex = ea.ConsumeIndex;
+                    sa.AnchorFieldIndices = ea.AnchorFieldIndices ?? Array.Empty<int>();
+                    break;
                 case FuseDaemonsAction fda: sa.FieldIndex = fda.PrimaryIndex; sa.ConsumeIndex = fda.SecondaryIndex; break;
                 case PlayAsheCardAction pac: sa.HandIndex = pac.HandIndex; sa.TargetDaemonFieldIndex = pac.TargetDaemonFieldIndex; break;
                 case AssignAsheCardAction aac: sa.AsheCardBoardIndex = aac.AsheCardBoardIndex; sa.TargetDaemonFieldIndex = aac.TargetDaemonFieldIndex; break;

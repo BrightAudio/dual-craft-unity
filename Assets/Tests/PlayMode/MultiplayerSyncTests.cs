@@ -63,6 +63,24 @@ namespace DualCraft.Tests.PlayMode
         }
 
         [Test]
+        public void BindAction_RoundTripsEveryChosenAnchor()
+        {
+            var wireAction = Net.SerializableAction.FromGameAction(new EvolveAction
+            {
+                FieldIndex = 3,
+                ConsumeIndex = 4,
+                AnchorFieldIndices = new[] { 3, 1, 0 },
+            });
+
+            var decoded = wireAction.ToGameAction() as EvolveAction;
+
+            Assert.IsNotNull(decoded);
+            Assert.AreEqual(3, decoded.FieldIndex);
+            Assert.AreEqual(4, decoded.ConsumeIndex);
+            CollectionAssert.AreEqual(new[] { 3, 1, 0 }, decoded.AnchorFieldIndices);
+        }
+
+        [Test]
         public void AuthoritativeSnapshots_ProjectForBothSeats_WithPlayableCards()
         {
             var decks = Resources.LoadAll<DeckData>("CardData/Decks")
