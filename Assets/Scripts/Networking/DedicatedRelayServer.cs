@@ -25,6 +25,8 @@ namespace DualCraft.Networking
     public sealed class DedicatedRelayServer : MonoBehaviour
     {
         private const string ChunkMagic = "DUALMON_CHUNK_V1";
+        private const int MaxPacketsPerClientPerFrame = 8;
+        private const int MaxStateRecoveryAttempts = 12;
         private sealed class ClientSlot
         {
             public NetworkConnection Connection;
@@ -34,6 +36,7 @@ namespace DualCraft.Networking
             public float NextStateRecoveryAt;
             public int StateRecoveryAttempts;
             public readonly Dictionary<string, ChunkAccumulator> Chunks = new();
+            public readonly Queue<byte[]> OutgoingPackets = new();
         }
 
         [Serializable]
@@ -168,6 +171,8 @@ namespace DualCraft.Networking
                 PumpClient(_clients[i], i);
 
             PumpStateRecovery();
+            foreach (ClientSlot client in _clients)
+                FlushOutgoing(client);
         }
 
         private void PumpClient(ClientSlot client, int listIndex)
@@ -370,7 +375,9 @@ namespace DualCraft.Networking
             float now = Time.unscaledTime;
             foreach (ClientSlot client in _clients)
             {
-                if (client.Seat < 0 || client.RenderConfirmed || now < client.NextStateRecoveryAt)
+                if (client.Seat < 0 || client.RenderConfirmed
+                    || client.StateRecoveryAttempts >= MaxStateRecoveryAttempts
+                    || now < client.NextStateRecoveryAt)
                     continue;
 
                 SendFreshState(client, "render confirmation timeout");
@@ -470,17 +477,37 @@ namespace DualCraft.Networking
             byte[] full = Encoding.UTF8.GetBytes(JsonUtility.ToJson(envelope));
             IReadOnlyList<byte[]> packets = RelayManager.BuildTransportPackets(full);
             foreach (byte[] packet in packets)
+                client.OutgoingPackets.Enqueue(packet);
+        }
+
+        private void FlushOutgoing(ClientSlot client)
+        {
+            if (client == null || !_driver.IsCreated || !client.Connection.IsCreated)
+                return;
+
+            int sent = 0;
+            while (sent < MaxPacketsPerClientPerFrame && client.OutgoingPackets.Count > 0)
             {
+                byte[] packet = client.OutgoingPackets.Peek();
                 int begin = _driver.BeginSend(_reliablePipeline, client.Connection, out DataStreamWriter writer, packet.Length);
                 if (begin != 0)
                 {
-                    Debug.LogError($"[DedicatedServer] BeginSend failed: {begin}.");
-                    return;
+                    // The reliable pipeline is temporarily full. Keep the packet at the
+                    // front of the queue and retry after the next driver update.
+                    break;
                 }
+
                 writer.WriteBytes(packet);
                 int end = _driver.EndSend(writer);
                 if (end < 0)
-                    Debug.LogError($"[DedicatedServer] EndSend failed: {end}.");
+                {
+                    Debug.LogWarning($"[DedicatedServer] Relay send backpressure ({end}); "
+                        + $"{client.OutgoingPackets.Count} packet(s) remain queued for seat {client.Seat}.");
+                    break;
+                }
+
+                client.OutgoingPackets.Dequeue();
+                sent++;
             }
         }
 

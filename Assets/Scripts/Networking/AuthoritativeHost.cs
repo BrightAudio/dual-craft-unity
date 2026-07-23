@@ -234,6 +234,9 @@ namespace DualCraft.Networking
             // The GameCore validates turn ownership and phase
             ActionResult result = Core.Play(seatIndex, action);
             _serverSequence++;
+            UnityEngine.Debug.Log($"[Authority] seq={_serverSequence} seat={seatIndex} "
+                + $"action={sa.ActionType ?? "unknown"} success={result.Success} "
+                + $"reason={result.Reason ?? ""}");
 
             _replay.RecordMove(
                 Core.State.TurnNumber, seatIndex, sa,
