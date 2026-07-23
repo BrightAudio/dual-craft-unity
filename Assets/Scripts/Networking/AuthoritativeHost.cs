@@ -313,6 +313,8 @@ namespace DualCraft.Networking
                     Name = ps.Name,
                     InvokerHp = ps.Invoker.Hp,
                     InvokerMaxHp = ps.Invoker.MaxHp,
+                    InvokerCardId = ps.InvokerCard?.cardId ?? "",
+                    InvokerArchetype = ps.InvokerArchetype.ToString(),
                     Will = ps.Will,
                     MaxWill = ps.MaxWill,
                     HandCount = ps.Hand.Count,

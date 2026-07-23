@@ -17,6 +17,7 @@ using Unity.Services.Authentication;
 namespace DualCraft.Networking
 {
     using Battle;
+    using Data;
 
     /// <summary>
     /// Relay-based game client for the joining player.
@@ -36,7 +37,9 @@ namespace DualCraft.Networking
         private int _joinRequestAttempts;
         private int _lastReceivedServerSequence = -1;
         private int _lastAppliedServerSequence = -1;
+        private GameState _lastRenderedState;
         private float _lastPrivateStateRequestAt = -999f;
+        private int _serverSeatIndex = 1;
 
         public GameStateSnapshot LatestSnapshot { get; private set; }
         public int LastAppliedServerSequence => _lastAppliedServerSequence;
@@ -52,6 +55,7 @@ namespace DualCraft.Networking
 
         public bool IsConnected => _relay != null && _relay.IsConnected;
         public int ActionSequence => _actionSequence;
+        public int ServerSeatIndex => _serverSeatIndex;
 
         /// <summary>
         /// Initialize and connect to a host via join code.
@@ -69,7 +73,9 @@ namespace DualCraft.Networking
             _joinRequestAttempts = 0;
             _lastReceivedServerSequence = -1;
             _lastAppliedServerSequence = -1;
+            _lastRenderedState = null;
             _lastPrivateStateRequestAt = -999f;
+            _serverSeatIndex = 1;
 
             if (_relay != null)
             {
@@ -147,6 +153,8 @@ namespace DualCraft.Networking
             // Tell the host who we are and send our full deck
             var joinReq = new JoinRoomRequest
             {
+                ProtocolVersion = MultiplayerProtocol.CurrentVersion,
+                BuildId = MultiplayerProtocol.BuildId,
                 PlayerId = _playerId,
                 PlayerName = _playerName,
                 RoomId = _relay.JoinCode,
@@ -159,12 +167,17 @@ namespace DualCraft.Networking
                 joinReq.MainDeck = BuildDeckEntries(_deckData.cards);
                 joinReq.PillarDeck = BuildDeckEntries(_deckData.pillars);
                 joinReq.WardIds = _deckData.wardIds;
+                joinReq.DeckElement = _deckData.element.ToString();
+                joinReq.DeckArchetype = _deckData.primaryCreatureType.ToString();
+                joinReq.InvokerCardId = _deckData.invokerCard?.cardId;
+                if (string.IsNullOrWhiteSpace(joinReq.InvokerCardId))
+                    joinReq.InvokerCardId = ProfileManager.Load()?.activeInvokerDesign ?? "";
             }
 
             _relay.SendMessage(joinReq, _playerId);
             _lastJoinRequestSentAt = Time.unscaledTime;
             _joinRequestAttempts++;
-            Debug.Log($"[RelayGameClient] Join request sent ({_joinRequestAttempts}).");
+            Debug.Log($"[RelayGameClient] Join request sent ({_joinRequestAttempts}) with protocol {MultiplayerProtocol.CurrentVersion}, build {MultiplayerProtocol.BuildId}.");
         }
 
         private static SerializableDeckEntry[] BuildDeckEntries(Cards.DeckEntry[] entries)
@@ -226,7 +239,7 @@ namespace DualCraft.Networking
                     var confirmed = JsonUtility.FromJson<ActionConfirmed>(envelope.Payload);
                     if (confirmed == null)
                         break;
-                    if (!ValidatePrivateState(confirmed.State, 1, confirmed.ServerSequence, "action confirmation", out _))
+                    if (!ValidatePrivateState(confirmed.State, _serverSeatIndex, confirmed.ServerSequence, "action confirmation", out _))
                         break;
                     if (HandleDuplicateState(confirmed.ServerSequence, "ActionConfirmed"))
                         break;
@@ -237,7 +250,7 @@ namespace DualCraft.Networking
                         LatestSnapshot = new GameStateSnapshot
                     {
                         RoomId = confirmed.State.RoomId,
-                        YourPlayerIndex = 1,
+                        YourPlayerIndex = _serverSeatIndex,
                         State = confirmed.State,
                         ServerSequence = confirmed.ServerSequence,
                     };
@@ -255,7 +268,7 @@ namespace DualCraft.Networking
                     var over = JsonUtility.FromJson<GameOver>(envelope.Payload);
                     if (over == null)
                         break;
-                    if (!ValidatePrivateState(over.FinalState, 1, over.ServerSequence, "game over", out _))
+                    if (!ValidatePrivateState(over.FinalState, _serverSeatIndex, over.ServerSequence, "game over", out _))
                         break;
                     if (HandleDuplicateState(over.ServerSequence, "GameOver"))
                         break;
@@ -266,7 +279,7 @@ namespace DualCraft.Networking
                         LatestSnapshot = new GameStateSnapshot
                     {
                         RoomId = over.FinalState.RoomId,
-                        YourPlayerIndex = 1,
+                        YourPlayerIndex = _serverSeatIndex,
                         State = over.FinalState,
                         ServerSequence = over.ServerSequence,
                     };
@@ -277,7 +290,12 @@ namespace DualCraft.Networking
                     break;
 
                 case nameof(RoomJoined):
-                    // Confirmation we're in the room
+                    var joined = JsonUtility.FromJson<RoomJoined>(envelope.Payload);
+                    if (joined != null && joined.PlayerIndex >= 0 && joined.PlayerIndex <= 1)
+                    {
+                        _serverSeatIndex = joined.PlayerIndex;
+                        Debug.Log($"[RelayGameClient] Server assigned seat {_serverSeatIndex}.");
+                    }
                     break;
 
                 case nameof(OpponentDisconnected):
@@ -289,6 +307,18 @@ namespace DualCraft.Networking
                     // Latency tracking
                     break;
 
+                case nameof(ServerError):
+                    var serverError = JsonUtility.FromJson<ServerError>(envelope.Payload);
+                    if (serverError != null)
+                    {
+                        string message = string.IsNullOrWhiteSpace(serverError.Message)
+                            ? serverError.Code
+                            : serverError.Message;
+                        Debug.LogError($"[RelayGameClient] Server error {serverError.Code}: {message}");
+                        OnError?.Invoke(message);
+                    }
+                    break;
+
                 default:
                     Debug.LogWarning($"[RelayGameClient] Unknown: {envelope.Type}");
                     break;
@@ -298,6 +328,16 @@ namespace DualCraft.Networking
         private bool ValidatePrivateState(SerializableGameState state, int expectedSeat, int serverSequence,
             string stateKind, out int resolvedSeat)
         {
+            if (state == null || state.ProtocolVersion != MultiplayerProtocol.CurrentVersion)
+            {
+                resolvedSeat = expectedSeat;
+                string version = state == null ? "missing" : state.ProtocolVersion.ToString();
+                string mismatchMessage = $"Multiplayer build mismatch. Expected protocol {MultiplayerProtocol.CurrentVersion}, received {version}. Update both copies of DualMon.";
+                Debug.LogError($"[RelayGameClient] {mismatchMessage}");
+                OnError?.Invoke(mismatchMessage);
+                return false;
+            }
+
             if (NetworkStateProjector.TryResolvePrivateHand(state, expectedSeat, out resolvedSeat, out string error))
                 return true;
 
@@ -318,7 +358,7 @@ namespace DualCraft.Networking
             {
                 PlayerId = _playerId,
                 RoomId = _relay.JoinCode,
-                PlayerIndex = 1,
+                PlayerIndex = _serverSeatIndex,
                 LastServerSequence = serverSequence,
                 Reason = reason,
             }, _playerId);
@@ -337,7 +377,7 @@ namespace DualCraft.Networking
             _relay.SendMessage(new ActionRequest
             {
                 PlayerId = _playerId,
-                PlayerIndex = 1, // guest is always seat 1
+                PlayerIndex = _serverSeatIndex,
                 SequenceNum = _actionSequence,
                 Action = SerializableAction.FromGameAction(action),
             }, _playerId);
@@ -346,13 +386,15 @@ namespace DualCraft.Networking
         /// <summary>
         /// Called by the battle scene after a server state has actually been applied to the UI.
         /// </summary>
-        public void AcknowledgeAppliedState(int serverSequence, string stateKind)
+        public void AcknowledgeAppliedState(int serverSequence, string stateKind, GameState renderedState = null)
         {
             if (serverSequence < _lastAppliedServerSequence)
                 return;
 
             _lastAppliedServerSequence = serverSequence;
-            SendStateAck(serverSequence, stateKind ?? "AppliedState", "Applied");
+            if (renderedState != null)
+                _lastRenderedState = renderedState;
+            SendStateAck(serverSequence, stateKind ?? "AppliedState", "Applied", _lastRenderedState);
         }
 
         private void AcknowledgeReceivedState(int serverSequence, string stateKind)
@@ -364,7 +406,10 @@ namespace DualCraft.Networking
         {
             if (serverSequence <= _lastAppliedServerSequence)
             {
-                SendStateAck(serverSequence, stateKind, "Reconfirmed");
+                // A duplicate still needs the proof from the last rendered battle view.
+                // Sending an empty ACK here makes the host resend forever and eventually
+                // fills Relay's receive queue even though the cards are already visible.
+                SendStateAck(serverSequence, stateKind, "Reconfirmed", _lastRenderedState);
                 return true;
             }
 
@@ -377,18 +422,33 @@ namespace DualCraft.Networking
             return false;
         }
 
-        private void SendStateAck(int serverSequence, string stateKind, string logVerb)
+        private void SendStateAck(int serverSequence, string stateKind, string logVerb, GameState renderedState = null)
         {
             if (!_gameActive || !IsConnected || serverSequence < 0)
                 return;
 
+            var hand = renderedState?.Players != null && renderedState.Players.Length > 0
+                ? renderedState.Players[0]?.Hand
+                : null;
+            int renderedHandCount = hand?.Count ?? 0;
+            int renderedNamedCount = hand?.Count(card => card?.Card != null
+                && !string.IsNullOrWhiteSpace(card.Card.cardId)
+                && !string.IsNullOrWhiteSpace(card.Card.cardName)) ?? 0;
+            int renderedArtworkCount = hand?.Count(card => card?.Card != null
+                && (card.Card.artwork != null || card.Card.fullArt != null)) ?? 0;
+
             _relay.SendMessage(new StateAppliedAck
             {
+                ProtocolVersion = MultiplayerProtocol.CurrentVersion,
+                BuildId = MultiplayerProtocol.BuildId,
                 PlayerId = _playerId,
                 RoomId = _relay.JoinCode,
-                PlayerIndex = 1,
+                PlayerIndex = _serverSeatIndex,
                 ServerSequence = serverSequence,
                 StateKind = stateKind ?? "State",
+                RenderedHandCount = renderedHandCount,
+                RenderedNamedCardCount = renderedNamedCount,
+                RenderedArtworkCount = renderedArtworkCount,
             }, _playerId);
 
             Debug.Log($"[RelayGameClient] {logVerb} {stateKind ?? "State"} seq {serverSequence}; ACK sent.");

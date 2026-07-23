@@ -329,8 +329,8 @@ namespace DualCraft.Networking
             // Player stats
             boardView.SetPlayerName(myState.Name);
             boardView.SetOpponentName(theirState.Name);
-            boardView.SetPlayerHP(myState.ConjurorHp, myState.ConjurorMaxHp);
-            boardView.SetOpponentHP(theirState.ConjurorHp, theirState.ConjurorMaxHp);
+            boardView.SetPlayerHP(myState.InvokerHp, myState.InvokerMaxHp);
+            boardView.SetOpponentHP(theirState.InvokerHp, theirState.InvokerMaxHp);
             boardView.SetPlayerWill(myState.Will, myState.MaxWill);
             boardView.SetOpponentWill(theirState.Will, theirState.MaxWill);
             boardView.SetPlayerDeckCount(myState.DeckCount);

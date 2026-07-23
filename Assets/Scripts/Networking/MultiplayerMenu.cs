@@ -15,6 +15,9 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace DualCraft.Networking
 {
@@ -81,6 +84,7 @@ namespace DualCraft.Networking
         private PlayerProfile _profile;
         private readonly List<DeckChoice> _deckChoices = new();
         private int _selectedDeckIndex;
+        private bool _loadingBattleScene;
 
         // ═════════════════════════════════════════════════
         //  LIFECYCLE
@@ -117,6 +121,21 @@ namespace DualCraft.Networking
             await _relay.InitializeServices();
             _connectingPanel.SetActive(false);
             ShowPage(MenuPage.Main);
+            if (!string.IsNullOrWhiteSpace(_relay.LastError) && _statusText != null)
+                _statusText.text = _relay.LastError;
+
+            string[] args = Environment.GetCommandLineArgs();
+            int joinArg = Array.FindIndex(args, arg => string.Equals(arg, "-relay-smoke-join", StringComparison.OrdinalIgnoreCase));
+            if (joinArg >= 0 && joinArg + 1 < args.Length)
+            {
+                OnJoinClicked();
+                _codeInput.text = args[joinArg + 1].Trim().ToUpperInvariant();
+                OnConnectClicked();
+            }
+            else if (args.Any(arg => string.Equals(arg, "-relay-smoke-host", StringComparison.OrdinalIgnoreCase)))
+            {
+                OnHostClicked();
+            }
         }
 
         // ═════════════════════════════════════════════════
@@ -180,7 +199,7 @@ namespace DualCraft.Networking
             SetAnchored(_deckHelpText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -6), new Vector2(520, 34));
 
             _statusText = CreateText(_mainPanel.transform, "StatusText", "Pick a deck, then Host or Join.", 16, GoldDim).GetComponent<TMP_Text>();
-            _statusText.enableWordWrapping = true;
+            _statusText.textWrappingMode = TextWrappingModes.Normal;
             SetAnchored(_statusText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -108), new Vector2(520, 42));
 
             var hostBtn = CreateButton(_mainPanel.transform, "HostButton", "HOST FRIEND GAME", Gold, DarkBg, OnHostClicked);
@@ -354,7 +373,9 @@ namespace DualCraft.Networking
             if (string.IsNullOrEmpty(code))
             {
                 if (_statusText != null)
-                    _statusText.text = "Unable to create room. Check your network connection.";
+                    _statusText.text = string.IsNullOrWhiteSpace(_relay.LastError)
+                        ? "Unable to create room. Check your network connection."
+                        : _relay.LastError;
                 ShowPage(MenuPage.Main);
                 return;
             }
@@ -374,6 +395,8 @@ namespace DualCraft.Networking
             };
             _host.OnGameStarted += () =>
             {
+                if (_loadingBattleScene) return;
+                _loadingBattleScene = true;
                 Debug.Log("[MultiplayerMenu] Game started! Loading battle...");
                 RuntimeAssetLocator.TryLoadScene("Battle", this);
             };
@@ -413,6 +436,8 @@ namespace DualCraft.Networking
             };
             _client.OnGameStateReceived += _ =>
             {
+                if (_loadingBattleScene) return;
+                _loadingBattleScene = true;
                 Debug.Log("[MultiplayerMenu] Game state received, loading battle...");
                 RuntimeAssetLocator.TryLoadScene("Battle", this);
             };
@@ -500,6 +525,8 @@ namespace DualCraft.Networking
             }
 
             var prebuiltDecks = Resources.LoadAll<DeckData>("CardData/Decks")
+                .Where(deck => deck != null)
+                .Select(deck => deck.CreatePlayableRuntimeCopy())
                 .Where(deck => deck != null && deck.IsValid)
                 .OrderBy(deck => deck.primaryCreatureType)
                 .ThenBy(deck => deck.element)
@@ -536,7 +563,7 @@ namespace DualCraft.Networking
             {
                 _deckChoiceText.text = "No valid decks";
                 if (_deckHelpText != null)
-                    _deckHelpText.text = "Build a 40-card deck before playing online.";
+                    _deckHelpText.text = $"Build a {GameConstants.DeckSize}-card deck before playing online.";
                 return;
             }
 
@@ -577,31 +604,76 @@ namespace DualCraft.Networking
 
         private static bool WasSubmitPressed()
         {
-            return Input.GetKeyDown(KeyCode.Return)
+            bool pressed = Input.GetKeyDown(KeyCode.Return)
                 || Input.GetKeyDown(KeyCode.KeypadEnter)
                 || Input.GetKeyDown(KeyCode.Space)
                 || Input.GetKeyDown(KeyCode.JoystickButton0);
+#if ENABLE_INPUT_SYSTEM
+            var keyboard = Keyboard.current;
+            var gamepad = Gamepad.current;
+            pressed |= keyboard != null
+                && (keyboard.enterKey.wasPressedThisFrame
+                    || keyboard.numpadEnterKey.wasPressedThisFrame
+                    || keyboard.spaceKey.wasPressedThisFrame);
+            pressed |= gamepad != null
+                && (gamepad.buttonSouth.wasPressedThisFrame
+                    || gamepad.startButton.wasPressedThisFrame);
+#endif
+            return pressed;
         }
 
         private static bool WasCancelPressed()
         {
-            return Input.GetKeyDown(KeyCode.Escape)
+            bool pressed = Input.GetKeyDown(KeyCode.Escape)
                 || Input.GetKeyDown(KeyCode.Backspace)
                 || Input.GetKeyDown(KeyCode.JoystickButton1);
+#if ENABLE_INPUT_SYSTEM
+            var keyboard = Keyboard.current;
+            var gamepad = Gamepad.current;
+            pressed |= keyboard != null
+                && (keyboard.escapeKey.wasPressedThisFrame
+                    || keyboard.backspaceKey.wasPressedThisFrame);
+            pressed |= gamepad != null
+                && (gamepad.buttonEast.wasPressedThisFrame
+                    || gamepad.selectButton.wasPressedThisFrame);
+#endif
+            return pressed;
         }
 
         private static bool WasPreviousPressed()
         {
-            return Input.GetKeyDown(KeyCode.Q)
+            bool pressed = Input.GetKeyDown(KeyCode.Q)
                 || Input.GetKeyDown(KeyCode.LeftBracket)
                 || Input.GetKeyDown(KeyCode.JoystickButton4);
+#if ENABLE_INPUT_SYSTEM
+            var keyboard = Keyboard.current;
+            var gamepad = Gamepad.current;
+            pressed |= keyboard != null
+                && (keyboard.qKey.wasPressedThisFrame
+                    || keyboard.leftBracketKey.wasPressedThisFrame);
+            pressed |= gamepad != null
+                && (gamepad.leftShoulder.wasPressedThisFrame
+                    || gamepad.dpad.left.wasPressedThisFrame);
+#endif
+            return pressed;
         }
 
         private static bool WasNextPressed()
         {
-            return Input.GetKeyDown(KeyCode.E)
+            bool pressed = Input.GetKeyDown(KeyCode.E)
                 || Input.GetKeyDown(KeyCode.RightBracket)
                 || Input.GetKeyDown(KeyCode.JoystickButton5);
+#if ENABLE_INPUT_SYSTEM
+            var keyboard = Keyboard.current;
+            var gamepad = Gamepad.current;
+            pressed |= keyboard != null
+                && (keyboard.eKey.wasPressedThisFrame
+                    || keyboard.rightBracketKey.wasPressedThisFrame);
+            pressed |= gamepad != null
+                && (gamepad.rightShoulder.wasPressedThisFrame
+                    || gamepad.dpad.right.wasPressedThisFrame);
+#endif
+            return pressed;
         }
 
         private string GetPlayerName()

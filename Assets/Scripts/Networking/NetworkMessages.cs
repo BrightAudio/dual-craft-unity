@@ -17,6 +17,12 @@ namespace DualCraft.Networking
     using Battle;
     using Core;
 
+    public static class MultiplayerProtocol
+    {
+        public const int CurrentVersion = 4;
+        public const string BuildId = "cloud-authority-v4-20260722";
+    }
+
     // ─── Envelope ────────────────────────────────────────
 
     /// <summary>
@@ -76,6 +82,8 @@ namespace DualCraft.Networking
     [Serializable]
     public class JoinRoomRequest
     {
+        public int ProtocolVersion;
+        public string BuildId;
         public string PlayerId;
         public string PlayerName;
         public string RoomId;       // empty = matchmaking
@@ -84,6 +92,9 @@ namespace DualCraft.Networking
         public SerializableDeckEntry[] MainDeck;   // card IDs + counts
         public SerializableDeckEntry[] PillarDeck; // pillar IDs + counts
         public string[] WardIds;                   // equipped invoker Ward glyphs
+        public string DeckElement;
+        public string DeckArchetype;
+        public string InvokerCardId;
     }
 
     /// <summary>One entry in a serialized deck: cardId + count.</summary>
@@ -223,11 +234,16 @@ namespace DualCraft.Networking
     [Serializable]
     public class StateAppliedAck
     {
+        public int ProtocolVersion;
+        public string BuildId;
         public string PlayerId;
         public string RoomId;
         public int PlayerIndex;
         public int ServerSequence;
         public string StateKind;
+        public int RenderedHandCount;
+        public int RenderedNamedCardCount;
+        public int RenderedArtworkCount;
     }
 
     /// <summary>Requests a fresh owner-private snapshot when hand identities are incomplete.</summary>
@@ -397,7 +413,7 @@ namespace DualCraft.Networking
     [Serializable]
     public class SerializableGameState
     {
-        public const int CurrentProtocolVersion = 2;
+        public const int CurrentProtocolVersion = MultiplayerProtocol.CurrentVersion;
 
         public int ProtocolVersion;
         public string RoomId;
@@ -425,6 +441,8 @@ namespace DualCraft.Networking
         public string Name;
         public int InvokerHp;
         public int InvokerMaxHp;
+        public string InvokerCardId;
+        public string InvokerArchetype;
         public int Will;
         public int MaxWill;
         public int HandCount;       // opponent sees count, not cards

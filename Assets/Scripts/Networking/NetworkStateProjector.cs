@@ -136,6 +136,10 @@ namespace DualCraft.Networking
                 Id = source.Id,
                 Name = source.Name,
                 Invoker = new InvokerState { Hp = source.InvokerHp, MaxHp = source.InvokerMaxHp },
+                InvokerCard = !string.IsNullOrWhiteSpace(source.InvokerCardId)
+                    ? db.GetCard(source.InvokerCardId) as InvokerCardData
+                    : null,
+                InvokerArchetype = ParseEnum(source.InvokerArchetype, CreatureType.Elemental),
                 Will = source.Will,
                 MaxWill = source.MaxWill,
                 Field = BuildField(source.Field, db),

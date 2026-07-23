@@ -178,6 +178,8 @@ namespace DualCraft.Networking
         {
             Send(new JoinRoomRequest
             {
+                ProtocolVersion = MultiplayerProtocol.CurrentVersion,
+                BuildId = MultiplayerProtocol.BuildId,
                 PlayerId = _playerId,
                 PlayerName = _playerId, // server looks up display name
                 RoomId = roomId,

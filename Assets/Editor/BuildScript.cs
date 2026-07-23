@@ -1,10 +1,18 @@
 using UnityEditor;
 using UnityEditor.Build.Reporting;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 public static class BuildScript
 {
     private const string ExternalBuildRoot = "/Volumes/Seagate/DualMonBuilds";
+
+    [InitializeOnLoadMethod]
+    private static void ConfigureBatchImportWorkers()
+    {
+        if (System.Environment.GetEnvironmentVariable("DUALMON_SINGLE_PROCESS_IMPORT") == "1")
+            EditorUserSettings.desiredImportWorkerCount = 0;
+    }
 
     private static readonly string[] Scenes =
     {
@@ -79,6 +87,46 @@ public static class BuildScript
         {
             Debug.Log($"Windows build succeeded: {report.summary.outputPath}");
         }
+    }
+
+    [MenuItem("Build/Build Linux Dedicated Server")]
+    public static void BuildLinuxDedicatedServer()
+    {
+        AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+        PlayerSettings.SetScriptingBackend(UnityEditor.Build.NamedBuildTarget.Server, ScriptingImplementation.Mono2x);
+        const string serverScenePath = "Assets/Scenes/DedicatedServer.unity";
+        EnsureEmptyServerScene(serverScenePath);
+
+        string outputPath = System.Environment.GetEnvironmentVariable("DUALMON_SERVER_BUILD_PATH");
+        if (string.IsNullOrWhiteSpace(outputPath))
+            outputPath = DefaultBuildPath("Server/DualMonServer.x86_64", "Builds/Server/DualMonServer.x86_64");
+
+        var options = new BuildPlayerOptions
+        {
+            scenes = new[] { serverScenePath },
+            locationPathName = outputPath,
+            target = BuildTarget.StandaloneLinux64,
+            subtarget = (int)StandaloneBuildSubtarget.Server,
+            options = BuildOptions.None,
+        };
+
+        BuildReport report = BuildPipeline.BuildPlayer(options);
+        if (report.summary.result != BuildResult.Succeeded)
+        {
+            Debug.LogError($"Linux server build failed: {report.summary.totalErrors} errors");
+            EditorApplication.Exit(1);
+        }
+
+        Debug.Log($"Linux server build succeeded: {report.summary.outputPath}");
+    }
+
+    private static void EnsureEmptyServerScene(string scenePath)
+    {
+        if (System.IO.File.Exists(scenePath))
+            return;
+
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        EditorSceneManager.SaveScene(scene, scenePath);
     }
 
     private static string DefaultBuildPath(string externalRelativePath, string localFallbackPath)

@@ -27,6 +27,42 @@ namespace DualCraft.Tests.PlayMode
         }
 
         [Test]
+        public void MultiplayerProtocol_RoundTripsBuildAndRenderedHandProof()
+        {
+            var join = new Net.JoinRoomRequest
+            {
+                ProtocolVersion = Net.MultiplayerProtocol.CurrentVersion,
+                BuildId = Net.MultiplayerProtocol.BuildId,
+                PlayerId = "windows-guest",
+                DeckElement = Element.Dark.ToString(),
+                DeckArchetype = CreatureType.Undead.ToString(),
+                InvokerCardId = "inv-undead",
+            };
+            var decodedJoin = Net.JsonUtility.FromJson<Net.JoinRoomRequest>(Net.JsonUtility.ToJson(join));
+            Assert.AreEqual(Net.MultiplayerProtocol.CurrentVersion, decodedJoin.ProtocolVersion);
+            Assert.AreEqual(Net.MultiplayerProtocol.BuildId, decodedJoin.BuildId);
+            Assert.AreEqual(Element.Dark.ToString(), decodedJoin.DeckElement);
+            Assert.AreEqual(CreatureType.Undead.ToString(), decodedJoin.DeckArchetype);
+            Assert.AreEqual("inv-undead", decodedJoin.InvokerCardId);
+
+            var ack = new Net.StateAppliedAck
+            {
+                ProtocolVersion = Net.MultiplayerProtocol.CurrentVersion,
+                BuildId = Net.MultiplayerProtocol.BuildId,
+                ServerSequence = 7,
+                StateKind = "Snapshot",
+                RenderedHandCount = 5,
+                RenderedNamedCardCount = 5,
+                RenderedArtworkCount = 5,
+            };
+            var decodedAck = Net.JsonUtility.FromJson<Net.StateAppliedAck>(Net.JsonUtility.ToJson(ack));
+            Assert.AreEqual(5, decodedAck.RenderedHandCount);
+            Assert.AreEqual(5, decodedAck.RenderedNamedCardCount);
+            Assert.AreEqual(5, decodedAck.RenderedArtworkCount);
+            Assert.AreEqual(Net.MultiplayerProtocol.CurrentVersion, Net.SerializableGameState.CurrentProtocolVersion);
+        }
+
+        [Test]
         public void AuthoritativeSnapshots_ProjectForBothSeats_WithPlayableCards()
         {
             var decks = Resources.LoadAll<DeckData>("CardData/Decks")
@@ -51,6 +87,8 @@ namespace DualCraft.Tests.PlayMode
             Assert.IsNotNull(guestSnapshot?.State, "Guest should receive initial state.");
             Assert.AreEqual(hostSnapshot.ServerSequence, guestSnapshot.ServerSequence, "Initial sequence should match for both seats.");
             AssertOwnerPrivatePayload(guestSnapshot.State, 1, "initial guest snapshot");
+            AssertPlayerIdentity(hostSnapshot.State, 0, decks[0], "host identity");
+            AssertPlayerIdentity(guestSnapshot.State, 1, decks[1], "guest identity");
 
             var hostView = Net.NetworkStateProjector.ToLocalGameState(hostSnapshot.State, hostSnapshot.YourPlayerIndex, _db);
             var guestView = Net.NetworkStateProjector.ToLocalGameState(guestSnapshot.State, guestSnapshot.YourPlayerIndex, _db);
@@ -318,6 +356,15 @@ namespace DualCraft.Tests.PlayMode
             Assert.IsTrue(state.ViewerHandCardIds.All(id => !string.IsNullOrWhiteSpace(id)), $"{label} contains blank private card IDs.");
             Assert.IsTrue(state.ViewerHandCards.All(spec => spec != null && !string.IsNullOrWhiteSpace(spec.CardId)),
                 $"{label} contains blank private card specs.");
+        }
+
+        private static void AssertPlayerIdentity(Net.SerializableGameState state, int seat, DeckData deck, string label)
+        {
+            Assert.IsNotNull(state?.Players?[seat], $"{label} player state missing.");
+            Assert.AreEqual(deck.primaryCreatureType.ToString(), state.Players[seat].InvokerArchetype,
+                $"{label} archetype changed over the network.");
+            Assert.IsFalse(string.IsNullOrWhiteSpace(state.Players[seat].InvokerCardId),
+                $"{label} Invoker card identity was not serialized.");
         }
     }
 }

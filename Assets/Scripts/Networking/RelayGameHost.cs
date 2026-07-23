@@ -59,7 +59,7 @@ namespace DualCraft.Networking
         public int LastGuestStateSequence => _lastGuestStateSequence;
         public int LastGuestAppliedSequence => _lastGuestAppliedSequence;
         public bool GuestSynced => _lastGuestStateSequence >= 0
-            && Math.Max(_lastGuestReceivedSequence, _lastGuestAppliedSequence) >= _lastGuestStateSequence;
+            && _lastGuestAppliedSequence >= _lastGuestStateSequence;
 
         /// <summary>
         /// Initialize the host with game data.
@@ -185,6 +185,20 @@ namespace DualCraft.Networking
                 return;
             }
 
+            if (req.ProtocolVersion != MultiplayerProtocol.CurrentVersion
+                || !string.Equals(req.BuildId, MultiplayerProtocol.BuildId, StringComparison.Ordinal))
+            {
+                string message = $"Multiplayer build mismatch. Host requires {MultiplayerProtocol.BuildId} (protocol {MultiplayerProtocol.CurrentVersion}); guest reported {req.BuildId ?? "unknown"} (protocol {req.ProtocolVersion}).";
+                Debug.LogError($"[RelayGameHost] {message}");
+                PublishGuestSyncStatus(message);
+                SendRemoteEnvelope(NetEnvelope.Create(new ServerError
+                {
+                    Code = "BUILD_MISMATCH",
+                    Message = message,
+                }, "host"));
+                return;
+            }
+
             if (_gameStarted)
             {
                 Debug.Log("[RelayGameHost] Duplicate join request after game start; resending guest snapshot.");
@@ -239,6 +253,15 @@ namespace DualCraft.Networking
 
             var deck = ScriptableObject.CreateInstance<DeckData>();
             deck.deckName = $"{req.PlayerName}'s Deck";
+            deck.element = Enum.TryParse(req.DeckElement, true, out Element element)
+                ? element
+                : Element.Flame;
+            deck.primaryCreatureType = Enum.TryParse(req.DeckArchetype, true, out CreatureType archetype)
+                ? archetype
+                : CreatureType.Elemental;
+            deck.invokerCard = !string.IsNullOrWhiteSpace(req.InvokerCardId)
+                ? _cardDb.GetCard(req.InvokerCardId) as InvokerCardData
+                : null;
 
             // Reconstruct main deck entries
             var mainEntries = new System.Collections.Generic.List<DeckEntry>();
@@ -332,6 +355,15 @@ namespace DualCraft.Networking
             if (ack == null || ack.PlayerIndex != 1)
                 return;
 
+            if (ack.ProtocolVersion != MultiplayerProtocol.CurrentVersion
+                || !string.Equals(ack.BuildId, MultiplayerProtocol.BuildId, StringComparison.Ordinal))
+            {
+                string mismatch = $"Ignored stale guest acknowledgement from {ack.BuildId ?? "unknown"} (protocol {ack.ProtocolVersion}).";
+                Debug.LogError($"[RelayGameHost] {mismatch}");
+                PublishGuestSyncStatus(mismatch);
+                return;
+            }
+
             bool receivedOnly = !string.IsNullOrWhiteSpace(ack.StateKind)
                 && ack.StateKind.StartsWith("Received", StringComparison.OrdinalIgnoreCase);
             if (receivedOnly)
@@ -339,9 +371,25 @@ namespace DualCraft.Networking
                 if (ack.ServerSequence > _lastGuestReceivedSequence)
                     _lastGuestReceivedSequence = ack.ServerSequence;
             }
-            else if (ack.ServerSequence > _lastGuestAppliedSequence)
+            else
             {
-                _lastGuestAppliedSequence = ack.ServerSequence;
+                int expectedHandCount = _room?.Core?.State?.Players != null
+                    ? _room.Core.State.Players[1].Hand.Count
+                    : -1;
+                bool renderComplete = expectedHandCount >= 0
+                    && ack.RenderedHandCount == expectedHandCount
+                    && ack.RenderedNamedCardCount == expectedHandCount
+                    && ack.RenderedArtworkCount == expectedHandCount;
+                if (!renderComplete)
+                {
+                    string incomplete = $"Guest battle view incomplete for state #{ack.ServerSequence}: expected {expectedHandCount} hand cards; rendered {ack.RenderedHandCount}, named {ack.RenderedNamedCardCount}, artwork {ack.RenderedArtworkCount}.";
+                    Debug.LogError($"[RelayGameHost] {incomplete}");
+                    PublishGuestSyncStatus(incomplete);
+                    return;
+                }
+
+                if (ack.ServerSequence > _lastGuestAppliedSequence)
+                    _lastGuestAppliedSequence = ack.ServerSequence;
             }
 
             bool synced = GuestSynced;
