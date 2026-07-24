@@ -68,6 +68,7 @@ namespace DualCraft.Networking
         public void Initialize(CardDatabase cardDb, DeckData hostDeck,
                                string hostPlayerName, string hostPlayerId)
         {
+            ResetForNewRoom();
             _cardDb = cardDb;
             _hostDeck = hostDeck;
             _hostPlayerId = hostPlayerId;
@@ -95,6 +96,52 @@ namespace DualCraft.Networking
             _relay.OnClientConnected += HandleGuestConnected;
             _relay.OnDataReceived += HandleIncomingData;
             _relay.OnClientDisconnected += HandleGuestDisconnected;
+        }
+
+        private void ResetForNewRoom()
+        {
+            if (_room != null)
+                _room.OnSendToPlayer -= HandleOutgoingMessage;
+
+            if (_relay != null)
+            {
+                _relay.OnClientConnected -= HandleGuestConnected;
+                _relay.OnDataReceived -= HandleIncomingData;
+                _relay.OnClientDisconnected -= HandleGuestDisconnected;
+            }
+
+            if (_startSnapshotBurst != null)
+                StopCoroutine(_startSnapshotBurst);
+            if (_stateHeartbeat != null)
+                StopCoroutine(_stateHeartbeat);
+            if (_gameOverBurst != null)
+                StopCoroutine(_gameOverBurst);
+            if (_guestSyncWatchdog != null)
+                StopCoroutine(_guestSyncWatchdog);
+
+            _startSnapshotBurst = null;
+            _stateHeartbeat = null;
+            _gameOverBurst = null;
+            _guestSyncWatchdog = null;
+            _room = null;
+            _guestDeck = null;
+            _gameStarted = false;
+            _lastGuestStateEnvelope = null;
+            _lastGuestStateSequence = -1;
+            _lastGuestReceivedSequence = -1;
+            _lastGuestAppliedSequence = -1;
+            _lastGuestResendAt = -999f;
+
+            // MultiplayerMenu subscribes again immediately after Initialize.
+            OnGuestJoined = null;
+            OnGameStarted = null;
+            OnGameEnded = null;
+            OnGuestSyncStatusChanged = null;
+        }
+
+        public void Deactivate()
+        {
+            ResetForNewRoom();
         }
 
         private void OnDestroy()

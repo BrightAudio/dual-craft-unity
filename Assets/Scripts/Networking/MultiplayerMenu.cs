@@ -367,7 +367,11 @@ namespace DualCraft.Networking
         private async void OnHostClicked()
         {
             ShowPage(MenuPage.Connecting);
-            _connectingText.text = "CREATING ROOM...";
+            _connectingText.text = "CREATING NEW PRIVATE ROOM...";
+
+            var previousClient = _relay.GetComponent<RelayGameClient>();
+            if (previousClient != null)
+                previousClient.ResetForNewRoom();
 
             string code = await _relay.StartHost();
             if (string.IsNullOrEmpty(code))
@@ -402,7 +406,7 @@ namespace DualCraft.Networking
             };
 
             _joinCodeText.text = code.ToUpper();
-            _hostStatusText.text = "Waiting for opponent...";
+            _hostStatusText.text = "Private room created. Waiting for opponent...";
             ShowPage(MenuPage.HostWaiting);
         }
 
@@ -430,6 +434,8 @@ namespace DualCraft.Networking
             {
                 _client = _relay.GetComponent<RelayGameClient>() ?? _relay.gameObject.AddComponent<RelayGameClient>();
             }
+            _relay.GetComponent<RelayGameHost>()?.Deactivate();
+            _client.ResetForNewRoom();
             _client.OnConnectedToHost += () =>
             {
                 _connectingText.text = "CONNECTED! WAITING FOR HOST...";

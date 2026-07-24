@@ -133,7 +133,18 @@ namespace DualCraft.Networking
             try
             {
                 LastStatus = "Initializing Unity Services...";
-                await UnityServices.InitializeAsync();
+                string relayProfile = GetCommandLineValue("-relay-profile");
+                if (string.IsNullOrWhiteSpace(relayProfile))
+                {
+                    await UnityServices.InitializeAsync();
+                }
+                else
+                {
+                    var options = new InitializationOptions();
+                    options.SetProfile(relayProfile);
+                    await UnityServices.InitializeAsync(options);
+                    Debug.Log($"[RelayManager] Using isolated Relay profile {relayProfile}.");
+                }
                 if (!AuthenticationService.Instance.IsSignedIn)
                 {
                     LastStatus = "Signing in anonymously...";
@@ -153,6 +164,14 @@ namespace DualCraft.Networking
             }
         }
 
+        private static string GetCommandLineValue(string option)
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            int index = Array.FindIndex(args,
+                arg => string.Equals(arg, option, StringComparison.OrdinalIgnoreCase));
+            return index >= 0 && index + 1 < args.Length ? args[index + 1] : "";
+        }
+
         // ═════════════════════════════════════════════════
         //  HOST — Create a relay and get a join code
         // ═════════════════════════════════════════════════
@@ -163,6 +182,9 @@ namespace DualCraft.Networking
         /// </summary>
         public async Task<string> StartHost()
         {
+            // A Host press always represents a brand-new private room. Dispose any
+            // previous allocation/driver before asking Relay for a fresh join code.
+            Shutdown();
             _isHost = true;
             LastError = "";
 
@@ -220,6 +242,8 @@ namespace DualCraft.Networking
         /// </summary>
         public async Task<bool> JoinGame(string joinCode)
         {
+            // Joining a different friend's room must never reuse stale transport state.
+            Shutdown();
             _isHost = false;
             _joinCode = joinCode;
             LastError = "";
@@ -600,6 +624,11 @@ namespace DualCraft.Networking
                 if (_clientConnection.IsCreated) _driver.Disconnect(_clientConnection);
                 _driver.Dispose();
             }
+
+            _driver = default;
+            _reliablePipeline = default;
+            _hostConnection = default;
+            _clientConnection = default;
             _connected = false;
             _isHost = false;
             _joinCode = null;

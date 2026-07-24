@@ -57,6 +57,27 @@ namespace DualCraft.Networking
         public int ActionSequence => _actionSequence;
         public int ServerSeatIndex => _serverSeatIndex;
 
+        public void ResetForNewRoom()
+        {
+            if (_relay != null)
+            {
+                _relay.OnClientConnected -= HandleConnected;
+                _relay.OnDataReceived -= HandleIncomingData;
+                _relay.OnClientDisconnected -= HandleDisconnected;
+            }
+
+            _gameActive = false;
+            _joinAccepted = false;
+            LatestSnapshot = null;
+            OnConnectedToHost = null;
+            OnGameStateReceived = null;
+            OnActionConfirmed = null;
+            OnActionRejected = null;
+            OnGameOverReceived = null;
+            OnHostDisconnected = null;
+            OnError = null;
+        }
+
         /// <summary>
         /// Initialize and connect to a host via join code.
         /// </summary>
