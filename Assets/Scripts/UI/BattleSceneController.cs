@@ -1361,7 +1361,8 @@ namespace DualCraft.UI
 
         private void Update()
         {
-            if (WasSubmitPressedThisFrame())
+            bool submitPressed = WasSubmitPressedThisFrame();
+            if (submitPressed)
             {
                 if (_storyResultAwaitingReturn)
                 {
@@ -1374,13 +1375,18 @@ namespace DualCraft.UI
                     AdvanceBattleDialogue();
                     return;
                 }
-
-                PressPrimaryBattleAction();
-                return;
             }
 
             if (WasCancelPressedThisFrame())
+            {
                 CancelBattleSelection();
+                return;
+            }
+
+            // A / buttonSouth is reserved for the EventSystem's selected control.
+            // Only Start (or the keyboard phase keys) advances the battle directly.
+            if (WasPhaseShortcutPressedThisFrame())
+                PressPrimaryBattleAction();
         }
 
         private void EnsureHybridDiagnosticsOverlay()
@@ -1461,6 +1467,24 @@ namespace DualCraft.UI
             pressed |= gamepad != null
                 && (gamepad.buttonEast.wasPressedThisFrame
                     || gamepad.selectButton.wasPressedThisFrame);
+#endif
+            return pressed;
+        }
+
+        private static bool WasPhaseShortcutPressedThisFrame()
+        {
+            bool pressed = Input.GetKeyDown(KeyCode.Return)
+                || Input.GetKeyDown(KeyCode.KeypadEnter)
+                || Input.GetKeyDown(KeyCode.Space)
+                || Input.GetKeyDown(KeyCode.JoystickButton7);
+#if ENABLE_INPUT_SYSTEM
+            var keyboard = Keyboard.current;
+            var gamepad = Gamepad.current;
+            pressed |= keyboard != null
+                && (keyboard.enterKey.wasPressedThisFrame
+                    || keyboard.numpadEnterKey.wasPressedThisFrame
+                    || keyboard.spaceKey.wasPressedThisFrame);
+            pressed |= gamepad != null && gamepad.startButton.wasPressedThisFrame;
 #endif
             return pressed;
         }
